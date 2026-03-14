@@ -48,6 +48,9 @@ class _LabourScreenState extends State<LabourScreen> {
   double get _totalWage =>
       _laborEntries.fold(0, (sum, labor) => sum + labor.total);
 
+  double get _totalPending =>
+      _laborEntries.fold(0, (sum, labor) => sum + _totalPendingForLabor(labor));
+
   double _totalUpadForLabor(String laborName) {
     return _upadEntries
         .where((entry) => entry.laborName == laborName)
@@ -57,6 +60,54 @@ class _LabourScreenState extends State<LabourScreen> {
   double _totalPendingForLabor(LaborEntry labor) {
     final pending = labor.total - _totalUpadForLabor(labor.name);
     return pending < 0 ? 0 : pending;
+  }
+
+  Widget _buildOverallSummaryCards() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 700;
+
+        final cards = [
+          statCard(
+            t(widget.language, 'laborTotalPaid'),
+            '₹ ${_totalPaid.toStringAsFixed(2)}',
+            Colors.teal,
+          ),
+          statCard(
+            t(widget.language, 'laborTotalPending'),
+            '₹ ${_totalPending.toStringAsFixed(2)}',
+            Colors.red,
+          ),
+          statCard(
+            t(widget.language, 'laborTotalWage'),
+            '₹ ${_totalWage.toStringAsFixed(2)}',
+            Colors.indigo,
+          ),
+        ];
+
+        if (isMobile) {
+          return Column(
+            children: [
+              cards[0],
+              const SizedBox(height: 8),
+              cards[1],
+              const SizedBox(height: 8),
+              cards[2],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: cards[0]),
+            const SizedBox(width: 8),
+            Expanded(child: cards[1]),
+            const SizedBox(width: 8),
+            Expanded(child: cards[2]),
+          ],
+        );
+      },
+    );
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -123,6 +174,33 @@ class _LabourScreenState extends State<LabourScreen> {
       _laborEntries.removeAt(idx);
       _upadEntries.removeWhere((entry) => entry.laborName == laborName);
     });
+  }
+
+  Future<void> _confirmRemove(int idx) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(t(widget.language, 'deleteLaborTitle')),
+          content: Text(t(widget.language, 'deleteLaborConfirm')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(t(widget.language, 'cancelButton')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(t(widget.language, 'deleteButton')),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      _remove(idx);
+    }
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -206,17 +284,7 @@ class _LabourScreenState extends State<LabourScreen> {
                   ),
                   const SizedBox(height: 12),
                   // ── Totals ──────────────────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: statCard(
-                          t(widget.language, 'laborTotalPaid'),
-                          '₹ ${_totalPaid.toStringAsFixed(2)}',
-                          Colors.teal,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildOverallSummaryCards(),
                 ],
               ),
             ),
@@ -239,6 +307,7 @@ class _LabourScreenState extends State<LabourScreen> {
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
+                isThreeLine: true,
                 leading: CircleAvatar(
                   backgroundColor: Colors.blue.shade100,
                   child: const Icon(Icons.person, color: Colors.blue),
@@ -247,10 +316,19 @@ class _LabourScreenState extends State<LabourScreen> {
                   '${labor.name}  •  ${labor.days} ${t(widget.language, 'laborDay')}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                subtitle: Text(
-                  '${t(widget.language, 'laborTotalPaid')}: ₹ ${totalUpad.toStringAsFixed(2)}'
-                  '  |  ${t(widget.language, 'laborTotalPending')}: ₹ ${totalPending.toStringAsFixed(2)}'
-                  '  |  ${t(widget.language, 'laborTotalWage')}: ₹ ${labor.total.toStringAsFixed(2)}',
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${t(widget.language, 'laborTotalPaid')}: ₹ ${totalUpad.toStringAsFixed(2)}',
+                    ),
+                    Text(
+                      '${t(widget.language, 'laborTotalPending')}: ₹ ${totalPending.toStringAsFixed(2)}',
+                    ),
+                    Text(
+                      '${t(widget.language, 'laborTotalWage')}: ₹ ${labor.total.toStringAsFixed(2)}',
+                    ),
+                  ],
                 ),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -261,7 +339,7 @@ class _LabourScreenState extends State<LabourScreen> {
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _remove(idx),
+                      onPressed: () => _confirmRemove(idx),
                     ),
                   ],
                 ),
@@ -273,25 +351,7 @@ class _LabourScreenState extends State<LabourScreen> {
           if (!_showLaborForm)
             Padding(
               padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: statCard(
-                      t(widget.language, 'laborTotalPaid'),
-                      '₹ ${_totalPaid.toStringAsFixed(2)}',
-                      Colors.teal,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: statCard(
-                      t(widget.language, 'laborTotalWage'),
-                      '₹ ${_totalWage.toStringAsFixed(2)}',
-                      Colors.indigo,
-                    ),
-                  ),
-                ],
-              ),
+              child: _buildOverallSummaryCards(),
             ),
         ],
 

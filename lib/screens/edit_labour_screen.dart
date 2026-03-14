@@ -244,177 +244,211 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     );
   }
 
+  void _saveUpadChangesOnly() {
+    final updatedUpadEntries = _upadEntries
+        .map(
+          (entry) => UpadEntry(
+            laborName: widget.initialEntry.name,
+            amount: entry.amount,
+            note: entry.note,
+            date: entry.date,
+          ),
+        )
+        .toList();
+
+    Navigator.pop(
+      context,
+      EditLabourResult(
+        originalLaborName: widget.initialEntry.name,
+        updatedLabor: widget.initialEntry,
+        updatedUpadEntries: updatedUpadEntries,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t(widget.language, 'laborUpdateButton')),
-        backgroundColor: Colors.green[700],
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: t(widget.language, 'laborName'),
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.person),
+    return WillPopScope(
+      onWillPop: () async {
+        _saveUpadChangesOnly();
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(t(widget.language, 'laborUpdateButton')),
+          backgroundColor: Colors.green[700],
+          foregroundColor: Colors.white,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: t(widget.language, 'laborName'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.person),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _mobileController,
-              decoration: InputDecoration(
-                labelText: t(widget.language, 'laborMobile'),
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.phone),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _mobileController,
+                decoration: InputDecoration(
+                  labelText: t(widget.language, 'laborMobile'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.phone),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _daysController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: t(widget.language, 'laborDay'),
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.calendar_today),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _daysController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: t(widget.language, 'laborDay'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.calendar_today),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _dailyRateController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+              const SizedBox(height: 10),
+              TextField(
+                controller: _dailyRateController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: t(widget.language, 'laborDailyWage'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.money),
+                ),
               ),
-              decoration: InputDecoration(
-                labelText: t(widget.language, 'laborDailyWage'),
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.money),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _totalController,
+                readOnly: true,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: t(widget.language, 'laborTotalWage'),
+                  border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.account_balance_wallet),
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _totalController,
-              readOnly: true,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: InputDecoration(
-                labelText: t(widget.language, 'laborTotalWage'),
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.account_balance_wallet),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                      ),
+                      onPressed: _saveUpadChangesOnly,
+                      child: Text(t(widget.language, 'cancelButton')),
                     ),
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(t(widget.language, 'cancelButton')),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.update),
-                    label: Text(t(widget.language, 'laborUpdateButton')),
-                    onPressed: _saveLaborChanges,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.update),
+                      label: Text(t(widget.language, 'laborUpdateButton')),
+                      onPressed: _saveLaborChanges,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.account_balance),
-                label: Text(t(widget.language, 'upadAddButton')),
-                onPressed: () => _showUpadFormDialog(),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            if (_upadEntries.isEmpty)
-              Text(t(widget.language, 'upadNoRecords'))
-            else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: [
-                    DataColumn(label: Text(t(widget.language, 'upadAmount'))),
-                    DataColumn(label: Text(t(widget.language, 'upadNote'))),
-                    DataColumn(label: Text(t(widget.language, 'upadDate'))),
-                    DataColumn(label: Text(t(widget.language, 'actions'))),
-                  ],
-                  rows: [
-                    ..._upadEntries.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final upad = entry.value;
-                      return DataRow(
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.account_balance),
+                  label: Text(t(widget.language, 'upadAddButton')),
+                  onPressed: () => _showUpadFormDialog(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (_upadEntries.isEmpty)
+                Text(t(widget.language, 'upadNoRecords'))
+              else
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    columns: [
+                      DataColumn(label: Text(t(widget.language, 'upadAmount'))),
+                      DataColumn(label: Text(t(widget.language, 'upadNote'))),
+                      DataColumn(label: Text(t(widget.language, 'upadDate'))),
+                      DataColumn(label: Text(t(widget.language, 'actions'))),
+                    ],
+                    rows: [
+                      ..._upadEntries.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final upad = entry.value;
+                        return DataRow(
+                          cells: [
+                            DataCell(
+                              Text('₹ ${upad.amount.toStringAsFixed(2)}'),
+                            ),
+                            DataCell(Text(upad.note)),
+                            DataCell(Text(upad.date)),
+                            DataCell(
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.blue,
+                                    ),
+                                    onPressed: () => _showUpadFormDialog(
+                                      existing: upad,
+                                      index: index,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _upadEntries.removeAt(index);
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                      DataRow(
                         cells: [
-                          DataCell(Text('₹ ${upad.amount.toStringAsFixed(2)}')),
-                          DataCell(Text(upad.note)),
-                          DataCell(Text(upad.date)),
                           DataCell(
-                            Row(
-                              children: [
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: Colors.blue,
-                                  ),
-                                  onPressed: () => _showUpadFormDialog(
-                                    existing: upad,
-                                    index: index,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _upadEntries.removeAt(index);
-                                    });
-                                  },
-                                ),
-                              ],
+                            Text(
+                              '₹ ${_totalUpadAmount.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
+                          DataCell(
+                            Text(
+                              'Total Upad: $_totalUpadCount',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const DataCell(Text('-')),
+                          const DataCell(SizedBox.shrink()),
                         ],
-                      );
-                    }),
-                    DataRow(
-                      cells: [
-                        DataCell(
-                          Text(
-                            '₹ ${_totalUpadAmount.toStringAsFixed(2)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        DataCell(
-                          Text(
-                            'Total Upad: $_totalUpadCount',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const DataCell(Text('-')),
-                        const DataCell(SizedBox.shrink()),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

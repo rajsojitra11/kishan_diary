@@ -196,6 +196,20 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Cancel',
     AppLanguage.gujarati: 'રદ કરો',
   },
+  'deleteButton': {
+    AppLanguage.english: 'Delete',
+    AppLanguage.gujarati: 'કાઢી નાખો',
+  },
+  'deleteLaborTitle': {
+    AppLanguage.english: 'Delete Labor',
+    AppLanguage.gujarati: 'મજૂર કાઢી નાખો',
+  },
+  'deleteLaborConfirm': {
+    AppLanguage.english:
+        'Are you sure you want to delete this labor and all upad records?',
+    AppLanguage.gujarati:
+        'શું તમે આ મજૂર અને તેની તમામ ઉપાડ નોંધો કાઢી નાખવા માંગો છો?',
+  },
   'laborTotalPaid': {
     AppLanguage.english: 'Total Paid:',
     AppLanguage.gujarati: 'કુલ ચુકવેલ:',
