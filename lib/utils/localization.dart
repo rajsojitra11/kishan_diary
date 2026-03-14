@@ -40,12 +40,12 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'જમીન ડેશબોર્ડ',
   },
   'laborHoursLabel': {
-    AppLanguage.english: 'Labor Hours',
-    AppLanguage.gujarati: 'મજુર કલાક',
+    AppLanguage.english: 'Labor Rupees (₹)',
+    AppLanguage.gujarati: 'મજૂરી રૂપિયા (₹)',
   },
   'fertilizerLabel': {
     AppLanguage.english: 'Fertilizer',
-    AppLanguage.gujarati: 'દવા-બિયારણ',
+    AppLanguage.gujarati: 'દવા-બિયારણ (₹)',
   },
   'incomeLabel': {
     AppLanguage.english: 'Income (₹)',

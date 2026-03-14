@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import 'text_input_config.dart';
 
@@ -19,10 +20,14 @@ Widget buildInput(TextInputConfig config) {
 
 /// A stat card with coloured background and icon.
 Widget statCard(String title, String value, Color color) {
+  final isAnimal = title.contains('Animal') || title.contains('પશુ');
+
   return Card(
     color: color.withAlpha(38),
     child: ListTile(
-      leading: Icon(_iconForStat(title), color: color),
+      leading: isAnimal
+          ? FaIcon(FontAwesomeIcons.cow, color: color, size: 20)
+          : Icon(_iconForStat(title), color: color),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
       trailing: Text(value, style: const TextStyle(fontSize: 15)),
     ),
@@ -30,15 +35,17 @@ Widget statCard(String title, String value, Color color) {
 }
 
 IconData _iconForStat(String title) {
-  if (title.contains('Labor') || title.contains('મજૂર') || title.contains('မ')) {
+  if (title.contains('Labor') ||
+      title.contains('મજૂર') ||
+      title.contains('မ')) {
     return Icons.group;
   }
   if (title.contains('Fertilizer') || title.contains('દવા')) return Icons.grass;
   if (title.contains('Income') || title.contains('આવક')) {
     return Icons.currency_rupee;
   }
-  if (title.contains('Expenses') || title.contains('ખર્ચ')) return Icons.money_off;
+  if (title.contains('Expenses') || title.contains('ખર્ચ'))
+    return Icons.money_off;
   if (title.contains('Crop') || title.contains('ફસલ')) return Icons.agriculture;
-  if (title.contains('Animal') || title.contains('પશુ')) return Icons.pets;
   return Icons.info;
 }

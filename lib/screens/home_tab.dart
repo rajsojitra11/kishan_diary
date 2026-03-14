@@ -68,8 +68,9 @@ class _HomeTabState extends State<HomeTab> {
         if (widget.lands.isEmpty) ...[
           Card(
             elevation: 3,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -78,20 +79,35 @@ class _HomeTabState extends State<HomeTab> {
                   Text(
                     t(widget.language, 'addNewLand'),
                     style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  buildInput(TextInputConfig(
-                      _nameCtrl, t(widget.language, 'landName'),
-                      Icons.landscape)),
+                  buildInput(
+                    TextInputConfig(
+                      _nameCtrl,
+                      t(widget.language, 'landName'),
+                      Icons.landscape,
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  buildInput(TextInputConfig(
-                      _sizeCtrl, t(widget.language, 'landSize'), Icons.straighten,
-                      number: true)),
+                  buildInput(
+                    TextInputConfig(
+                      _sizeCtrl,
+                      t(widget.language, 'landSize'),
+                      Icons.straighten,
+                      number: true,
+                    ),
+                  ),
                   const SizedBox(height: 10),
-                  buildInput(TextInputConfig(
-                      _locationCtrl, t(widget.language, 'location'),
-                      Icons.location_on)),
+                  buildInput(
+                    TextInputConfig(
+                      _locationCtrl,
+                      t(widget.language, 'location'),
+                      Icons.location_on,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -117,45 +133,67 @@ class _HomeTabState extends State<HomeTab> {
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.4,
-            children: [
-              statCard(
-                t(widget.language, 'incomeLabel'),
-                '₹ ${widget.selectedLand!.income.toStringAsFixed(2)}',
-                Colors.teal,
-              ),
-              statCard(
-                t(widget.language, 'expensesLabel'),
-                '₹ ${widget.selectedLand!.expenses.toStringAsFixed(2)}',
-                Colors.red,
-              ),
-              statCard(
-                t(widget.language, 'cropProductionLabel'),
-                '${widget.selectedLand!.cropProductionKg.toStringAsFixed(2)} kg',
-                Colors.orange,
-              ),
-              statCard(
-                t(widget.language, 'fertilizerLabel'),
-                '₹ ${widget.selectedLand!.fertilizerKg.toStringAsFixed(2)}',
-                Colors.green,
-              ),
-              statCard(
-                t(widget.language, 'laborHoursLabel'),
-                '${widget.selectedLand!.laborHours} hrs',
-                Colors.blue,
-              ),
-              statCard(
-                t(widget.language, 'animalIncomeLabel'),
-                '₹ ${widget.animalIncomeGlobal.toStringAsFixed(2)}',
-                Colors.purple,
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cards = [
+                statCard(
+                  t(widget.language, 'incomeLabel'),
+                  '₹ ${widget.selectedLand!.income.toStringAsFixed(2)}',
+                  Colors.teal,
+                ),
+                statCard(
+                  t(widget.language, 'expensesLabel'),
+                  '₹ ${widget.selectedLand!.expenses.toStringAsFixed(2)}',
+                  Colors.red,
+                ),
+                statCard(
+                  t(widget.language, 'cropProductionLabel'),
+                  '${widget.selectedLand!.cropProductionKg.toStringAsFixed(2)} kg',
+                  Colors.orange,
+                ),
+                statCard(
+                  t(widget.language, 'fertilizerLabel'),
+                  '₹ ${widget.selectedLand!.fertilizerKg.toStringAsFixed(2)}',
+                  Colors.green,
+                ),
+                statCard(
+                  t(widget.language, 'laborHoursLabel'),
+                  '₹ ${widget.selectedLand!.laborRupees.toStringAsFixed(2)}',
+                  Colors.blue,
+                ),
+                statCard(
+                  t(widget.language, 'animalIncomeLabel'),
+                  '₹ ${widget.animalIncomeGlobal.toStringAsFixed(2)}',
+                  Colors.purple,
+                ),
+              ];
+
+              if (constraints.maxWidth < 640) {
+                return Column(
+                  children: [
+                    for (int i = 0; i < cards.length; i++) ...[
+                      cards[i],
+                      if (i != cards.length - 1) const SizedBox(height: 8),
+                    ],
+                  ],
+                );
+              }
+
+              final crossAxisCount = constraints.maxWidth >= 1100 ? 3 : 2;
+
+              return GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: cards.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: crossAxisCount == 2 ? 2.2 : 2.4,
+                ),
+                itemBuilder: (_, index) => cards[index],
+              );
+            },
           ),
         ],
       ],

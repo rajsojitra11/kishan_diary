@@ -2,7 +2,7 @@ class Land {
   String name;
   double size;
   String location;
-  int laborHours;
+  double laborRupees;
   double fertilizerKg;
   double income;
   double expenses;
@@ -13,7 +13,7 @@ class Land {
     required this.name,
     required this.size,
     required this.location,
-    this.laborHours = 0,
+    this.laborRupees = 0,
     this.fertilizerKg = 0,
     this.income = 0,
     this.expenses = 0,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../models/land.dart';
 import '../screens/animal_screen.dart';
@@ -76,15 +77,30 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              buildInput(TextInputConfig(
-                  nameCtrl, t(_language, 'landName'), Icons.landscape)),
+              buildInput(
+                TextInputConfig(
+                  nameCtrl,
+                  t(_language, 'landName'),
+                  Icons.landscape,
+                ),
+              ),
               const SizedBox(height: 8),
-              buildInput(TextInputConfig(
-                  sizeCtrl, t(_language, 'landSize'), Icons.straighten,
-                  number: true)),
+              buildInput(
+                TextInputConfig(
+                  sizeCtrl,
+                  t(_language, 'landSize'),
+                  Icons.straighten,
+                  number: true,
+                ),
+              ),
               const SizedBox(height: 8),
-              buildInput(TextInputConfig(
-                  locCtrl, t(_language, 'location'), Icons.location_on)),
+              buildInput(
+                TextInputConfig(
+                  locCtrl,
+                  t(_language, 'location'),
+                  Icons.location_on,
+                ),
+              ),
             ],
           ),
         ),
@@ -127,15 +143,30 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              buildInput(TextInputConfig(
-                  nameCtrl, t(_language, 'landName'), Icons.landscape)),
+              buildInput(
+                TextInputConfig(
+                  nameCtrl,
+                  t(_language, 'landName'),
+                  Icons.landscape,
+                ),
+              ),
               const SizedBox(height: 8),
-              buildInput(TextInputConfig(
-                  sizeCtrl, t(_language, 'landSize'), Icons.straighten,
-                  number: true)),
+              buildInput(
+                TextInputConfig(
+                  sizeCtrl,
+                  t(_language, 'landSize'),
+                  Icons.straighten,
+                  number: true,
+                ),
+              ),
               const SizedBox(height: 8),
-              buildInput(TextInputConfig(
-                  locCtrl, t(_language, 'location'), Icons.location_on)),
+              buildInput(
+                TextInputConfig(
+                  locCtrl,
+                  t(_language, 'location'),
+                  Icons.location_on,
+                ),
+              ),
             ],
           ),
         ),
@@ -183,20 +214,29 @@ class _HomeScreenState extends State<HomeScreen> {
       type: BottomNavigationBarType.fixed,
       items: [
         BottomNavigationBarItem(
-            icon: const Icon(Icons.home), label: t(_language, 'navHome')),
+          icon: const Icon(Icons.home),
+          label: t(_language, 'navHome'),
+        ),
         BottomNavigationBarItem(
-            icon: const Icon(Icons.currency_rupee),
-            label: t(_language, 'navIncome')),
+          icon: const Icon(Icons.currency_rupee),
+          label: t(_language, 'navIncome'),
+        ),
         BottomNavigationBarItem(
-            icon: const Icon(Icons.money_off),
-            label: t(_language, 'navExpense')),
+          icon: const Icon(Icons.money_off),
+          label: t(_language, 'navExpense'),
+        ),
         BottomNavigationBarItem(
-            icon: const Icon(Icons.agriculture),
-            label: t(_language, 'navCrop')),
+          icon: const Icon(Icons.agriculture),
+          label: t(_language, 'navCrop'),
+        ),
         BottomNavigationBarItem(
-            icon: const Icon(Icons.group), label: t(_language, 'navLabor')),
+          icon: const Icon(Icons.group),
+          label: t(_language, 'navLabor'),
+        ),
         BottomNavigationBarItem(
-            icon: const Icon(Icons.pets), label: t(_language, 'navAnimal')),
+          icon: const FaIcon(FontAwesomeIcons.cow),
+          label: t(_language, 'navAnimal'),
+        ),
       ],
     );
   }
@@ -224,10 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onSaved: () => setState(() {}),
         );
       case 4:
-        return LabourScreen(
-          selectedLand: _selectedLand,
-          language: _language,
-        );
+        return LabourScreen(selectedLand: _selectedLand, language: _language);
       case 5:
         return AnimalScreen(
           language: _language,
@@ -377,7 +414,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (_) => AlertDialog(
                     title: Text(t(_language, 'drawerAbout')),
                     content: const Text(
-                        'Kishan Diary — land tracking & expense management app.'),
+                      'Kishan Diary — land tracking & expense management app.',
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
