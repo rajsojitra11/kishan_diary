@@ -124,8 +124,16 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'મોબાઇલ',
   },
   'laborDay': {
-    AppLanguage.english: 'Majuri Days',
-    AppLanguage.gujarati: 'મજૂરી દિવસ',
+    AppLanguage.english: 'Labor Days',
+    AppLanguage.gujarati: 'મજૂરીના દિવસો',
+  },
+  'laborDailyWage': {
+    AppLanguage.english: 'Daily Wage (₹)',
+    AppLanguage.gujarati: 'એક દિવસની મજૂરી (₹)',
+  },
+  'laborTotalWage': {
+    AppLanguage.english: 'Total Wage (₹)',
+    AppLanguage.gujarati: 'કુલ મજૂરી (₹)',
   },
   'laborPaid': {
     AppLanguage.english: 'Total Paid (₹)',
@@ -184,6 +192,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Update Labor',
     AppLanguage.gujarati: 'મજૂર અપડેટ કરો',
   },
+  'cancelButton': {
+    AppLanguage.english: 'Cancel',
+    AppLanguage.gujarati: 'રદ કરો',
+  },
   'laborTotalPaid': {
     AppLanguage.english: 'Total Paid:',
     AppLanguage.gujarati: 'કુલ ચુકવેલ:',
@@ -193,12 +205,16 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'કુલ બાકી:',
   },
   'laborFormButton': {
-    AppLanguage.english: 'Majur Umero',
+    AppLanguage.english: 'Add Labor',
     AppLanguage.gujarati: 'મજૂર ઉમેરો',
   },
   'enterValidLabor': {
     AppLanguage.english: 'Enter valid labor details',
     AppLanguage.gujarati: 'માન્ય મજૂર વિગતો દાખલ કરો',
+  },
+  'editLand': {
+    AppLanguage.english: 'Edit Land Details',
+    AppLanguage.gujarati: 'જમીનની વિગત સુધારો',
   },
 };
 
