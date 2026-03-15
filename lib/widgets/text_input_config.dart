@@ -11,6 +11,7 @@ class TextInputConfig {
   final Widget? suffixIcon;
   final VoidCallback? onTap;
   final String? Function(String?)? validator;
+  final AutovalidateMode autovalidateMode;
 
   TextInputConfig(
     this.controller,
@@ -23,5 +24,6 @@ class TextInputConfig {
     this.suffixIcon,
     this.onTap,
     this.validator,
+    this.autovalidateMode = AutovalidateMode.onUserInteraction,
   });
 }

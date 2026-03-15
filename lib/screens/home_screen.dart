@@ -80,6 +80,34 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  Future<void> _confirmClearAll() async {
+    final shouldClear =
+        await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text(t(_language, 'deleteAllDataTitle')),
+            content: Text(t(_language, 'deleteAllDataConfirm')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(t(_language, 'cancelButton')),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(t(_language, 'deleteButton')),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldClear) {
+      return;
+    }
+
+    _clearAll();
+  }
+
   void _navigateToTab(int index) {
     if (index == _navIndex) {
       return;
@@ -494,8 +522,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 leading: const Icon(Icons.clear_all, color: Colors.red),
                 title: Text(t(_language, 'drawerClear')),
                 onTap: () {
-                  _clearAll();
                   Navigator.pop(context);
+                  _confirmClearAll();
                 },
               ),
 

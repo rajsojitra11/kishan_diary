@@ -28,12 +28,43 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _milkController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
+  bool _showRecordValidation = false;
 
   void _deleteRecord(int index) {
     setState(() {
       widget.animal.records.removeAt(index);
     });
     widget.onChanged();
+  }
+
+  Future<void> _confirmDeleteRecord(int index) async {
+    final shouldDelete =
+        await showDialog<bool>(
+          context: context,
+          builder: (_) {
+            return AlertDialog(
+              title: Text(t(widget.language, 'deleteAnimalRecordTitle')),
+              content: Text(t(widget.language, 'deleteAnimalRecordConfirm')),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(t(widget.language, 'cancelButton')),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text(t(widget.language, 'deleteButton')),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+
+    if (!shouldDelete || index < 0 || index >= widget.animal.records.length) {
+      return;
+    }
+
+    _deleteRecord(index);
   }
 
   @override
@@ -64,7 +95,14 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   }
 
   void _saveRecord() {
-    if (!(_recordFormKey.currentState?.validate() ?? false)) {
+    final isValid = _recordFormKey.currentState?.validate() ?? false;
+
+    if (!isValid) {
+      if (!_showRecordValidation) {
+        setState(() {
+          _showRecordValidation = true;
+        });
+      }
       return;
     }
 
@@ -78,10 +116,42 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
     widget.onChanged();
 
     setState(() {
+      _recordFormKey.currentState?.reset();
       _amountController.clear();
       _milkController.clear();
       _dateController.clear();
+      _showRecordValidation = false;
     });
+  }
+
+  Widget _buildRecordCard(AnimalRecord record, int index) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.indigo.shade100,
+          child: const Icon(Icons.local_drink, color: Colors.indigo),
+        ),
+        title: Text(
+          '${record.milk.toStringAsFixed(2)} L',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${t(widget.language, 'animalDateLabel')}: ${record.date}'),
+            Text(
+              '${t(widget.language, 'animalAmountLabel')}: ₹ ${record.amount.toStringAsFixed(2)}',
+            ),
+          ],
+        ),
+        trailing: IconButton(
+          tooltip: t(widget.language, 'deleteButton'),
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () => _confirmDeleteRecord(index),
+        ),
+      ),
+    );
   }
 
   @override
@@ -117,6 +187,9 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                   t(widget.language, 'animalAmountLabel'),
                   Icons.currency_rupee,
                   number: true,
+                  autovalidateMode: _showRecordValidation
+                      ? AutovalidateMode.onUserInteraction
+                      : AutovalidateMode.disabled,
                   validator: (value) {
                     final raw = value?.trim() ?? '';
                     if (raw.isEmpty) {
@@ -143,6 +216,9 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                   t(widget.language, 'animalMilkLabel'),
                   Icons.local_drink,
                   number: true,
+                  autovalidateMode: _showRecordValidation
+                      ? AutovalidateMode.onUserInteraction
+                      : AutovalidateMode.disabled,
                   validator: (value) {
                     final raw = value?.trim() ?? '';
                     if (raw.isEmpty) {
@@ -170,6 +246,9 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                   Icons.calendar_today,
                   readOnly: true,
                   onTap: _pickDate,
+                  autovalidateMode: _showRecordValidation
+                      ? AutovalidateMode.onUserInteraction
+                      : AutovalidateMode.disabled,
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.calendar_today),
                     onPressed: _pickDate,
@@ -203,39 +282,9 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
               if (widget.animal.records.isEmpty)
                 Text(t(widget.language, 'animalNoRecords'))
               else
-                DataTable(
-                  columns: [
-                    DataColumn(
-                      label: Text(t(widget.language, 'animalDateLabel')),
-                    ),
-                    DataColumn(
-                      label: Text(t(widget.language, 'animalMilkLabel')),
-                    ),
-                    DataColumn(
-                      label: Text(t(widget.language, 'animalAmountLabel')),
-                    ),
-                    DataColumn(label: Text(t(widget.language, 'actions'))),
-                  ],
-                  rows: widget.animal.records.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final record = entry.value;
-
-                    return DataRow(
-                      cells: [
-                        DataCell(Text(record.date)),
-                        DataCell(Text('${record.milk.toStringAsFixed(2)} L')),
-                        DataCell(Text('₹ ${record.amount.toStringAsFixed(2)}')),
-                        DataCell(
-                          IconButton(
-                            tooltip: t(widget.language, 'deleteButton'),
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteRecord(index),
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
-                ),
+                ...widget.animal.records.asMap().entries.map((entry) {
+                  return _buildRecordCard(entry.value, entry.key);
+                }),
             ],
           ),
         ),

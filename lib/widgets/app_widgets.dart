@@ -14,7 +14,7 @@ Widget buildInput(TextInputConfig config) {
     maxLines: config.maxLines,
     onTap: config.onTap,
     validator: config.validator,
-    autovalidateMode: AutovalidateMode.onUserInteraction,
+    autovalidateMode: config.autovalidateMode,
     decoration: InputDecoration(
       labelText: config.label,
       border: const OutlineInputBorder(),

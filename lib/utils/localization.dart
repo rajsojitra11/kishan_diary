@@ -40,17 +40,14 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'જમીન ડેશબોર્ડ',
   },
   'laborHoursLabel': {
-    AppLanguage.english: 'Labor Cost (₹)',
-    AppLanguage.gujarati: 'મજૂરી ખર્ચ (₹)',
+    AppLanguage.english: 'Labor Cost',
+    AppLanguage.gujarati: 'મજૂરી ખર્ચ',
   },
   'fertilizerLabel': {
-    AppLanguage.english: 'Fertilizer & Seeds (₹)',
-    AppLanguage.gujarati: 'દવા-બિયારણ (₹)',
+    AppLanguage.english: 'Fertilizer & Seeds',
+    AppLanguage.gujarati: 'દવા-બિયારણ',
   },
-  'incomeLabel': {
-    AppLanguage.english: 'Income (₹)',
-    AppLanguage.gujarati: 'આવક (₹)',
-  },
+  'incomeLabel': {AppLanguage.english: 'Income', AppLanguage.gujarati: 'આવક'},
   'incomeAddButton': {
     AppLanguage.english: 'Add Income',
     AppLanguage.gujarati: 'આવક ઉમેરો',
@@ -64,8 +61,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'આવક પ્રકાર',
   },
   'incomeAmountLabel': {
-    AppLanguage.english: 'Amount (₹)',
-    AppLanguage.gujarati: 'રકમ (₹)',
+    AppLanguage.english: 'Amount',
+    AppLanguage.gujarati: 'રકમ',
   },
   'incomeDateLabel': {
     AppLanguage.english: 'Date',
@@ -119,6 +116,14 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Are you sure you want to delete this income record?',
     AppLanguage.gujarati: 'શું તમે આ આવક નોંધ કાઢી નાખવા માંગો છો?',
   },
+  'deleteAnimalRecordTitle': {
+    AppLanguage.english: 'Delete Animal Record',
+    AppLanguage.gujarati: 'પશુ નોંધ કાઢી નાખો',
+  },
+  'deleteAnimalRecordConfirm': {
+    AppLanguage.english: 'Are you sure you want to delete this animal record?',
+    AppLanguage.gujarati: 'શું તમે આ પશુ નોંધ કાઢી નાખવા માંગો છો?',
+  },
   'incomeTypeCropSale': {
     AppLanguage.english: 'Crop Sale',
     AppLanguage.gujarati: 'ફસલ વેચાણ',
@@ -164,8 +169,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'ખર્ચ પ્રકાર',
   },
   'expenseAmountLabel': {
-    AppLanguage.english: 'Amount (₹)',
-    AppLanguage.gujarati: 'રકમ (₹)',
+    AppLanguage.english: 'Amount',
+    AppLanguage.gujarati: 'રકમ',
   },
   'expenseDateLabel': {
     AppLanguage.english: 'Date',
@@ -364,6 +369,16 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Clear All Data',
     AppLanguage.gujarati: 'બધો ડેટા સાફ કરો',
   },
+  'deleteAllDataTitle': {
+    AppLanguage.english: 'Delete All Data',
+    AppLanguage.gujarati: 'બધો ડેટા કાઢી નાખો',
+  },
+  'deleteAllDataConfirm': {
+    AppLanguage.english:
+        'Are you sure you want to delete all data? This action cannot be undone.',
+    AppLanguage.gujarati:
+        'શું તમે ખરેખર બધી માહિતી કાઢી નાખવા માંગો છો? આ ક્રિયા પાછી કરી શકાશે નહીં.',
+  },
   'drawerAddLand': {
     AppLanguage.english: 'Add Land',
     AppLanguage.gujarati: 'જમીન ઉમેરો',
@@ -396,8 +411,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
   'navLabor': {AppLanguage.english: 'Labor', AppLanguage.gujarati: 'મજૂર'},
   'navAnimal': {AppLanguage.english: 'Animal', AppLanguage.gujarati: 'પશુ'},
   'animalIncomeLabel': {
-    AppLanguage.english: 'Animal Income (₹)',
-    AppLanguage.gujarati: 'પશુ આવક (₹)',
+    AppLanguage.english: 'Animal Income',
+    AppLanguage.gujarati: 'પશુ આવક',
   },
   'addAnimalButton': {
     AppLanguage.english: 'Add Animal',
@@ -424,8 +439,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'કૃપા કરીને પશુનું નામ દાખલ કરો',
   },
   'animalAmountLabel': {
-    AppLanguage.english: 'Amount (₹)',
-    AppLanguage.gujarati: 'રકમ (₹)',
+    AppLanguage.english: 'Amount',
+    AppLanguage.gujarati: 'રકમ',
   },
   'animalMilkLabel': {
     AppLanguage.english: 'Milk (L)',
@@ -448,8 +463,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'આ પશુ માટે કોઈ નોંધ નથી',
   },
   'animalTotalAmountLabel': {
-    AppLanguage.english: 'Total Amount (₹)',
-    AppLanguage.gujarati: 'કુલ રકમ (₹)',
+    AppLanguage.english: 'Total Amount',
+    AppLanguage.gujarati: 'કુલ રકમ',
   },
   'animalTotalMilkLabel': {
     AppLanguage.english: 'Total Milk (L)',
@@ -473,20 +488,20 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'મજૂરીના દિવસો',
   },
   'laborDailyWage': {
-    AppLanguage.english: 'Daily Wage (₹)',
-    AppLanguage.gujarati: 'એક દિવસની મજૂરી (₹)',
+    AppLanguage.english: 'Daily Wage',
+    AppLanguage.gujarati: 'એક દિવસની મજૂરી',
   },
   'laborTotalWage': {
-    AppLanguage.english: 'Total Wage (₹)',
-    AppLanguage.gujarati: 'કુલ મજૂરી (₹)',
+    AppLanguage.english: 'Total Wage',
+    AppLanguage.gujarati: 'કુલ મજૂરી',
   },
   'laborPaid': {
-    AppLanguage.english: 'Total Paid (₹)',
-    AppLanguage.gujarati: 'કુલ ચૂકવણી (₹)',
+    AppLanguage.english: 'Total Paid',
+    AppLanguage.gujarati: 'કુલ ચૂકવણી',
   },
   'laborBalance': {
-    AppLanguage.english: 'Total Pending (₹)',
-    AppLanguage.gujarati: 'બાકી ચૂકવણી (₹)',
+    AppLanguage.english: 'Total Pending',
+    AppLanguage.gujarati: 'બાકી ચૂકવણી',
   },
   'upadSectionTitle': {
     AppLanguage.english: 'Upad Records for',
@@ -497,8 +512,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'ઉપાડ ફોર્મ',
   },
   'upadAmount': {
-    AppLanguage.english: 'Upad Amount (₹)',
-    AppLanguage.gujarati: 'ઉપાડ રકમ (₹)',
+    AppLanguage.english: 'Upad Amount',
+    AppLanguage.gujarati: 'ઉપાડ રકમ',
   },
   'upadNote': {
     AppLanguage.english: 'Detail (Note)',
@@ -572,12 +587,12 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'શું તમે આ ઉપાડ રેકોર્ડ કાઢી નાખવા માંગો છો?',
   },
   'laborTotalPaid': {
-    AppLanguage.english: 'Total Paid (₹)',
-    AppLanguage.gujarati: 'કુલ ચૂકવેલ (₹)',
+    AppLanguage.english: 'Total Paid',
+    AppLanguage.gujarati: 'કુલ ચૂકવેલ',
   },
   'laborTotalPending': {
-    AppLanguage.english: 'Total Pending (₹)',
-    AppLanguage.gujarati: 'કુલ બાકી (₹)',
+    AppLanguage.english: 'Total Pending',
+    AppLanguage.gujarati: 'કુલ બાકી',
   },
   'laborFormButton': {
     AppLanguage.english: 'Add Labor',
