@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/labor_entry.dart';
 import '../models/upad_entry.dart';
+import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/custom_app_bar.dart';
 
@@ -47,6 +48,56 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
       _upadEntries.fold(0.0, (sum, entry) => sum + entry.amount);
 
   int get _totalUpadCount => _upadEntries.length;
+
+  int? _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  String _toDisplayDate(String? serverDate) {
+    if (serverDate == null || serverDate.trim().isEmpty) {
+      return '';
+    }
+    final parts = serverDate.split('-');
+    if (parts.length != 3) {
+      return serverDate;
+    }
+    return '${parts[2]}/${parts[1]}/${parts[0]}';
+  }
+
+  LaborEntry _laborFromApi(Map<String, dynamic> item) {
+    return LaborEntry(
+      id: _toInt(item['id']),
+      name: item['labor_name']?.toString() ?? widget.initialEntry.name,
+      mobile: item['mobile']?.toString() ?? widget.initialEntry.mobile,
+      days: _toDouble(item['total_days']),
+      dailyRate: _toDouble(item['daily_rate']),
+    );
+  }
+
+  UpadEntry _upadFromApi(Map<String, dynamic> item) {
+    final snapshot = item['labor_name_snapshot']?.toString();
+    return UpadEntry(
+      id: _toInt(item['id']),
+      laborEntryId: _toInt(item['labor_entry_id']) ?? widget.initialEntry.id,
+      landId: _toInt(item['land_id']),
+      laborName: snapshot == null || snapshot.trim().isEmpty
+          ? _nameController.text.trim()
+          : snapshot,
+      amount: _toDouble(item['amount']),
+      note: item['note']?.toString() ?? '',
+      date: _toDisplayDate(item['payment_date']?.toString()),
+    );
+  }
 
   double? _tryParseNumber(String value) {
     final normalized = value.trim().replaceAll(',', '.');
@@ -132,7 +183,7 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     if (raw.isEmpty) {
       return t(widget.language, 'validationRequiredField');
     }
-    final parsed = double.tryParse(raw);
+    final parsed = _tryParseNumber(raw);
     if (parsed == null) {
       return t(widget.language, 'validationEnterValidNumber');
     }
@@ -233,21 +284,66 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
               child: Text(t(widget.language, 'cancelButton')),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (!(formKey.currentState?.validate() ?? false)) {
                   return;
                 }
 
-                final amount = double.parse(amountController.text.trim());
+                final amount = _tryParseNumber(amountController.text.trim());
+                if (amount == null || amount <= 0) {
+                  return;
+                }
                 final note = noteController.text.trim();
                 final date = dateController.text.trim();
 
-                final upad = UpadEntry(
+                UpadEntry upad = UpadEntry(
+                  id: existing?.id,
+                  laborEntryId:
+                      existing?.laborEntryId ?? widget.initialEntry.id,
+                  landId: existing?.landId,
                   laborName: _nameController.text.trim(),
                   amount: amount,
                   note: note,
                   date: date,
                 );
+
+                if (widget.initialEntry.id != null) {
+                  try {
+                    final payload = existing?.id == null
+                        ? await ApiService.instance.createUpadEntry(
+                            laborEntryId: widget.initialEntry.id!,
+                            amount: amount,
+                            paymentDate: date,
+                            note: note,
+                            laborNameSnapshot: _nameController.text.trim(),
+                          )
+                        : await ApiService.instance.updateUpadEntry(
+                            upadEntryId: existing!.id!,
+                            amount: amount,
+                            paymentDate: date,
+                            note: note,
+                            laborNameSnapshot: _nameController.text.trim(),
+                          );
+
+                    upad = _upadFromApi(
+                      ((payload['upad_entry'] as Map?) ?? {})
+                          .cast<String, dynamic>(),
+                    );
+                  } on ApiException catch (error) {
+                    if (!mounted) {
+                      return;
+                    }
+
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(error.message)));
+                    return;
+                  }
+                }
+
+                if (!mounted) {
+                  return;
+                }
 
                 setState(() {
                   if (index != null) {
@@ -256,6 +352,10 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
                     _upadEntries.add(upad);
                   }
                 });
+
+                if (!dialogContext.mounted) {
+                  return;
+                }
 
                 Navigator.pop(dialogContext);
               },
@@ -275,7 +375,7 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     });
   }
 
-  void _saveLaborChanges() {
+  Future<void> _saveLaborChanges() async {
     if (!(_laborFormKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -285,16 +385,45 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     final days = _tryParseNumber(_daysController.text) ?? 0.0;
     final dailyRate = _tryParseNumber(_dailyRateController.text) ?? 0.0;
 
-    final updatedLabor = LaborEntry(
+    LaborEntry updatedLabor = LaborEntry(
+      id: widget.initialEntry.id,
       name: name,
       mobile: mobile,
       days: days,
       dailyRate: dailyRate,
     );
 
+    if (widget.initialEntry.id != null) {
+      try {
+        final payload = await ApiService.instance.updateLaborEntry(
+          laborEntryId: widget.initialEntry.id!,
+          laborName: name,
+          mobile: mobile,
+          totalDays: days,
+          dailyRate: dailyRate,
+        );
+
+        updatedLabor = _laborFromApi(
+          ((payload['labor_entry'] as Map?) ?? {}).cast<String, dynamic>(),
+        );
+      } on ApiException catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+        return;
+      }
+    }
+
     final updatedUpadEntries = _upadEntries
         .map(
           (entry) => UpadEntry(
+            id: entry.id,
+            laborEntryId: entry.laborEntryId ?? updatedLabor.id,
+            landId: entry.landId,
             laborName: name,
             amount: entry.amount,
             note: entry.note,
@@ -302,6 +431,10 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
           ),
         )
         .toList();
+
+    if (!mounted) {
+      return;
+    }
 
     Navigator.pop(
       context,
@@ -317,6 +450,9 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     final updatedUpadEntries = _upadEntries
         .map(
           (entry) => UpadEntry(
+            id: entry.id,
+            laborEntryId: entry.laborEntryId,
+            landId: entry.landId,
             laborName: widget.initialEntry.name,
             amount: entry.amount,
             note: entry.note,
@@ -359,6 +495,23 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
 
     if (confirmed != true) {
       return;
+    }
+
+    final target = _upadEntries[index];
+
+    if (target.id != null) {
+      try {
+        await ApiService.instance.deleteUpadEntry(target.id!);
+      } on ApiException catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+        return;
+      }
     }
 
     setState(() {

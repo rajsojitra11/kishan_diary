@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/animal.dart';
 import '../models/animal_record.dart';
+import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/custom_app_bar.dart';
@@ -29,8 +30,134 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   final TextEditingController _milkController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
   bool _showRecordValidation = false;
+  bool _loading = false;
 
-  void _deleteRecord(int index) {
+  int? _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  String _toDisplayDate(String? serverDate) {
+    if (serverDate == null || serverDate.trim().isEmpty) {
+      return '';
+    }
+    final parts = serverDate.split('-');
+    if (parts.length != 3) {
+      return serverDate;
+    }
+    return '${parts[2]}/${parts[1]}/${parts[0]}';
+  }
+
+  AnimalRecord _recordFromApi(Map<String, dynamic> item) {
+    return AnimalRecord(
+      id: _toInt(item['id']),
+      amount: _toDouble(item['amount']),
+      milk: _toDouble(item['milk_liter']),
+      date: _toDisplayDate(item['record_date']?.toString()),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecords();
+  }
+
+  Future<void> _loadRecords() async {
+    if (widget.animal.id == null) {
+      return;
+    }
+
+    setState(() => _loading = true);
+    try {
+      final payload = await ApiService.instance.getAnimalRecords(
+        widget.animal.id!,
+      );
+      final records = ((payload['records'] as List?) ?? [])
+          .map((item) => _recordFromApi((item as Map).cast<String, dynamic>()))
+          .toList();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        widget.animal.records
+          ..clear()
+          ..addAll(records);
+        widget.animal.totalAmountCached = _toDouble(
+          ((payload['totals'] as Map?)?['total_amount']),
+        );
+        widget.animal.totalMilkCached = _toDouble(
+          ((payload['totals'] as Map?)?['total_milk']),
+        );
+        _loading = false;
+      });
+      widget.onChanged();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  double? _tryParseNumber(String? value) {
+    final normalized = (value ?? '').trim().replaceAll(',', '.');
+    if (normalized.isEmpty) {
+      return null;
+    }
+    return double.tryParse(normalized);
+  }
+
+  Future<void> _deleteRecord(int index) async {
+    final target = widget.animal.records[index];
+
+    if (target.id != null) {
+      try {
+        final payload = await ApiService.instance.deleteAnimalRecord(
+          target.id!,
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          widget.animal.records.removeAt(index);
+          widget.animal.totalAmountCached = _toDouble(
+            ((payload['totals'] as Map?)?['total_amount']),
+          );
+          widget.animal.totalMilkCached = _toDouble(
+            ((payload['totals'] as Map?)?['total_milk']),
+          );
+        });
+        widget.onChanged();
+      } on ApiException catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+      return;
+    }
+
     setState(() {
       widget.animal.records.removeAt(index);
     });
@@ -94,7 +221,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
     }
   }
 
-  void _saveRecord() {
+  Future<void> _saveRecord() async {
     final isValid = _recordFormKey.currentState?.validate() ?? false;
 
     if (!isValid) {
@@ -106,14 +233,56 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
       return;
     }
 
-    final amount = double.parse(_amountController.text.trim());
-    final milk = double.parse(_milkController.text.trim());
+    final amount = _tryParseNumber(_amountController.text);
+    final milk = _tryParseNumber(_milkController.text);
+    if (amount == null || amount <= 0 || milk == null || milk <= 0) {
+      return;
+    }
     final date = _dateController.text.trim();
 
-    widget.animal.records.add(
-      AnimalRecord(amount: amount, milk: milk, date: date),
-    );
-    widget.onChanged();
+    if (widget.animal.id != null) {
+      try {
+        final payload = await ApiService.instance.createAnimalRecord(
+          animalId: widget.animal.id!,
+          amount: amount,
+          milkLiter: milk,
+          recordDate: date,
+        );
+
+        final createdRecord = _recordFromApi(
+          ((payload['record'] as Map?) ?? {}).cast<String, dynamic>(),
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          widget.animal.records.add(createdRecord);
+          widget.animal.totalAmountCached = _toDouble(
+            ((payload['totals'] as Map?)?['total_amount']),
+          );
+          widget.animal.totalMilkCached = _toDouble(
+            ((payload['totals'] as Map?)?['total_milk']),
+          );
+        });
+        widget.onChanged();
+      } on ApiException catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+        return;
+      }
+    } else {
+      widget.animal.records.add(
+        AnimalRecord(amount: amount, milk: milk, date: date),
+      );
+      widget.onChanged();
+    }
 
     setState(() {
       _recordFormKey.currentState?.reset();
@@ -279,7 +448,9 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              if (widget.animal.records.isEmpty)
+              if (_loading)
+                const Center(child: CircularProgressIndicator())
+              else if (widget.animal.records.isEmpty)
                 Text(t(widget.language, 'animalNoRecords'))
               else
                 ...widget.animal.records.asMap().entries.map((entry) {

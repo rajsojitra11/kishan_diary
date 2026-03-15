@@ -5,6 +5,7 @@ import 'labor_entry.dart';
 import 'upad_entry.dart';
 
 class Land {
+  int? id;
   String name;
   double size;
   String location;
@@ -19,8 +20,10 @@ class Land {
   List<IncomeEntry> incomeEntries;
   List<LaborEntry> laborEntries;
   List<UpadEntry> upadEntries;
+  bool detailsLoaded;
 
   Land({
+    this.id,
     required this.name,
     required this.size,
     required this.location,
@@ -35,6 +38,7 @@ class Land {
     List<IncomeEntry>? incomeEntries,
     List<LaborEntry>? laborEntries,
     List<UpadEntry>? upadEntries,
+    this.detailsLoaded = false,
   }) : cropEntries = cropEntries ?? [],
        expenseEntries = expenseEntries ?? [],
        incomeEntries = incomeEntries ?? [],

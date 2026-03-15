@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import '../models/expense_entry.dart';
 import '../models/land.dart';
+import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 
@@ -34,6 +35,97 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   ];
 
   String _typeLabel(String key) => t(widget.language, key);
+
+  bool _loading = false;
+
+  int? _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  String _toDisplayDate(String? serverDate) {
+    if (serverDate == null || serverDate.trim().isEmpty) {
+      return '';
+    }
+    final parts = serverDate.split('-');
+    if (parts.length != 3) {
+      return serverDate;
+    }
+    return '${parts[2]}/${parts[1]}/${parts[0]}';
+  }
+
+  ExpenseEntry _entryFromApi(Map<String, dynamic> item) {
+    return ExpenseEntry(
+      id: _toInt(item['id']),
+      type: item['expense_type']?.toString() ?? _expenseTypeKeys.first,
+      amount: _toDouble(item['amount']),
+      date: _toDisplayDate(item['entry_date']?.toString()),
+      note: item['note']?.toString() ?? '',
+      billPhotoPath: item['bill_photo_path']?.toString(),
+      billPhotoUrl: item['bill_photo_url']?.toString(),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEntries();
+  }
+
+  @override
+  void didUpdateWidget(covariant ExpenseScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedLand?.id != widget.selectedLand?.id) {
+      _loadEntries();
+    }
+  }
+
+  Future<void> _loadEntries() async {
+    final land = widget.selectedLand;
+    if (land == null || land.id == null) {
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    try {
+      final payload = await ApiService.instance.getExpenseEntries(land.id!);
+      final entries = ((payload['expense_entries'] as List?) ?? [])
+          .map((item) => _entryFromApi((item as Map).cast<String, dynamic>()))
+          .toList();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        land.expenseEntries
+          ..clear()
+          ..addAll(entries);
+        land.expenses = _toDouble(payload['total_expense']);
+        land.fertilizerKg = _toDouble(payload['fertilizer_kg']);
+        _loading = false;
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
 
   double? _tryParseNumber(String? value) {
     final normalized = (value ?? '').trim().replaceAll(',', '.');
@@ -125,6 +217,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     String selectedType = _normalizeExpenseType(initialEntry?.type);
     String? selectedBillPhotoPath = initialEntry?.billPhotoPath;
     Uint8List? selectedBillPhotoBytes = initialEntry?.billPhotoBytes;
+    String? selectedBillPhotoUrl = initialEntry?.billPhotoUrl;
 
     final entry = await showDialog<ExpenseEntry>(
       context: context,
@@ -170,6 +263,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               setDialogState(() {
                 selectedBillPhotoPath = file.path;
                 selectedBillPhotoBytes = bytes;
+                selectedBillPhotoUrl = null;
               });
             }
 
@@ -262,7 +356,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                             ElevatedButton.icon(
                               icon: const Icon(Icons.photo),
                               label: Text(
-                                selectedBillPhotoBytes == null
+                                (selectedBillPhotoBytes == null &&
+                                        (selectedBillPhotoUrl == null ||
+                                            selectedBillPhotoUrl!
+                                                .trim()
+                                                .isEmpty))
                                     ? t(
                                         widget.language,
                                         'expensePickPhotoButton',
@@ -274,7 +372,11 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                               ),
                               onPressed: pickBillPhoto,
                             ),
-                            if (selectedBillPhotoBytes != null) ...[
+                            if (selectedBillPhotoBytes != null ||
+                                (selectedBillPhotoUrl != null &&
+                                    selectedBillPhotoUrl!
+                                        .trim()
+                                        .isNotEmpty)) ...[
                               const SizedBox(width: 8),
                               IconButton(
                                 tooltip: t(
@@ -285,6 +387,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                                   setDialogState(() {
                                     selectedBillPhotoPath = null;
                                     selectedBillPhotoBytes = null;
+                                    selectedBillPhotoUrl = null;
                                   });
                                 },
                                 icon: const Icon(
@@ -295,16 +398,32 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                             ],
                           ],
                         ),
-                        if (selectedBillPhotoBytes != null) ...[
+                        if (selectedBillPhotoBytes != null ||
+                            (selectedBillPhotoUrl != null &&
+                                selectedBillPhotoUrl!.trim().isNotEmpty)) ...[
                           const SizedBox(height: 8),
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
-                            child: Image.memory(
-                              selectedBillPhotoBytes!,
-                              width: 120,
-                              height: 80,
-                              fit: BoxFit.cover,
-                            ),
+                            child: selectedBillPhotoBytes != null
+                                ? Image.memory(
+                                    selectedBillPhotoBytes!,
+                                    width: 120,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.network(
+                                    selectedBillPhotoUrl!,
+                                    width: 120,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 120,
+                                      height: 80,
+                                      color: Colors.grey.shade200,
+                                      alignment: Alignment.center,
+                                      child: const Icon(Icons.broken_image),
+                                    ),
+                                  ),
                           ),
                         ],
                       ],
@@ -359,7 +478,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Future<void> _addExpense() async {
-    if (widget.selectedLand == null) {
+    final land = widget.selectedLand;
+    if (land == null) {
       return;
     }
 
@@ -368,33 +488,119 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       return;
     }
 
-    setState(() {
-      widget.selectedLand!.expenseEntries.add(entry);
-      _syncExpenseMetric();
-    });
-    widget.onSaved();
-  }
-
-  Future<void> _editExpense(int index) async {
-    if (widget.selectedLand == null) {
+    if (land.id == null) {
+      setState(() {
+        land.expenseEntries.add(entry);
+        _syncExpenseMetric();
+      });
+      widget.onSaved();
       return;
     }
 
-    final existing = widget.selectedLand!.expenseEntries[index];
+    try {
+      final payload = await ApiService.instance.createExpenseEntry(
+        landId: land.id!,
+        expenseType: entry.type,
+        amount: entry.amount,
+        entryDate: entry.date,
+        note: entry.note,
+        billPhotoPath: entry.billPhotoPath,
+        billPhotoBytes: entry.billPhotoBytes,
+        billPhotoFileName: entry.billPhotoPath?.split('/').last,
+      );
+
+      final created = _entryFromApi(
+        ((payload['expense_entry'] as Map?) ?? {}).cast<String, dynamic>(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        land.expenseEntries.add(created);
+        land.expenses = _toDouble(
+          ((payload['land_totals'] as Map?)?['expense_total']),
+        );
+        land.fertilizerKg = _toDouble(
+          ((payload['land_totals'] as Map?)?['fertilizer_kg']),
+        );
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _editExpense(int index) async {
+    final land = widget.selectedLand;
+    if (land == null) {
+      return;
+    }
+
+    final existing = land.expenseEntries[index];
     final updated = await _showExpenseForm(initialEntry: existing);
     if (!mounted || updated == null) {
       return;
     }
 
-    setState(() {
-      widget.selectedLand!.expenseEntries[index] = updated;
-      _syncExpenseMetric();
-    });
-    widget.onSaved();
+    if (existing.id == null) {
+      setState(() {
+        land.expenseEntries[index] = updated;
+        _syncExpenseMetric();
+      });
+      widget.onSaved();
+      return;
+    }
+
+    try {
+      final payload = await ApiService.instance.updateExpenseEntry(
+        expenseEntryId: existing.id!,
+        expenseType: updated.type,
+        amount: updated.amount,
+        entryDate: updated.date,
+        note: updated.note,
+        billPhotoPath: updated.billPhotoPath,
+        billPhotoBytes: updated.billPhotoBytes,
+        billPhotoFileName: updated.billPhotoPath?.split('/').last,
+      );
+
+      final updatedEntry = _entryFromApi(
+        ((payload['expense_entry'] as Map?) ?? {}).cast<String, dynamic>(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        land.expenseEntries[index] = updatedEntry;
+        land.expenses = _toDouble(
+          ((payload['land_totals'] as Map?)?['expense_total']),
+        );
+        land.fertilizerKg = _toDouble(
+          ((payload['land_totals'] as Map?)?['fertilizer_kg']),
+        );
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   Future<void> _deleteExpense(int index) async {
-    if (widget.selectedLand == null) {
+    final land = widget.selectedLand;
+    if (land == null) {
       return;
     }
 
@@ -427,15 +633,47 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       return;
     }
 
-    setState(() {
-      widget.selectedLand!.expenseEntries.removeAt(index);
-      _syncExpenseMetric();
-    });
-    widget.onSaved();
+    final target = land.expenseEntries[index];
+
+    if (target.id == null) {
+      setState(() {
+        land.expenseEntries.removeAt(index);
+        _syncExpenseMetric();
+      });
+      widget.onSaved();
+      return;
+    }
+
+    try {
+      final payload = await ApiService.instance.deleteExpenseEntry(target.id!);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        land.expenseEntries.removeAt(index);
+        land.expenses = _toDouble(
+          ((payload['land_totals'] as Map?)?['expense_total']),
+        );
+        land.fertilizerKg = _toDouble(
+          ((payload['land_totals'] as Map?)?['fertilizer_kg']),
+        );
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   void _viewBillPhoto(ExpenseEntry entry) {
-    if (entry.billPhotoBytes == null) {
+    if (entry.billPhotoBytes == null &&
+        (entry.billPhotoUrl == null || entry.billPhotoUrl!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t(widget.language, 'expenseNoBillPhoto'))),
       );
@@ -462,7 +700,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 400),
                   child: InteractiveViewer(
-                    child: Image.memory(entry.billPhotoBytes!),
+                    child: entry.billPhotoBytes != null
+                        ? Image.memory(entry.billPhotoBytes!)
+                        : Image.network(entry.billPhotoUrl!),
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -647,7 +887,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        if (entries.isEmpty)
+        if (_loading)
+          const Center(child: CircularProgressIndicator())
+        else if (entries.isEmpty)
           Text(t(widget.language, 'expenseNoRecords'))
         else
           LayoutBuilder(

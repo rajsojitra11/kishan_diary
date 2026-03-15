@@ -12,6 +12,8 @@ import '../screens/home_tab.dart';
 import '../screens/income_screen.dart';
 import '../screens/labour_screen.dart';
 import '../screens/login_screen.dart';
+import '../utils/api_service.dart';
+import '../utils/app_session.dart';
 import '../utils/localization.dart';
 import '../utils/pdf_export.dart';
 import '../widgets/app_widgets.dart';
@@ -61,6 +63,8 @@ class _HomeScreenState extends State<HomeScreen> {
   late String _profileBirthdate;
   late String _profilePassword;
   Uint8List? _profileImageBytes;
+  String? _profileImageUrl;
+  bool _initialLoading = true;
 
   @override
   void initState() {
@@ -72,11 +76,154 @@ class _HomeScreenState extends State<HomeScreen> {
     _profileEmail = widget.initialUserEmail?.trim() ?? '';
     _profileBirthdate = widget.initialUserBirthdate?.trim() ?? '';
     _profilePassword = widget.initialUserPassword ?? '';
+    _bootstrapData();
+  }
+
+  Future<void> _bootstrapData() async {
+    try {
+      final token = await AppSession.getToken();
+      if (token == null || token.isEmpty) {
+        if (!mounted) {
+          return;
+        }
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+        return;
+      }
+
+      final profileData = await ApiService.instance.me();
+      _applyProfileFromPayload(profileData);
+
+      final landsPayload = await ApiService.instance.getLands();
+      final animalsPayload = await ApiService.instance.getAnimals();
+
+      final mappedLands = landsPayload.map(_landFromApi).toList();
+      final mappedAnimals = ((animalsPayload['animals'] as List?) ?? [])
+          .map((item) => _animalFromApi((item as Map).cast<String, dynamic>()))
+          .toList();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _lands
+          ..clear()
+          ..addAll(mappedLands);
+        _animals
+          ..clear()
+          ..addAll(mappedAnimals);
+        _selectedLand = _lands.isNotEmpty ? _lands.first : null;
+        _initialLoading = false;
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _initialLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _initialLoading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to load app data.')));
+    }
+  }
+
+  void _applyProfileFromPayload(Map<String, dynamic> payload) {
+    final profile = payload['user'] is Map
+        ? (payload['user'] as Map).cast<String, dynamic>()
+        : payload;
+
+    final preferredLanguage = profile['preferred_language']?.toString();
+
+    _profileName = profile['name']?.toString().trim().isNotEmpty == true
+        ? profile['name'].toString().trim()
+        : t(_language, 'loggedUserDefaultName');
+    _profileEmail = profile['email']?.toString() ?? '';
+    _profileBirthdate = _toDisplayDate(profile['birth_date']?.toString());
+    _profileImageUrl = profile['profile_image_url']?.toString();
+    _language = _languageFromApiCode(preferredLanguage);
+  }
+
+  AppLanguage _languageFromApiCode(String? code) {
+    if (code == 'en') {
+      return AppLanguage.english;
+    }
+    return AppLanguage.gujarati;
+  }
+
+  String _languageToApiCode(AppLanguage language) {
+    switch (language) {
+      case AppLanguage.english:
+        return 'en';
+      case AppLanguage.gujarati:
+        return 'gu';
+    }
+  }
+
+  String _toDisplayDate(String? serverDate) {
+    if (serverDate == null || serverDate.trim().isEmpty) {
+      return '';
+    }
+    final parts = serverDate.split('-');
+    if (parts.length != 3) {
+      return serverDate;
+    }
+    return '${parts[2]}/${parts[1]}/${parts[0]}';
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  int? _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  Land _landFromApi(Map<String, dynamic> item) {
+    return Land(
+      id: _toInt(item['id']),
+      name: item['land_name']?.toString() ?? '',
+      size: _toDouble(item['land_size']),
+      location: item['location']?.toString() ?? '',
+      laborRupees: _toDouble(item['labor_rupees']),
+      fertilizerKg: _toDouble(item['fertilizer_kg']),
+      income: _toDouble(item['income_total']),
+      expenses: _toDouble(item['expense_total']),
+      cropProductionKg: _toDouble(item['crop_production_kg']),
+      animalIncome: _toDouble(item['animal_income_total']),
+    );
+  }
+
+  Animal _animalFromApi(Map<String, dynamic> item) {
+    return Animal(
+      id: _toInt(item['id']),
+      name: item['animal_name']?.toString() ?? '',
+      totalAmountCached: _toDouble(item['total_amount']),
+      totalMilkCached: _toDouble(item['total_milk']),
+    );
   }
 
   ImageProvider get _profileImageProvider {
     if (_profileImageBytes != null) {
       return MemoryImage(_profileImageBytes!);
+    }
+    if (_profileImageUrl != null && _profileImageUrl!.trim().isNotEmpty) {
+      return NetworkImage(_profileImageUrl!);
     }
     return const AssetImage(_defaultProfileImagePath);
   }
@@ -87,16 +234,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Land Operations ────────────────────────────────────────────────────────
 
-  void _addLandFromValues(String name, double size, String location) {
-    final land = Land(name: name, size: size, location: location);
-    setState(() {
-      _lands.add(land);
-      _selectedLand = land;
-      _navIndex = 0;
-      _tabHistory
-        ..remove(0)
-        ..add(0);
-    });
+  void _addLandFromValues(String name, double size, String location) async {
+    try {
+      final payload = await ApiService.instance.createLand(
+        name: name,
+        size: size,
+        location: location,
+      );
+      final land = _landFromApi(payload);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _lands.add(land);
+        _selectedLand = land;
+        _navIndex = 0;
+        _tabHistory
+          ..remove(0)
+          ..add(0);
+      });
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   void _selectLand(Land land) {
@@ -146,7 +312,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    _clearAll();
+    try {
+      await ApiService.instance.clearAllData();
+      _clearAll();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   void _navigateToTab(int index) {
@@ -212,21 +388,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return null;
   }
 
-  Future<Uint8List?> _pickProfileImage(ImageSource source) async {
-    final pickedFile = await _imagePicker.pickImage(
+  Future<XFile?> _pickProfileImage(ImageSource source) async {
+    return _imagePicker.pickImage(
       source: source,
       imageQuality: 85,
       maxWidth: 900,
     );
-
-    if (pickedFile == null) {
-      return null;
-    }
-
-    return pickedFile.readAsBytes();
   }
 
-  Future<Uint8List?> _showProfileImagePickerOptions() async {
+  Future<Map<String, dynamic>?> _showProfileImagePickerOptions() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (_) => SafeArea(
@@ -252,7 +422,13 @@ class _HomeScreenState extends State<HomeScreen> {
       return null;
     }
 
-    return _pickProfileImage(source);
+    final pickedFile = await _pickProfileImage(source);
+    if (pickedFile == null) {
+      return null;
+    }
+
+    final bytes = await pickedFile.readAsBytes();
+    return {'bytes': bytes, 'path': pickedFile.path};
   }
 
   // ── Dialogs ────────────────────────────────────────────────────────────────
@@ -384,7 +560,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ElevatedButton.icon(
             icon: const Icon(Icons.save),
             label: Text(t(_language, 'saveMetricsButton')),
-            onPressed: () {
+            onPressed: () async {
               if (!(formKey.currentState?.validate() ?? false)) {
                 return;
               }
@@ -393,12 +569,41 @@ class _HomeScreenState extends State<HomeScreen> {
               final size = double.parse(sizeCtrl.text.trim());
               final location = locCtrl.text.trim();
 
-              setState(() {
-                land.name = name;
-                land.size = size;
-                land.location = location;
-              });
-              Navigator.pop(context);
+              try {
+                if (land.id != null) {
+                  final payload = await ApiService.instance.updateLand(
+                    landId: land.id!,
+                    name: name,
+                    size: size,
+                    location: location,
+                  );
+                  final updated = _landFromApi(payload);
+                  setState(() {
+                    land.name = updated.name;
+                    land.size = updated.size;
+                    land.location = updated.location;
+                  });
+                } else {
+                  setState(() {
+                    land.name = name;
+                    land.size = size;
+                    land.location = location;
+                  });
+                }
+
+                if (!mounted) {
+                  return;
+                }
+
+                Navigator.pop(context);
+              } on ApiException catch (error) {
+                if (!mounted) {
+                  return;
+                }
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(error.message)));
+              }
             },
           ),
         ],
@@ -417,6 +622,8 @@ class _HomeScreenState extends State<HomeScreen> {
     birthdateCtrl.text = _profileBirthdate;
     passwordCtrl.text = _profilePassword;
     Uint8List? tempProfileImageBytes = _profileImageBytes;
+    String? tempProfileImageUrl = _profileImageUrl;
+    String? tempProfileImagePath;
 
     await showDialog(
       context: context,
@@ -434,19 +641,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundColor: Colors.grey.shade200,
                     backgroundImage: tempProfileImageBytes != null
                         ? MemoryImage(tempProfileImageBytes!)
-                        : const AssetImage(_defaultProfileImagePath)
-                              as ImageProvider,
+                        : (tempProfileImageUrl != null &&
+                                  tempProfileImageUrl!.trim().isNotEmpty
+                              ? NetworkImage(tempProfileImageUrl!)
+                              : const AssetImage(_defaultProfileImagePath)
+                                    as ImageProvider),
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
                     onPressed: () async {
-                      final pickedBytes =
+                      final pickedResult =
                           await _showProfileImagePickerOptions();
-                      if (pickedBytes == null) {
+                      if (pickedResult == null) {
                         return;
                       }
                       dialogSetState(() {
-                        tempProfileImageBytes = pickedBytes;
+                        tempProfileImageBytes =
+                            pickedResult['bytes'] as Uint8List?;
+                        tempProfileImagePath = pickedResult['path']?.toString();
+                        if (tempProfileImageBytes != null) {
+                          tempProfileImageUrl = null;
+                        }
                       });
                     },
                     icon: const Icon(Icons.image_outlined),
@@ -505,7 +720,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   TextFormField(
                     controller: passwordCtrl,
                     obscureText: true,
-                    validator: _requiredValidator,
                     decoration: InputDecoration(
                       labelText: t(_language, 'updateProfilePassword'),
                       border: const OutlineInputBorder(),
@@ -522,25 +736,93 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(t(_language, 'cancelButton')),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (!(formKey.currentState?.validate() ?? false)) {
                   return;
                 }
 
-                setState(() {
-                  _profileName = nameCtrl.text.trim();
-                  _profileEmail = emailCtrl.text.trim();
-                  _profileBirthdate = birthdateCtrl.text.trim();
-                  _profilePassword = passwordCtrl.text;
-                  _profileImageBytes = tempProfileImageBytes;
-                });
+                try {
+                  final updated = await ApiService.instance.updateProfile(
+                    name: nameCtrl.text.trim(),
+                    email: emailCtrl.text.trim(),
+                    birthDate: birthdateCtrl.text.trim(),
+                    password: passwordCtrl.text.trim().isEmpty
+                        ? null
+                        : passwordCtrl.text,
+                    passwordConfirmation: passwordCtrl.text.trim().isEmpty
+                        ? null
+                        : passwordCtrl.text,
+                  );
 
-                Navigator.pop(dialogContext);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(t(_language, 'profileUpdatedMessage')),
-                  ),
-                );
+                  String? updatedProfileImageUrl;
+
+                  if (tempProfileImagePath != null &&
+                      tempProfileImagePath!.isNotEmpty) {
+                    final imagePayload = await ApiService.instance
+                        .updateProfileImage(
+                          imagePath: tempProfileImagePath,
+                          imageBytes: tempProfileImageBytes,
+                          fileName: tempProfileImagePath!.split('/').last,
+                        );
+                    updatedProfileImageUrl = imagePayload['profile_image_url']
+                        ?.toString();
+                  } else if (tempProfileImageBytes != null) {
+                    final imagePayload = await ApiService.instance
+                        .updateProfileImage(
+                          imageBytes: tempProfileImageBytes,
+                          fileName: 'profile_image.jpg',
+                        );
+                    updatedProfileImageUrl = imagePayload['profile_image_url']
+                        ?.toString();
+                  }
+
+                  final user = ((updated['user'] as Map?) ?? {})
+                      .cast<String, dynamic>();
+
+                  await AppSession.saveUserProfile(
+                    name: user['name']?.toString(),
+                    email: user['email']?.toString(),
+                    birthDate: birthdateCtrl.text.trim(),
+                  );
+
+                  if (!mounted) {
+                    return;
+                  }
+
+                  setState(() {
+                    _profileName =
+                        user['name']?.toString() ?? nameCtrl.text.trim();
+                    _profileEmail =
+                        user['email']?.toString() ?? emailCtrl.text.trim();
+                    _profileBirthdate = birthdateCtrl.text.trim();
+                    if (passwordCtrl.text.trim().isNotEmpty) {
+                      _profilePassword = passwordCtrl.text;
+                    }
+                    _profileImageBytes = tempProfileImageBytes;
+                    _profileImageUrl =
+                        updatedProfileImageUrl ??
+                        user['profile_image_url']?.toString() ??
+                        _profileImageUrl;
+                  });
+
+                  if (!dialogContext.mounted) {
+                    return;
+                  }
+
+                  Navigator.pop(dialogContext);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(t(_language, 'profileUpdatedMessage')),
+                    ),
+                  );
+                } on ApiException catch (error) {
+                  if (!dialogContext.mounted) {
+                    return;
+                  }
+                  ScaffoldMessenger.of(
+                    dialogContext,
+                  ).showSnackBar(SnackBar(content: Text(error.message)));
+                }
               },
               child: Text(t(_language, 'saveButton')),
             ),
@@ -572,6 +854,16 @@ class _HomeScreenState extends State<HomeScreen> {
         false;
 
     if (!shouldLogout || !mounted) {
+      return;
+    }
+
+    try {
+      await ApiService.instance.logout();
+    } catch (_) {}
+
+    await AppSession.clearAll();
+
+    if (!mounted) {
       return;
     }
 
@@ -644,29 +936,42 @@ class _HomeScreenState extends State<HomeScreen> {
   // ── Current Tab ────────────────────────────────────────────────────────────
 
   Widget _currentTab() {
+    if (_initialLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     switch (_navIndex) {
       case 1:
         return IncomeScreen(
+          key: ValueKey('income-${_selectedLand?.id ?? 'none'}'),
           selectedLand: _selectedLand,
           language: _language,
           onSaved: () => setState(() {}),
         );
       case 2:
         return ExpenseScreen(
+          key: ValueKey('expense-${_selectedLand?.id ?? 'none'}'),
           selectedLand: _selectedLand,
           language: _language,
           onSaved: () => setState(() {}),
         );
       case 3:
         return CropScreen(
+          key: ValueKey('crop-${_selectedLand?.id ?? 'none'}'),
           selectedLand: _selectedLand,
           language: _language,
           onSaved: () => setState(() {}),
         );
       case 4:
-        return LabourScreen(selectedLand: _selectedLand, language: _language);
+        return LabourScreen(
+          key: ValueKey('labor-${_selectedLand?.id ?? 'none'}'),
+          selectedLand: _selectedLand,
+          language: _language,
+          onSaved: () => setState(() {}),
+        );
       case 5:
         return AnimalScreen(
+          key: const ValueKey('animal'),
           language: _language,
           animals: _animals,
           onAnimalsChanged: (updatedAnimals) {
@@ -801,6 +1106,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                     groupValue: _language,
                                     onChanged: (v) {
                                       if (v != null) {
+                                        ApiService.instance
+                                            .updateLanguage(
+                                              _languageToApiCode(v),
+                                            )
+                                            .then(
+                                              (_) => AppSession.saveUserProfile(
+                                                preferredLanguage:
+                                                    _languageToApiCode(v),
+                                              ),
+                                            )
+                                            .catchError((_) {});
                                         setState(() => _language = v);
                                         Navigator.pop(context);
                                       }

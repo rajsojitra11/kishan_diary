@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import 'home_screen.dart';
+import '../utils/api_service.dart';
+import '../utils/app_session.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key, required this.mobileNumber});
@@ -18,6 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   static const String _registerLogoPath = 'lib/assets/images/register.png';
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _mobileController = TextEditingController();
   final _emailController = TextEditingController();
   final _birthdateController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -26,13 +29,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
   DateTime? _selectedBirthdate;
 
   @override
+  void initState() {
+    super.initState();
+    _mobileController.text = widget.mobileNumber;
+    _loadPendingMobile();
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
+    _mobileController.dispose();
     _emailController.dispose();
     _birthdateController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPendingMobile() async {
+    final pendingMobile = await AppSession.getPendingRegistrationMobile();
+    if (!mounted) {
+      return;
+    }
+    if (pendingMobile == null || pendingMobile.trim().isEmpty) {
+      return;
+    }
+
+    if (widget.mobileNumber.trim().isEmpty) {
+      setState(() {
+        _mobileController.text = pendingMobile.trim();
+      });
+    }
   }
 
   String? _requiredValidator(String? value) {
@@ -48,6 +75,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     if (value != _passwordController.text) {
       return 'Passwords do not match';
+    }
+    return null;
+  }
+
+  String? _mobileValidator(String? value) {
+    final mobile = (value ?? '').trim();
+    if (mobile.isEmpty) {
+      return 'Please enter mobile number';
+    }
+    if (!RegExp(r'^\d{10}$').hasMatch(mobile)) {
+      return 'Enter valid 10 digit mobile number';
     }
     return null;
   }
@@ -107,6 +145,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _submit() {
+    _register();
+  }
+
+  Future<void> _register() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -118,17 +160,64 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (_) => HomeScreen(
-          initialUserName: _nameController.text.trim(),
-          initialUserEmail: _emailController.text.trim(),
-          initialUserBirthdate: _birthdateController.text.trim(),
-          initialUserPassword: _passwordController.text,
+    try {
+      final registerData = await ApiService.instance.register(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        mobile: _mobileController.text.trim(),
+        birthDate: _birthdateController.text.trim(),
+        password: _passwordController.text,
+        passwordConfirmation: _confirmPasswordController.text,
+      );
+
+      final token = registerData['token']?.toString();
+      final user = (registerData['user'] as Map?)?.cast<String, dynamic>();
+
+      if (token == null || token.isEmpty || user == null) {
+        throw ApiException('Invalid register response');
+      }
+
+      await AppSession.saveToken(token);
+      await AppSession.saveUserProfile(
+        name: user['name']?.toString(),
+        email: user['email']?.toString(),
+        birthDate: _birthdateController.text.trim(),
+        preferredLanguage: user['preferred_language']?.toString(),
+      );
+      await AppSession.clearPendingRegistrationMobile();
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(
+            initialUserName:
+                user['name']?.toString() ?? _nameController.text.trim(),
+            initialUserEmail:
+                user['email']?.toString() ?? _emailController.text.trim(),
+            initialUserBirthdate: _birthdateController.text.trim(),
+            initialUserPassword: _passwordController.text,
+          ),
         ),
-      ),
-      (route) => false,
-    );
+        (route) => false,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration failed, please try again.')),
+      );
+    }
   }
 
   @override
@@ -173,9 +262,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      Text(
-                        'Mobile: ${widget.mobileNumber}',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      TextFormField(
+                        controller: _mobileController,
+                        keyboardType: TextInputType.phone,
+                        readOnly: widget.mobileNumber.trim().isNotEmpty,
+                        style: const TextStyle(color: Colors.white),
+                        cursorColor: Colors.white,
+                        decoration: _darkInputDecoration('Mobile Number'),
+                        validator: _mobileValidator,
                       ),
                       const SizedBox(height: 12),
                       TextFormField(

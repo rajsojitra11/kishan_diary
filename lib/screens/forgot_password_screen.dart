@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../utils/api_service.dart';
+
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -106,6 +108,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   void _updatePassword() {
+    _resetPassword();
+  }
+
+  Future<void> _resetPassword() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -117,11 +123,39 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Password updated successfully')),
-    );
+    try {
+      await ApiService.instance.resetForgotPassword(
+        mobile: _mobileController.text.trim(),
+        birthDate: _birthdateController.text.trim(),
+        newPassword: _newPasswordController.text,
+        newPasswordConfirmation: _confirmPasswordController.text,
+      );
 
-    Navigator.of(context).pop();
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password updated successfully')),
+      );
+      Navigator.of(context).pop();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password reset failed, please try again.'),
+        ),
+      );
+    }
   }
 
   @override

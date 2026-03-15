@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/crop_entry.dart';
 import '../models/land.dart';
+import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 
@@ -36,6 +37,84 @@ class _CropScreenState extends State<CropScreen> {
     'cropTypeTal',
     'cropTypeAnyOther',
   ];
+
+  bool _loading = false;
+
+  int? _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  CropEntry _entryFromApi(Map<String, dynamic> item) {
+    return CropEntry(
+      id: _toInt(item['id']),
+      cropType: _normalizeCropTypeValue(item['crop_type']?.toString() ?? ''),
+      landSize: _toDouble(item['land_size']),
+      cropWeight: _toDouble(item['crop_weight']),
+      weightUnit: _normalizeWeightUnit(item['weight_unit']?.toString()),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEntries();
+  }
+
+  @override
+  void didUpdateWidget(covariant CropScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedLand?.id != widget.selectedLand?.id) {
+      _loadEntries();
+    }
+  }
+
+  Future<void> _loadEntries() async {
+    final land = widget.selectedLand;
+    if (land == null || land.id == null) {
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    try {
+      final payload = await ApiService.instance.getCropEntries(land.id!);
+      final entries = ((payload['crop_entries'] as List?) ?? [])
+          .map((item) => _entryFromApi((item as Map).cast<String, dynamic>()))
+          .toList();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        land.cropEntries
+          ..clear()
+          ..addAll(entries);
+        land.cropProductionKg = _toDouble(payload['crop_production_kg_total']);
+        _loading = false;
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
 
   String _normalizeCropTypeValue(String cropType) {
     if (cropType == 'cropTypeCumin') {
@@ -145,7 +224,7 @@ class _CropScreenState extends State<CropScreen> {
     return cropTypeKeyOrValue;
   }
 
-  void _recalculateCropProduction() {
+  void _syncCropProduction() {
     final selectedLand = widget.selectedLand;
     if (selectedLand == null) {
       return;
@@ -322,16 +401,74 @@ class _CropScreenState extends State<CropScreen> {
       return;
     }
 
-    setState(() {
-      if (isEditing) {
-        selectedLand.cropEntries[editingIndex] = entry;
-      } else {
-        selectedLand.cropEntries.add(entry);
-      }
-      _recalculateCropProduction();
-    });
+    if (selectedLand.id == null) {
+      setState(() {
+        if (isEditing) {
+          selectedLand.cropEntries[editingIndex] = entry;
+        } else {
+          selectedLand.cropEntries.add(entry);
+        }
+        _syncCropProduction();
+      });
+      widget.onSaved();
+      return;
+    }
 
-    widget.onSaved();
+    if (isEditing && (editingEntry?.id == null)) {
+      setState(() {
+        selectedLand.cropEntries[editingIndex] = entry;
+        _syncCropProduction();
+      });
+      widget.onSaved();
+      return;
+    }
+
+    try {
+      final payload = isEditing
+          ? await ApiService.instance.updateCropEntry(
+              cropEntryId: editingEntry!.id!,
+              cropType: entry.cropType,
+              landSize: entry.landSize,
+              cropWeight: entry.cropWeight,
+              weightUnit: entry.weightUnit,
+            )
+          : await ApiService.instance.createCropEntry(
+              landId: selectedLand.id!,
+              cropType: entry.cropType,
+              landSize: entry.landSize,
+              cropWeight: entry.cropWeight,
+              weightUnit: entry.weightUnit,
+            );
+
+      final savedEntry = _entryFromApi(
+        ((payload['crop_entry'] as Map?) ?? {}).cast<String, dynamic>(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        if (isEditing) {
+          selectedLand.cropEntries[editingIndex] = savedEntry;
+        } else {
+          selectedLand.cropEntries.add(savedEntry);
+        }
+
+        selectedLand.cropProductionKg = _toDouble(
+          ((payload['land_totals'] as Map?)?['crop_production_kg']),
+        );
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   Future<void> _deleteCrop(int index) async {
@@ -365,12 +502,40 @@ class _CropScreenState extends State<CropScreen> {
       return;
     }
 
-    setState(() {
-      selectedLand.cropEntries.removeAt(index);
-      _recalculateCropProduction();
-    });
+    final target = selectedLand.cropEntries[index];
 
-    widget.onSaved();
+    if (target.id == null) {
+      setState(() {
+        selectedLand.cropEntries.removeAt(index);
+        _syncCropProduction();
+      });
+      widget.onSaved();
+      return;
+    }
+
+    try {
+      final payload = await ApiService.instance.deleteCropEntry(target.id!);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        selectedLand.cropEntries.removeAt(index);
+        selectedLand.cropProductionKg = _toDouble(
+          ((payload['land_totals'] as Map?)?['crop_production_kg']),
+        );
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   Widget _buildMobileCropRecords(Land selectedLand) {
@@ -506,7 +671,9 @@ class _CropScreenState extends State<CropScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        if (selectedLand.cropEntries.isEmpty)
+        if (_loading)
+          const Center(child: CircularProgressIndicator())
+        else if (selectedLand.cropEntries.isEmpty)
           Text(t(widget.language, 'noCropRecords'))
         else
           LayoutBuilder(

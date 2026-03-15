@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/animal.dart';
 import '../screens/animal_detail_screen.dart';
+import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/text_input_config.dart';
@@ -23,6 +24,13 @@ class AnimalScreen extends StatefulWidget {
 }
 
 class _AnimalScreenState extends State<AnimalScreen> {
+  int? _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
   double get _totalAnimalIncome {
     return widget.animals.fold(0.0, (sum, animal) => sum + animal.totalAmount);
   }
@@ -72,16 +80,42 @@ class _AnimalScreenState extends State<AnimalScreen> {
             child: Text(t(widget.language, 'cancelButton')),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (!(formKey.currentState?.validate() ?? false)) {
                 return;
               }
 
               final name = nameController.text.trim();
 
-              final updated = List<Animal>.from(widget.animals)
-                ..add(Animal(name: name));
-              widget.onAnimalsChanged(updated);
+              try {
+                final payload = await ApiService.instance.createAnimal(name);
+                final animalPayload = ((payload['animal'] as Map?) ?? {})
+                    .cast<String, dynamic>();
+
+                if (!mounted) {
+                  return;
+                }
+
+                final updated = List<Animal>.from(widget.animals)
+                  ..add(
+                    Animal(
+                      id: _toInt(animalPayload['id']),
+                      name: animalPayload['animal_name']?.toString() ?? name,
+                      totalAmountCached: 0,
+                      totalMilkCached: 0,
+                    ),
+                  );
+                widget.onAnimalsChanged(updated);
+              } on ApiException catch (error) {
+                if (!mounted) {
+                  return;
+                }
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(error.message)));
+                return;
+              }
+
               Navigator.pop(context);
             },
             child: Text(t(widget.language, 'saveButton')),

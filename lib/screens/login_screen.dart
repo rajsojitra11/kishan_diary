@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'forgot_password_screen.dart';
+import 'home_screen.dart';
 import 'register_screen.dart';
+import '../utils/api_service.dart';
+import '../utils/app_session.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,15 +47,142 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _onLogin() {
+    _handleLogin();
+  }
+
+  String _toDisplayDate(String? serverDate) {
+    if (serverDate == null || serverDate.trim().isEmpty) {
+      return '';
+    }
+    final parts = serverDate.split('-');
+    if (parts.length != 3) {
+      return serverDate;
+    }
+    return '${parts[2]}/${parts[1]}/${parts[0]}';
+  }
+
+  Future<String?> _askPassword() async {
+    final passwordController = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Enter Password'),
+          content: TextField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Password',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.pop(dialogContext, passwordController.text.trim()),
+              child: const Text('Login'),
+            ),
+          ],
+        );
+      },
+    );
+    passwordController.dispose();
+    return password;
+  }
+
+  Future<void> _handleLogin() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RegisterScreen(mobileNumber: _mobileController.text),
-      ),
-    );
+    final mobile = _mobileController.text.trim();
+
+    try {
+      final check = await ApiService.instance.mobileCheck(mobile);
+      final exists = check['exists'] == true;
+
+      if (!mounted) {
+        return;
+      }
+
+      if (!exists) {
+        await AppSession.savePendingRegistrationMobile(mobile);
+
+        if (!mounted) {
+          return;
+        }
+
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => RegisterScreen(mobileNumber: mobile),
+          ),
+        );
+        return;
+      }
+
+      final password = await _askPassword();
+      if (!mounted) {
+        return;
+      }
+      if (password == null || password.isEmpty) {
+        return;
+      }
+
+      final loginData = await ApiService.instance.login(
+        mobile: mobile,
+        password: password,
+      );
+
+      final token = loginData['token']?.toString();
+      final user = (loginData['user'] as Map?)?.cast<String, dynamic>();
+      if (token == null || token.isEmpty || user == null) {
+        throw ApiException('Invalid login response');
+      }
+
+      await AppSession.saveToken(token);
+      await AppSession.saveUserProfile(
+        name: user['name']?.toString(),
+        email: user['email']?.toString(),
+        birthDate: _toDisplayDate(user['birth_date']?.toString()),
+        preferredLanguage: user['preferred_language']?.toString(),
+      );
+      await AppSession.clearPendingRegistrationMobile();
+
+      if (!mounted) {
+        return;
+      }
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (_) => HomeScreen(
+            initialUserName: user['name']?.toString(),
+            initialUserEmail: user['email']?.toString(),
+            initialUserBirthdate: _toDisplayDate(
+              user['birth_date']?.toString(),
+            ),
+          ),
+        ),
+        (route) => false,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Login failed, please try again.')),
+      );
+    }
   }
 
   @override

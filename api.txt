@@ -1,0 +1,519 @@
+KISHAN DIARY - REQUIRED API LIST (FROM FULL APP WORKFLOW)
+
+Version: 1.0
+Scope: APIs required by current Flutter screens + business logic
+Backend: Laravel (backend_kishan)
+
+====================================================================
+1) API CONVENTIONS
+====================================================================
+
+Base URL:
+- http://127.0.0.1:8000/api/v1
+
+Auth style:
+- Bearer token (Sanctum/JWT style)
+- All business APIs require Authorization header except auth endpoints.
+
+Standard success response:
+{
+  "success": true,
+  "message": "...",
+  "data": {...}
+}
+
+Standard error response:
+{
+  "success": false,
+  "message": "Validation failed",
+  "errors": {
+    "field": ["error message"]
+  }
+}
+
+Date format in API:
+- Request from app: dd/MM/yyyy (current UI)
+- Store and return normalized: yyyy-MM-dd (recommended)
+
+====================================================================
+2) AUTH + PROFILE APIs (Login/Register/Forgot Password/Drawer Profile)
+====================================================================
+
+A1) Check mobile (for current login flow)
+POST /auth/mobile-check
+Body:
+- mobile (string, required, 10 digits)
+Response data:
+- exists (bool)
+- user (id, name, email, mobile, birth_date, preferred_language, profile_image_url) [nullable]
+- next_action ("register" | "login_password" | "home")
+
+A2) Register user
+POST /auth/register
+Body:
+- name (string, required)
+- email (string, required, unique email format)
+- mobile (string, required, unique)
+- birth_date (date, required)
+- password (string, required)
+- password_confirmation (string, required)
+Response data:
+- token
+- user
+
+A3) Login user (recommended secure flow)
+POST /auth/login
+Body:
+- mobile (string, required)
+- password (string, required)
+Response data:
+- token
+- user
+
+A4) Forgot password reset (from ForgotPasswordScreen)
+POST /auth/forgot-password/reset
+Body:
+- mobile (string, required)
+- birth_date (date, required)
+- new_password (string, required)
+- new_password_confirmation (string, required)
+Response data:
+- password_reset (bool)
+
+A5) Logout
+POST /auth/logout
+Headers:
+- Authorization: Bearer <token>
+Response data:
+- logged_out (bool)
+
+A6) Get profile (drawer + initial home profile)
+GET /me
+Headers:
+- Authorization
+Response data:
+- id, name, email, mobile, birth_date, preferred_language, profile_image_url
+
+A7) Update profile (Update Profile dialog)
+PUT /me
+Headers:
+- Authorization
+Body:
+- name (string, required)
+- email (string, required)
+- birth_date (date, required)
+- password (string, optional, if changing)
+Response data:
+- user
+
+A8) Update profile image
+POST /me/profile-image
+Headers:
+- Authorization
+Body (multipart/form-data):
+- profile_image (file)
+Response data:
+- profile_image_url
+
+A9) Update language preference
+PATCH /me/language
+Headers:
+- Authorization
+Body:
+- preferred_language (en|gu|hi)
+Response data:
+- preferred_language
+
+====================================================================
+3) LAND APIs (HomeTab + Drawer Land Selector)
+====================================================================
+
+L1) List lands for logged-in user
+GET /lands
+Headers: Authorization
+Response data:
+- lands[] with:
+  id, land_name, land_size, location,
+  labor_rupees, fertilizer_kg, income_total, expense_total,
+  crop_production_kg, animal_income_total,
+  created_at, updated_at
+
+L2) Create land
+POST /lands
+Headers: Authorization
+Body:
+- land_name (string, required)
+- land_size (number > 0, required)
+- location (string, required)
+Response data:
+- land
+
+L3) Get single land details
+GET /lands/{land_id}
+Headers: Authorization
+Response data:
+- land
+
+L4) Update land
+PUT /lands/{land_id}
+Headers: Authorization
+Body:
+- land_name (string, required)
+- land_size (number > 0, required)
+- location (string, required)
+Response data:
+- land
+
+L5) Delete land
+DELETE /lands/{land_id}
+Headers: Authorization
+Response data:
+- deleted (bool)
+
+L6) Land dashboard summary (optional but useful)
+GET /lands/{land_id}/summary
+Headers: Authorization
+Response data:
+- income_total
+- expense_total
+- crop_production_kg
+- fertilizer_kg
+- labor_rupees
+- animal_income_total
+
+====================================================================
+4) INCOME APIs (IncomeScreen)
+====================================================================
+
+I1) List income entries by land
+GET /lands/{land_id}/income-entries
+Headers: Authorization
+Query (optional):
+- from_date, to_date, income_type
+Response data:
+- income_entries[]
+- total_income
+
+I2) Create income entry
+POST /lands/{land_id}/income-entries
+Headers: Authorization
+Body (multipart/form-data):
+- income_type (incomeTypeCropSale|incomeTypeTractorHarvester|incomeTypeVegetables|incomeTypeSubsidy|incomeTypeOther)
+- amount (number > 0)
+- entry_date (date)
+- note (string, optional)
+- bill_photo (file, optional)
+Response data:
+- income_entry
+- land_totals.income_total
+
+I3) Update income entry
+PUT /income-entries/{id}
+Headers: Authorization
+Body: same as create
+Response data:
+- income_entry
+- land_totals.income_total
+
+I4) Delete income entry
+DELETE /income-entries/{id}
+Headers: Authorization
+Response data:
+- deleted (bool)
+- land_totals.income_total
+
+====================================================================
+5) EXPENSE APIs (ExpenseScreen)
+====================================================================
+
+E1) List expense entries by land
+GET /lands/{land_id}/expense-entries
+Headers: Authorization
+Query (optional):
+- from_date, to_date, expense_type
+Response data:
+- expense_entries[]
+- total_expense
+- fertilizer_kg (computed from Medicine + Seeds expense types as per app logic)
+
+E2) Create expense entry
+POST /lands/{land_id}/expense-entries
+Headers: Authorization
+Body (multipart/form-data):
+- expense_type (expenseTypeMedicine|expenseTypeSeeds|expenseTypeTractor|expenseTypeLightBill|expenseTypeOther)
+- amount (number > 0)
+- entry_date (date)
+- note (string, optional)
+- bill_photo (file, optional)
+Response data:
+- expense_entry
+- land_totals.expense_total
+- land_totals.fertilizer_kg
+
+E3) Update expense entry
+PUT /expense-entries/{id}
+Headers: Authorization
+Body: same as create
+Response data:
+- expense_entry
+- land_totals.expense_total
+- land_totals.fertilizer_kg
+
+E4) Delete expense entry
+DELETE /expense-entries/{id}
+Headers: Authorization
+Response data:
+- deleted (bool)
+- land_totals.expense_total
+- land_totals.fertilizer_kg
+
+====================================================================
+6) CROP APIs (CropScreen)
+====================================================================
+
+C1) List crop entries by land
+GET /lands/{land_id}/crop-entries
+Headers: Authorization
+Response data:
+- crop_entries[]
+- crop_production_kg_total
+
+C2) Create crop entry
+POST /lands/{land_id}/crop-entries
+Headers: Authorization
+Body:
+- crop_type (cropTypeWheat|cropTypeCotton|cropTypeGroundnut|cropTypeBajra|cropTypeMaize|cropTypeRice|cropTypeJiru|cropTypeLasan|cropTypeChana|cropTypeTal|cropTypeAnyOther)
+- land_size (number > 0)
+- crop_weight (number > 0)
+- weight_unit (kg|man)
+Response data:
+- crop_entry (including crop_weight_kg)
+- land_totals.crop_production_kg
+
+C3) Update crop entry
+PUT /crop-entries/{id}
+Headers: Authorization
+Body: same as create
+Response data:
+- crop_entry
+- land_totals.crop_production_kg
+
+C4) Delete crop entry
+DELETE /crop-entries/{id}
+Headers: Authorization
+Response data:
+- deleted (bool)
+- land_totals.crop_production_kg
+
+====================================================================
+7) LABOUR + UPAD APIs (LabourScreen + EditLabourScreen)
+====================================================================
+
+LAB1) List labour entries by land (with paid/pending summary)
+GET /lands/{land_id}/labor-entries
+Headers: Authorization
+Response data:
+- labor_entries[]:
+  id, labor_name, mobile, total_days, daily_rate, total_wage,
+  total_upad_paid, pending_amount
+- totals:
+  total_paid, total_pending, total_wage
+
+LAB2) Create labour entry
+POST /lands/{land_id}/labor-entries
+Headers: Authorization
+Body:
+- labor_name (string, required)
+- mobile (string, required, 10 digits)
+- total_days (number >= 0, default 0)
+- daily_rate (number >= 0, default 0)
+Response data:
+- labor_entry
+- land_totals.labor_rupees
+
+LAB3) Update labour entry
+PUT /labor-entries/{id}
+Headers: Authorization
+Body:
+- labor_name
+- mobile
+- total_days
+- daily_rate
+Response data:
+- labor_entry
+- land_totals.labor_rupees
+
+LAB4) Delete labour entry
+DELETE /labor-entries/{id}
+Headers: Authorization
+Response data:
+- deleted (bool)
+- land_totals.labor_rupees
+
+UP1) List upad entries for a labour
+GET /labor-entries/{labor_entry_id}/upad-entries
+Headers: Authorization
+Response data:
+- upad_entries[]
+- total_upad_amount
+
+UP2) Create upad entry
+POST /labor-entries/{labor_entry_id}/upad-entries
+Headers: Authorization
+Body:
+- amount (number > 0)
+- note (string, optional)
+- payment_date (date, required)
+- labor_name_snapshot (string, required)
+Response data:
+- upad_entry
+- labor_summary.total_upad_paid
+- labor_summary.pending_amount
+
+UP3) Update upad entry
+PUT /upad-entries/{id}
+Headers: Authorization
+Body:
+- amount
+- note
+- payment_date
+- labor_name_snapshot
+Response data:
+- upad_entry
+- labor_summary.total_upad_paid
+- labor_summary.pending_amount
+
+UP4) Delete upad entry
+DELETE /upad-entries/{id}
+Headers: Authorization
+Response data:
+- deleted (bool)
+- labor_summary.total_upad_paid
+- labor_summary.pending_amount
+
+====================================================================
+8) ANIMAL APIs (AnimalScreen + AnimalDetailScreen)
+====================================================================
+
+AN1) List animals (user-level global list)
+GET /animals
+Headers: Authorization
+Response data:
+- animals[]: id, animal_name, total_amount, total_milk
+- animal_income_global
+
+AN2) Create animal
+POST /animals
+Headers: Authorization
+Body:
+- animal_name (string, required, unique per user)
+Response data:
+- animal
+
+AN3) Update animal name (optional for future)
+PUT /animals/{id}
+Headers: Authorization
+Body:
+- animal_name
+Response data:
+- animal
+
+AN4) Delete animal
+DELETE /animals/{id}
+Headers: Authorization
+Response data:
+- deleted (bool)
+
+AR1) List animal records
+GET /animals/{animal_id}/records
+Headers: Authorization
+Response data:
+- records[]: id, amount, milk_liter, record_date
+- totals: total_amount, total_milk
+
+AR2) Create animal record
+POST /animals/{animal_id}/records
+Headers: Authorization
+Body:
+- amount (number > 0)
+- milk_liter (number > 0)
+- record_date (date, required)
+Response data:
+- record
+- totals: total_amount, total_milk
+
+AR3) Delete animal record
+DELETE /animal-records/{id}
+Headers: Authorization
+Response data:
+- deleted (bool)
+- totals: total_amount, total_milk
+
+====================================================================
+9) GLOBAL APP ACTION APIs
+====================================================================
+
+G1) Clear all app data for current user (Drawer "Delete All Data")
+DELETE /me/all-data
+Headers: Authorization
+Deletes:
+- lands + income_entries + expense_entries + crop_entries + labor_entries + upad_entries
+- animals + animal_records
+Response data:
+- cleared (bool)
+
+G2) Full app dashboard summary
+GET /dashboard/summary
+Headers: Authorization
+Response data:
+- total_lands
+- income_total
+- expense_total
+- crop_production_kg
+- fertilizer_kg
+- labor_rupees
+- animal_income_global
+
+G3) Download report/pdf data source (optional)
+GET /reports/current-page
+Headers: Authorization
+Query:
+- page (home|income|expense|crop|labor|animal)
+- land_id (optional for land-specific pages)
+Response data:
+- report payload for client-side PDF generation
+
+====================================================================
+10) VALIDATION LOGIC THAT MUST MATCH APP
+====================================================================
+
+1. Numeric amount fields must be > 0 where app enforces positive values.
+2. Mobile must be exactly 10 digits.
+3. Dropdown values must be restricted to known keys listed in this file.
+4. Crop weight conversion:
+   - if weight_unit = 'man', crop_weight_kg = crop_weight * 20
+   - if weight_unit = 'kg', crop_weight_kg = crop_weight
+5. Land totals must be recalculated on create/update/delete of relevant entries.
+6. Expense fertilizer metric rule in app:
+   - fertilizer_kg uses expense type Medicine + Seeds totals.
+7. Animal name must be unique per user.
+
+====================================================================
+11) MINIMUM ROUTES TO IMPLEMENT FIRST (MVP ORDER)
+====================================================================
+
+Phase 1 (must-have):
+- A2, A3, A4, A6, A7
+- L1, L2, L4, L5
+- I1, I2, I3, I4
+- E1, E2, E3, E4
+- C1, C2, C3, C4
+- LAB1, LAB2, LAB3, LAB4
+- UP1, UP2, UP3, UP4
+- AN1, AN2, AR1, AR2, AR3
+- G1
+
+Phase 2 (nice to have):
+- A1, A8, A9, AN3, AN4, G2, G3
+
+END

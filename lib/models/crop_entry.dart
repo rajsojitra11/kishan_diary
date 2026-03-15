@@ -1,10 +1,12 @@
 class CropEntry {
+  int? id;
   String cropType;
   double landSize;
   double cropWeight;
   String weightUnit;
 
   CropEntry({
+    this.id,
     required this.cropType,
     required this.landSize,
     required this.cropWeight,

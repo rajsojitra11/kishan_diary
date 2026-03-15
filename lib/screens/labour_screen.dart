@@ -4,6 +4,7 @@ import '../models/labor_entry.dart';
 import '../models/land.dart';
 import '../models/upad_entry.dart';
 import '../screens/edit_labour_screen.dart';
+import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/text_input_config.dart';
@@ -13,11 +14,13 @@ import '../widgets/text_input_config.dart';
 class LabourScreen extends StatefulWidget {
   final Land? selectedLand;
   final AppLanguage language;
+  final VoidCallback onSaved;
 
   const LabourScreen({
     super.key,
     required this.selectedLand,
     required this.language,
+    required this.onSaved,
   });
 
   @override
@@ -28,6 +31,7 @@ class _LabourScreenState extends State<LabourScreen> {
   // ── Labor entries state ──────────────────────────────────────────────────
   final _laborFormKey = GlobalKey<FormState>();
   bool _showLaborForm = false;
+  bool _loading = false;
 
   // ── Form controllers ─────────────────────────────────────────────────────
   final TextEditingController _nameCtrl = TextEditingController();
@@ -58,6 +62,129 @@ class _LabourScreenState extends State<LabourScreen> {
   List<UpadEntry> get _upadEntries =>
       widget.selectedLand?.upadEntries ?? const [];
 
+  int? _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  String _toDisplayDate(String? serverDate) {
+    if (serverDate == null || serverDate.trim().isEmpty) {
+      return '';
+    }
+    final parts = serverDate.split('-');
+    if (parts.length != 3) {
+      return serverDate;
+    }
+    return '${parts[2]}/${parts[1]}/${parts[0]}';
+  }
+
+  LaborEntry _laborFromApi(Map<String, dynamic> item) {
+    return LaborEntry(
+      id: _toInt(item['id']),
+      name: item['labor_name']?.toString() ?? '',
+      mobile: item['mobile']?.toString() ?? '',
+      days: _toDouble(item['total_days']),
+      dailyRate: _toDouble(item['daily_rate']),
+    );
+  }
+
+  UpadEntry _upadFromApi(Map<String, dynamic> item, LaborEntry labor) {
+    final snapshot = item['labor_name_snapshot']?.toString();
+    return UpadEntry(
+      id: _toInt(item['id']),
+      laborEntryId: _toInt(item['labor_entry_id']) ?? labor.id,
+      landId: _toInt(item['land_id']),
+      laborName: snapshot == null || snapshot.trim().isEmpty
+          ? labor.name
+          : snapshot,
+      amount: _toDouble(item['amount']),
+      note: item['note']?.toString() ?? '',
+      date: _toDisplayDate(item['payment_date']?.toString()),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLaborEntries();
+  }
+
+  @override
+  void didUpdateWidget(covariant LabourScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedLand?.id != widget.selectedLand?.id) {
+      _loadLaborEntries();
+    }
+  }
+
+  Future<void> _loadLaborEntries() async {
+    final land = widget.selectedLand;
+    if (land == null || land.id == null) {
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    try {
+      final payload = await ApiService.instance.getLaborEntries(land.id!);
+      final laborEntries = ((payload['labor_entries'] as List?) ?? [])
+          .map((item) => _laborFromApi((item as Map).cast<String, dynamic>()))
+          .toList();
+
+      final upadEntries = <UpadEntry>[];
+      for (final labor in laborEntries) {
+        if (labor.id == null) {
+          continue;
+        }
+
+        final upadPayload = await ApiService.instance.getUpadEntries(labor.id!);
+        final entries = ((upadPayload['upad_entries'] as List?) ?? [])
+            .map(
+              (item) =>
+                  _upadFromApi((item as Map).cast<String, dynamic>(), labor),
+            )
+            .toList();
+        upadEntries.addAll(entries);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        land.laborEntries
+          ..clear()
+          ..addAll(laborEntries);
+        land.upadEntries
+          ..clear()
+          ..addAll(upadEntries);
+        land.laborRupees = _toDouble(
+          ((payload['totals'] as Map?)?['total_wage']),
+        );
+        _loading = false;
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
   String _formatDays(double days) {
     if (days == days.truncateToDouble()) {
       return days.toInt().toString();
@@ -77,14 +204,19 @@ class _LabourScreenState extends State<LabourScreen> {
     );
   }
 
-  double _totalUpadForLabor(String laborName) {
+  double _totalUpadForLabor(LaborEntry labor) {
     return _upadEntries
-        .where((entry) => entry.laborName == laborName)
+        .where((entry) {
+          if (labor.id != null && entry.laborEntryId != null) {
+            return entry.laborEntryId == labor.id;
+          }
+          return entry.laborName == labor.name;
+        })
         .fold(0.0, (sum, entry) => sum + entry.amount);
   }
 
   double _totalPendingForLabor(LaborEntry labor) {
-    final pending = labor.total - _totalUpadForLabor(labor.name);
+    final pending = labor.total - _totalUpadForLabor(labor);
     return pending < 0 ? 0.0 : pending;
   }
 
@@ -143,7 +275,7 @@ class _LabourScreenState extends State<LabourScreen> {
     _showLaborForm = false;
   }
 
-  void _submitEntry() {
+  Future<void> _submitEntry() async {
     if (!(_laborFormKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -163,11 +295,48 @@ class _LabourScreenState extends State<LabourScreen> {
       dailyRate: 0.0,
     );
 
-    setState(() {
-      selectedLand.laborEntries.add(entry);
-      _syncLaborMetric();
-      _clearForm();
-    });
+    if (selectedLand.id == null) {
+      setState(() {
+        selectedLand.laborEntries.add(entry);
+        _syncLaborMetric();
+        _clearForm();
+      });
+      widget.onSaved();
+      return;
+    }
+
+    try {
+      final payload = await ApiService.instance.createLaborEntry(
+        landId: selectedLand.id!,
+        laborName: name,
+        mobile: mobile,
+      );
+
+      final created = _laborFromApi(
+        ((payload['labor_entry'] as Map?) ?? {}).cast<String, dynamic>(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        selectedLand.laborEntries.add(created);
+        selectedLand.laborRupees = _toDouble(
+          ((payload['land_totals'] as Map?)?['labor_rupees']),
+        );
+        _clearForm();
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   String? _requiredValidator(String? value) {
@@ -195,9 +364,12 @@ class _LabourScreenState extends State<LabourScreen> {
     }
 
     final labor = _laborEntries[idx];
-    final laborUpads = _upadEntries
-        .where((entry) => entry.laborName == labor.name)
-        .toList();
+    final laborUpads = _upadEntries.where((entry) {
+      if (labor.id != null && entry.laborEntryId != null) {
+        return entry.laborEntryId == labor.id;
+      }
+      return entry.laborName == labor.name;
+    }).toList();
 
     final result = await Navigator.push<EditLabourResult>(
       context,
@@ -216,27 +388,67 @@ class _LabourScreenState extends State<LabourScreen> {
 
     setState(() {
       selectedLand.laborEntries[idx] = result.updatedLabor;
-      selectedLand.upadEntries
-        ..removeWhere((entry) => entry.laborName == result.originalLaborName)
-        ..addAll(result.updatedUpadEntries);
+      if (result.updatedLabor.id != null) {
+        selectedLand.upadEntries.removeWhere(
+          (entry) => entry.laborEntryId == result.updatedLabor.id,
+        );
+      } else {
+        selectedLand.upadEntries.removeWhere(
+          (entry) => entry.laborName == result.originalLaborName,
+        );
+      }
+      selectedLand.upadEntries.addAll(result.updatedUpadEntries);
       _syncLaborMetric();
     });
+    widget.onSaved();
   }
 
-  void _remove(int idx) {
+  Future<void> _remove(int idx) async {
     final selectedLand = widget.selectedLand;
     if (selectedLand == null) {
       return;
     }
 
-    final laborName = _laborEntries[idx].name;
-    setState(() {
-      selectedLand.laborEntries.removeAt(idx);
-      selectedLand.upadEntries.removeWhere(
-        (entry) => entry.laborName == laborName,
-      );
-      _syncLaborMetric();
-    });
+    final labor = _laborEntries[idx];
+
+    if (labor.id == null) {
+      setState(() {
+        selectedLand.laborEntries.removeAt(idx);
+        selectedLand.upadEntries.removeWhere(
+          (entry) => entry.laborName == labor.name,
+        );
+        _syncLaborMetric();
+      });
+      widget.onSaved();
+      return;
+    }
+
+    try {
+      final payload = await ApiService.instance.deleteLaborEntry(labor.id!);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        selectedLand.laborEntries.removeAt(idx);
+        selectedLand.upadEntries.removeWhere(
+          (entry) => entry.laborEntryId == labor.id,
+        );
+        selectedLand.laborRupees = _toDouble(
+          ((payload['land_totals'] as Map?)?['labor_rupees']),
+        );
+      });
+      widget.onSaved();
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
   }
 
   Future<void> _confirmRemove(int idx) async {
@@ -360,8 +572,14 @@ class _LabourScreenState extends State<LabourScreen> {
 
         const SizedBox(height: 12),
 
+        if (_loading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+
         // ── Labour Entry List ─────────────────────────────────────────────
-        if (!_showLaborForm && _laborEntries.isNotEmpty) ...[
+        if (!_loading && !_showLaborForm && _laborEntries.isNotEmpty) ...[
           Text(
             t(widget.language, 'navLabor'),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -370,7 +588,7 @@ class _LabourScreenState extends State<LabourScreen> {
           ..._laborEntries.asMap().entries.map((e) {
             final idx = e.key;
             final labor = e.value;
-            final totalUpad = _totalUpadForLabor(labor.name);
+            final totalUpad = _totalUpadForLabor(labor);
             final totalPending = _totalPendingForLabor(labor);
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
