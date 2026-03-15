@@ -26,8 +26,7 @@ class LabourScreen extends StatefulWidget {
 
 class _LabourScreenState extends State<LabourScreen> {
   // ── Labor entries state ──────────────────────────────────────────────────
-  final List<LaborEntry> _laborEntries = [];
-  List<UpadEntry> _upadEntries = [];
+  final _laborFormKey = GlobalKey<FormState>();
   bool _showLaborForm = false;
 
   // ── Form controllers ─────────────────────────────────────────────────────
@@ -50,6 +49,24 @@ class _LabourScreenState extends State<LabourScreen> {
 
   double get _totalPending =>
       _laborEntries.fold(0, (sum, labor) => sum + _totalPendingForLabor(labor));
+
+  List<LaborEntry> get _laborEntries =>
+      widget.selectedLand?.laborEntries ?? const [];
+
+  List<UpadEntry> get _upadEntries =>
+      widget.selectedLand?.upadEntries ?? const [];
+
+  void _syncLaborMetric() {
+    final land = widget.selectedLand;
+    if (land == null) {
+      return;
+    }
+
+    land.laborRupees = land.laborEntries.fold(
+      0,
+      (sum, labor) => sum + labor.total,
+    );
+  }
 
   double _totalUpadForLabor(String laborName) {
     return _upadEntries
@@ -118,25 +135,51 @@ class _LabourScreenState extends State<LabourScreen> {
   }
 
   void _submitEntry() {
-    final name = _nameCtrl.text.trim();
-    final mobile = _mobileCtrl.text.trim();
-
-    if (name.isEmpty || mobile.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t(widget.language, 'enterValidLabor'))),
-      );
+    if (!(_laborFormKey.currentState?.validate() ?? false)) {
       return;
     }
+
+    final selectedLand = widget.selectedLand;
+    if (selectedLand == null) {
+      return;
+    }
+
+    final name = _nameCtrl.text.trim();
+    final mobile = _mobileCtrl.text.trim();
 
     final entry = LaborEntry(name: name, mobile: mobile, days: 0, dailyRate: 0);
 
     setState(() {
-      _laborEntries.add(entry);
+      selectedLand.laborEntries.add(entry);
+      _syncLaborMetric();
       _clearForm();
     });
   }
 
+  String? _requiredValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return t(widget.language, 'validationRequiredField');
+    }
+    return null;
+  }
+
+  String? _mobileValidator(String? value) {
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty) {
+      return t(widget.language, 'validationRequiredField');
+    }
+    if (!RegExp(r'^\d{10}$').hasMatch(raw)) {
+      return t(widget.language, 'validationEnterValidMobile');
+    }
+    return null;
+  }
+
   Future<void> _startEdit(int idx) async {
+    final selectedLand = widget.selectedLand;
+    if (selectedLand == null) {
+      return;
+    }
+
     final labor = _laborEntries[idx];
     final laborUpads = _upadEntries
         .where((entry) => entry.laborName == labor.name)
@@ -158,21 +201,27 @@ class _LabourScreenState extends State<LabourScreen> {
     }
 
     setState(() {
-      _laborEntries[idx] = result.updatedLabor;
-      _upadEntries = [
-        ..._upadEntries.where(
-          (entry) => entry.laborName != result.originalLaborName,
-        ),
-        ...result.updatedUpadEntries,
-      ];
+      selectedLand.laborEntries[idx] = result.updatedLabor;
+      selectedLand.upadEntries
+        ..removeWhere((entry) => entry.laborName == result.originalLaborName)
+        ..addAll(result.updatedUpadEntries);
+      _syncLaborMetric();
     });
   }
 
   void _remove(int idx) {
+    final selectedLand = widget.selectedLand;
+    if (selectedLand == null) {
+      return;
+    }
+
     final laborName = _laborEntries[idx].name;
     setState(() {
-      _laborEntries.removeAt(idx);
-      _upadEntries.removeWhere((entry) => entry.laborName == laborName);
+      selectedLand.laborEntries.removeAt(idx);
+      selectedLand.upadEntries.removeWhere(
+        (entry) => entry.laborName == laborName,
+      );
+      _syncLaborMetric();
     });
   }
 
@@ -239,53 +288,58 @@ class _LabourScreenState extends State<LabourScreen> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    t(widget.language, 'navLabor'),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              child: Form(
+                key: _laborFormKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t(widget.language, 'navLabor'),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  buildInput(
-                    TextInputConfig(
-                      _nameCtrl,
-                      t(widget.language, 'laborName'),
-                      Icons.person,
+                    const SizedBox(height: 12),
+                    buildInput(
+                      TextInputConfig(
+                        _nameCtrl,
+                        t(widget.language, 'laborName'),
+                        Icons.person,
+                        validator: _requiredValidator,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  buildInput(
-                    TextInputConfig(
-                      _mobileCtrl,
-                      t(widget.language, 'laborMobile'),
-                      Icons.phone,
+                    const SizedBox(height: 10),
+                    buildInput(
+                      TextInputConfig(
+                        _mobileCtrl,
+                        t(widget.language, 'laborMobile'),
+                        Icons.phone,
+                        number: true,
+                        validator: _mobileValidator,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.add),
-                          label: Text(t(widget.language, 'laborAddButton')),
-                          onPressed: _submitEntry,
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.add),
+                            label: Text(t(widget.language, 'laborAddButton')),
+                            onPressed: _submitEntry,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton(
-                        onPressed: () => setState(_clearForm),
-                        child: const Text('Cancel'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // ── Totals ──────────────────────────────────────────────
-                  _buildOverallSummaryCards(),
-                ],
+                        const SizedBox(width: 8),
+                        TextButton(
+                          onPressed: () => setState(_clearForm),
+                          child: Text(t(widget.language, 'cancelButton')),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildOverallSummaryCards(),
+                  ],
+                ),
               ),
             ),
           ),
@@ -320,13 +374,13 @@ class _LabourScreenState extends State<LabourScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${t(widget.language, 'laborTotalPaid')}: ₹ ${totalUpad.toStringAsFixed(2)}',
+                      '${t(widget.language, 'laborTotalPaid')} ${totalUpad.toStringAsFixed(2)}',
                     ),
                     Text(
-                      '${t(widget.language, 'laborTotalPending')}: ₹ ${totalPending.toStringAsFixed(2)}',
+                      '${t(widget.language, 'laborTotalPending')} ${totalPending.toStringAsFixed(2)}',
                     ),
                     Text(
-                      '${t(widget.language, 'laborTotalWage')}: ₹ ${labor.total.toStringAsFixed(2)}',
+                      '${t(widget.language, 'laborTotalWage')} ${labor.total.toStringAsFixed(2)}',
                     ),
                   ],
                 ),

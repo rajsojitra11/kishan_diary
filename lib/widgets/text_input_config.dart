@@ -6,6 +6,11 @@ class TextInputConfig {
   final IconData icon;
   final bool number;
   final bool isInt;
+  final bool readOnly;
+  final int maxLines;
+  final Widget? suffixIcon;
+  final VoidCallback? onTap;
+  final String? Function(String?)? validator;
 
   TextInputConfig(
     this.controller,
@@ -13,5 +18,10 @@ class TextInputConfig {
     this.icon, {
     this.number = false,
     this.isInt = false,
+    this.readOnly = false,
+    this.maxLines = 1,
+    this.suffixIcon,
+    this.onTap,
+    this.validator,
   });
 }

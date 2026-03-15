@@ -5,15 +5,21 @@ import 'text_input_config.dart';
 
 /// A reusable text input field using [TextInputConfig].
 Widget buildInput(TextInputConfig config) {
-  return TextField(
+  return TextFormField(
     controller: config.controller,
     keyboardType: config.number
         ? const TextInputType.numberWithOptions(decimal: true)
         : TextInputType.text,
+    readOnly: config.readOnly,
+    maxLines: config.maxLines,
+    onTap: config.onTap,
+    validator: config.validator,
+    autovalidateMode: AutovalidateMode.onUserInteraction,
     decoration: InputDecoration(
       labelText: config.label,
       border: const OutlineInputBorder(),
       prefixIcon: Icon(config.icon),
+      suffixIcon: config.suffixIcon,
     ),
   );
 }
@@ -40,12 +46,17 @@ IconData _iconForStat(String title) {
       title.contains('မ')) {
     return Icons.group;
   }
-  if (title.contains('Fertilizer') || title.contains('દવા')) return Icons.grass;
+  if (title.contains('Fertilizer') || title.contains('દવા')) {
+    return Icons.compost;
+  }
   if (title.contains('Income') || title.contains('આવક')) {
     return Icons.currency_rupee;
   }
-  if (title.contains('Expenses') || title.contains('ખર્ચ'))
-    return Icons.money_off;
-  if (title.contains('Crop') || title.contains('ફસલ')) return Icons.agriculture;
+  if (title.contains('Expenses') || title.contains('ખર્ચ')) {
+    return Icons.receipt_long;
+  }
+  if (title.contains('Crop') || title.contains('ફસલ')) {
+    return Icons.eco;
+  }
   return Icons.info;
 }

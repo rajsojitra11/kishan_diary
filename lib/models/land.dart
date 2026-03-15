@@ -1,3 +1,9 @@
+import 'crop_entry.dart';
+import 'expense_entry.dart';
+import 'income_entry.dart';
+import 'labor_entry.dart';
+import 'upad_entry.dart';
+
 class Land {
   String name;
   double size;
@@ -8,6 +14,11 @@ class Land {
   double expenses;
   double cropProductionKg;
   double animalIncome;
+  List<CropEntry> cropEntries;
+  List<ExpenseEntry> expenseEntries;
+  List<IncomeEntry> incomeEntries;
+  List<LaborEntry> laborEntries;
+  List<UpadEntry> upadEntries;
 
   Land({
     required this.name,
@@ -19,5 +30,14 @@ class Land {
     this.expenses = 0,
     this.cropProductionKg = 0,
     this.animalIncome = 0,
-  });
+    List<CropEntry>? cropEntries,
+    List<ExpenseEntry>? expenseEntries,
+    List<IncomeEntry>? incomeEntries,
+    List<LaborEntry>? laborEntries,
+    List<UpadEntry>? upadEntries,
+  }) : cropEntries = cropEntries ?? [],
+       expenseEntries = expenseEntries ?? [],
+       incomeEntries = incomeEntries ?? [],
+       laborEntries = laborEntries ?? [],
+       upadEntries = upadEntries ?? [];
 }

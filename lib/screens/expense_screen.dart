@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../models/expense_entry.dart';
 import '../models/land.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
-import '../widgets/text_input_config.dart';
 
-/// Allows the user to record / update expenses for the selected land.
+/// Allows the user to add, edit and delete expense records for the selected land.
 class ExpenseScreen extends StatefulWidget {
   final Land? selectedLand;
   final AppLanguage language;
@@ -23,35 +24,439 @@ class ExpenseScreen extends StatefulWidget {
 }
 
 class _ExpenseScreenState extends State<ExpenseScreen> {
-  late final TextEditingController _ctrl;
+  final List<String> _expenseTypeKeys = const [
+    'expenseTypeMedicine',
+    'expenseTypeSeeds',
+    'expenseTypeTractor',
+    'expenseTypeLightBill',
+    'expenseTypeOther',
+  ];
 
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = TextEditingController(
-        text: widget.selectedLand?.expenses.toString() ?? '');
+  String _typeLabel(String key) => t(widget.language, key);
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 
-  @override
-  void didUpdateWidget(ExpenseScreen old) {
-    super.didUpdateWidget(old);
-    if (widget.selectedLand != old.selectedLand) {
-      _ctrl.text = widget.selectedLand?.expenses.toString() ?? '';
+  DateTime? _parseDate(String value) {
+    final parts = value.split('/');
+    if (parts.length != 3) {
+      return null;
     }
+
+    final day = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) {
+      return null;
+    }
+
+    return DateTime.tryParse(
+      '$year-${month.toString().padLeft(2, '0')}-${day.toString().padLeft(2, '0')}',
+    );
   }
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
+  void _syncExpenseMetric() {
+    final land = widget.selectedLand;
+    if (land == null) {
+      return;
+    }
+
+    const davaBiyaranTypes = {'expenseTypeMedicine', 'expenseTypeSeeds'};
+
+    land.expenses = land.expenseEntries.fold(
+      0,
+      (sum, entry) => sum + entry.amount,
+    );
+
+    land.fertilizerKg = land.expenseEntries
+        .where((entry) => davaBiyaranTypes.contains(entry.type))
+        .fold(0, (sum, entry) => sum + entry.amount);
   }
 
-  void _save() {
-    final value = double.tryParse(_ctrl.text.trim()) ?? 0;
-    setState(() => widget.selectedLand!.expenses = value);
+  Future<ExpenseEntry?> _showExpenseForm({ExpenseEntry? initialEntry}) async {
+    final amountController = TextEditingController(
+      text: initialEntry == null ? '' : initialEntry.amount.toString(),
+    );
+    final noteController = TextEditingController(
+      text: initialEntry?.note ?? '',
+    );
+    final dateController = TextEditingController(
+      text: initialEntry?.date ?? '',
+    );
+    final formKey = GlobalKey<FormState>();
+    String selectedType = initialEntry?.type ?? _expenseTypeKeys.first;
+    String? selectedBillPhotoPath = initialEntry?.billPhotoPath;
+    dynamic selectedBillPhotoBytes = initialEntry?.billPhotoBytes;
+
+    final entry = await showDialog<ExpenseEntry>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (statefulContext, setDialogState) {
+            Future<void> pickDate() async {
+              final pickedDate = await showDatePicker(
+                context: dialogContext,
+                initialDate: _parseDate(dateController.text) ?? DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+
+              if (pickedDate != null) {
+                setDialogState(() {
+                  dateController.text = _formatDate(pickedDate);
+                });
+              }
+            }
+
+            Future<void> pickBillPhoto() async {
+              final picker = ImagePicker();
+              final file = await picker.pickImage(
+                source: ImageSource.gallery,
+                imageQuality: 80,
+              );
+
+              if (file == null) {
+                return;
+              }
+
+              final bytes = await file.readAsBytes();
+
+              setDialogState(() {
+                selectedBillPhotoPath = file.path;
+                selectedBillPhotoBytes = bytes;
+              });
+            }
+
+            return AlertDialog(
+              title: Text(
+                initialEntry == null
+                    ? t(widget.language, 'expenseAddButton')
+                    : t(widget.language, 'expenseUpdateButton'),
+              ),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        DropdownButtonFormField<String>(
+                          value: selectedType,
+                          decoration: InputDecoration(
+                            labelText: t(widget.language, 'expenseTypeLabel'),
+                            border: const OutlineInputBorder(),
+                          ),
+                          items: _expenseTypeKeys.map((typeKey) {
+                            return DropdownMenuItem<String>(
+                              value: typeKey,
+                              child: Text(_typeLabel(typeKey)),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            if (value == null) {
+                              return;
+                            }
+                            setDialogState(() => selectedType = value);
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: amountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            labelText: t(widget.language, 'expenseAmountLabel'),
+                            border: const OutlineInputBorder(),
+                            prefixIcon: const Icon(Icons.currency_rupee),
+                          ),
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (value) {
+                            final raw = value?.trim() ?? '';
+                            if (raw.isEmpty) {
+                              return t(
+                                widget.language,
+                                'validationRequiredField',
+                              );
+                            }
+
+                            final amount = double.tryParse(raw);
+                            if (amount == null) {
+                              return t(
+                                widget.language,
+                                'validationEnterValidNumber',
+                              );
+                            }
+
+                            if (amount <= 0) {
+                              return t(
+                                widget.language,
+                                'validationEnterPositiveNumber',
+                              );
+                            }
+
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: dateController,
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            labelText: t(widget.language, 'expenseDateLabel'),
+                            border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              icon: const Icon(Icons.calendar_today),
+                              onPressed: pickDate,
+                            ),
+                          ),
+                          onTap: pickDate,
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return t(widget.language, 'validationSelectDate');
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                        TextFormField(
+                          controller: noteController,
+                          maxLines: 3,
+                          decoration: InputDecoration(
+                            labelText: t(widget.language, 'expenseNoteLabel'),
+                            border: const OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          t(widget.language, 'expenseBillPhotoLabel'),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              icon: const Icon(Icons.photo),
+                              label: Text(
+                                selectedBillPhotoBytes == null
+                                    ? t(
+                                        widget.language,
+                                        'expensePickPhotoButton',
+                                      )
+                                    : t(
+                                        widget.language,
+                                        'expenseChangePhotoButton',
+                                      ),
+                              ),
+                              onPressed: pickBillPhoto,
+                            ),
+                            if (selectedBillPhotoBytes != null) ...[
+                              const SizedBox(width: 8),
+                              IconButton(
+                                tooltip: t(
+                                  widget.language,
+                                  'expenseRemovePhotoButton',
+                                ),
+                                onPressed: () {
+                                  setDialogState(() {
+                                    selectedBillPhotoPath = null;
+                                    selectedBillPhotoBytes = null;
+                                  });
+                                },
+                                icon: const Icon(
+                                  Icons.close,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (selectedBillPhotoBytes != null) ...[
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.memory(
+                              selectedBillPhotoBytes,
+                              width: 120,
+                              height: 80,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(t(widget.language, 'cancelButton')),
+                ),
+                ElevatedButton.icon(
+                  icon: Icon(initialEntry == null ? Icons.add : Icons.save),
+                  label: Text(
+                    initialEntry == null
+                        ? t(widget.language, 'expenseAddButton')
+                        : t(widget.language, 'expenseUpdateButton'),
+                  ),
+                  onPressed: () {
+                    if (!(formKey.currentState?.validate() ?? false)) {
+                      return;
+                    }
+
+                    final amount = double.parse(amountController.text.trim());
+                    final date = dateController.text.trim();
+                    final note = noteController.text.trim();
+
+                    Navigator.pop(
+                      dialogContext,
+                      ExpenseEntry(
+                        type: selectedType,
+                        amount: amount,
+                        date: date,
+                        note: note,
+                        billPhotoPath: selectedBillPhotoPath,
+                        billPhotoBytes: selectedBillPhotoBytes,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    amountController.dispose();
+    noteController.dispose();
+    dateController.dispose();
+    return entry;
+  }
+
+  Future<void> _addExpense() async {
+    if (widget.selectedLand == null) {
+      return;
+    }
+
+    final entry = await _showExpenseForm();
+    if (entry == null) {
+      return;
+    }
+
+    setState(() {
+      widget.selectedLand!.expenseEntries.add(entry);
+      _syncExpenseMetric();
+    });
     widget.onSaved();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${t(widget.language, 'expensesLabel')} saved!')),
+  }
+
+  Future<void> _editExpense(int index) async {
+    if (widget.selectedLand == null) {
+      return;
+    }
+
+    final existing = widget.selectedLand!.expenseEntries[index];
+    final updated = await _showExpenseForm(initialEntry: existing);
+    if (updated == null) {
+      return;
+    }
+
+    setState(() {
+      widget.selectedLand!.expenseEntries[index] = updated;
+      _syncExpenseMetric();
+    });
+    widget.onSaved();
+  }
+
+  Future<void> _deleteExpense(int index) async {
+    if (widget.selectedLand == null) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(t(widget.language, 'deleteExpenseTitle')),
+          content: Text(t(widget.language, 'deleteExpenseConfirm')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(t(widget.language, 'cancelButton')),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(t(widget.language, 'deleteButton')),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() {
+      widget.selectedLand!.expenseEntries.removeAt(index);
+      _syncExpenseMetric();
+    });
+    widget.onSaved();
+  }
+
+  void _viewBillPhoto(ExpenseEntry entry) {
+    if (entry.billPhotoBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t(widget.language, 'expenseNoBillPhoto'))),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  t(widget.language, 'viewBillTitle'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 400),
+                  child: InteractiveViewer(
+                    child: Image.memory(entry.billPhotoBytes!),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: Text(t(widget.language, 'cancelButton')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -63,6 +468,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         child: Center(child: Text(t(widget.language, 'noLandSelected'))),
       );
     }
+
+    final entries = widget.selectedLand!.expenseEntries;
 
     return Card(
       elevation: 3,
@@ -83,18 +490,78 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               Colors.red,
             ),
             const SizedBox(height: 12),
-            buildInput(TextInputConfig(
-                _ctrl, t(widget.language, 'expensesLabel'), Icons.money_off,
-                number: true)),
-            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.save),
-                label: Text(t(widget.language, 'saveMetricsButton')),
-                onPressed: _save,
+                onPressed: _addExpense,
+                icon: const Icon(Icons.add),
+                label: Text(t(widget.language, 'expenseAddButton')),
               ),
             ),
+            const SizedBox(height: 12),
+            if (entries.isEmpty)
+              Text(t(widget.language, 'expenseNoRecords'))
+            else
+              ...entries.asMap().entries.map((item) {
+                final index = item.key;
+                final record = item.value;
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    isThreeLine: record.note.trim().isNotEmpty,
+                    leading: CircleAvatar(
+                      backgroundColor: Colors.orange.shade100,
+                      child: const Icon(
+                        Icons.receipt_long,
+                        color: Colors.orange,
+                      ),
+                    ),
+                    title: Text(
+                      _typeLabel(record.type),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${t(widget.language, 'expenseAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
+                        ),
+                        Text(
+                          '${t(widget.language, 'expenseDateLabel')}: ${record.date}',
+                        ),
+                        if (record.note.trim().isNotEmpty)
+                          Text(
+                            '${t(widget.language, 'expenseNoteListLabel')}: ${record.note}',
+                          ),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: t(widget.language, 'viewBillTitle'),
+                          onPressed: () => _viewBillPhoto(record),
+                          icon: const Icon(
+                            Icons.remove_red_eye,
+                            color: Colors.teal,
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: t(widget.language, 'expenseUpdateButton'),
+                          onPressed: () => _editExpense(index),
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                        ),
+                        IconButton(
+                          tooltip: t(widget.language, 'deleteButton'),
+                          onPressed: () => _deleteExpense(index),
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
           ],
         ),
       ),

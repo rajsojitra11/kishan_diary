@@ -9,11 +9,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kishan_diary/screens/home_screen.dart';
+import 'package:kishan_diary/utils/localization.dart';
 
 void main() {
   testWidgets('HomeScreen renders with title', (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
 
-    expect(find.text('Kishan Diary'), findsOneWidget);
+    expect(find.text(t(AppLanguage.gujarati, 'appTitle')), findsOneWidget);
   });
 }

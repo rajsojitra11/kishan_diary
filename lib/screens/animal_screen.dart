@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 
+import '../models/animal.dart';
+import '../screens/animal_detail_screen.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/text_input_config.dart';
 
-/// Allows the user to record / update animal (pet) income.
-/// Does NOT require a land to be selected.
 class AnimalScreen extends StatefulWidget {
   final AppLanguage language;
-  final double animalIncome;
-  final void Function(double income) onSaved;
+  final List<Animal> animals;
+  final ValueChanged<List<Animal>> onAnimalsChanged;
 
   const AnimalScreen({
     super.key,
     required this.language,
-    required this.animalIncome,
-    required this.onSaved,
+    required this.animals,
+    required this.onAnimalsChanged,
   });
 
   @override
@@ -23,35 +23,85 @@ class AnimalScreen extends StatefulWidget {
 }
 
 class _AnimalScreenState extends State<AnimalScreen> {
-  late final TextEditingController _ctrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = TextEditingController(text: widget.animalIncome.toString());
+  double get _totalAnimalIncome {
+    return widget.animals.fold(0, (sum, animal) => sum + animal.totalAmount);
   }
 
-  @override
-  void didUpdateWidget(AnimalScreen old) {
-    super.didUpdateWidget(old);
-    if (widget.animalIncome != old.animalIncome) {
-      _ctrl.text = widget.animalIncome.toString();
-    }
+  void _notifyAnimalsChanged() {
+    widget.onAnimalsChanged(List<Animal>.from(widget.animals));
+    setState(() {});
   }
 
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  void _showAddAnimalDialog() {
+    final nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
-  void _save() {
-    final value = double.tryParse(_ctrl.text.trim()) ?? 0;
-    widget.onSaved(value);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text('${t(widget.language, 'animalIncomeLabel')} saved!')),
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(t(widget.language, 'addAnimalButton')),
+        content: Form(
+          key: formKey,
+          child: buildInput(
+            TextInputConfig(
+              nameController,
+              t(widget.language, 'animalNameLabel'),
+              Icons.pets,
+              validator: (value) {
+                final name = value?.trim() ?? '';
+                if (name.isEmpty) {
+                  return t(widget.language, 'validationRequiredField');
+                }
+
+                final exists = widget.animals.any(
+                  (animal) => animal.name.toLowerCase() == name.toLowerCase(),
+                );
+
+                if (exists) {
+                  return t(widget.language, 'animalExists');
+                }
+
+                return null;
+              },
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(t(widget.language, 'cancelButton')),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (!(formKey.currentState?.validate() ?? false)) {
+                return;
+              }
+
+              final name = nameController.text.trim();
+
+              final updated = List<Animal>.from(widget.animals)
+                ..add(Animal(name: name));
+              widget.onAnimalsChanged(updated);
+              Navigator.pop(context);
+            },
+            child: Text(t(widget.language, 'saveButton')),
+          ),
+        ],
+      ),
     );
+  }
+
+  void _openAnimalDetail(Animal animal) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AnimalDetailScreen(
+          animal: animal,
+          language: widget.language,
+          onChanged: _notifyAnimalsChanged,
+        ),
+      ),
+    ).then((_) => _notifyAnimalsChanged());
   }
 
   @override
@@ -71,22 +121,47 @@ class _AnimalScreenState extends State<AnimalScreen> {
             const SizedBox(height: 12),
             statCard(
               t(widget.language, 'animalIncomeLabel'),
-              '₹ ${widget.animalIncome.toStringAsFixed(2)}',
+              '₹ ${_totalAnimalIncome.toStringAsFixed(2)}',
               Colors.purple,
             ),
-            const SizedBox(height: 12),
-            buildInput(TextInputConfig(
-                _ctrl, t(widget.language, 'animalIncomeLabel'), Icons.pets,
-                number: true)),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                icon: const Icon(Icons.save),
-                label: Text(t(widget.language, 'saveMetricsButton')),
-                onPressed: _save,
+                icon: const Icon(Icons.add),
+                label: Text(t(widget.language, 'addAnimalButton')),
+                onPressed: _showAddAnimalDialog,
               ),
             ),
+            const SizedBox(height: 16),
+            Text(
+              t(widget.language, 'animalListLabel'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            if (widget.animals.isEmpty)
+              Text(t(widget.language, 'animalNoAnimals'))
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: widget.animals.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (_, index) {
+                  final animal = widget.animals[index];
+                  return Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.pets, color: Colors.purple),
+                      title: Text(animal.name),
+                      subtitle: Text(
+                        '₹ ${animal.totalAmount.toStringAsFixed(2)} • ${animal.totalMilk.toStringAsFixed(2)} L',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _openAnimalDetail(animal),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),

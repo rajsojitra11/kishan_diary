@@ -29,6 +29,7 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
+  final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameCtrl = TextEditingController();
   final TextEditingController _sizeCtrl = TextEditingController();
   final TextEditingController _locationCtrl = TextEditingController();
@@ -42,16 +43,13 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   void _submit() {
-    final name = _nameCtrl.text.trim();
-    final size = double.tryParse(_sizeCtrl.text.trim()) ?? 0;
-    final location = _locationCtrl.text.trim();
-
-    if (name.isEmpty || size <= 0 || location.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t(widget.language, 'enterValidLand'))),
-      );
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
+
+    final name = _nameCtrl.text.trim();
+    final size = double.parse(_sizeCtrl.text.trim());
+    final location = _locationCtrl.text.trim();
 
     widget.onAddLand(name, size, location);
     _nameCtrl.clear();
@@ -59,8 +57,53 @@ class _HomeTabState extends State<HomeTab> {
     _locationCtrl.clear();
   }
 
+  String? _requiredValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return t(widget.language, 'validationRequiredField');
+    }
+    return null;
+  }
+
+  String? _positiveNumberValidator(String? value) {
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty) {
+      return t(widget.language, 'validationRequiredField');
+    }
+    final parsed = double.tryParse(raw);
+    if (parsed == null) {
+      return t(widget.language, 'validationEnterValidNumber');
+    }
+    if (parsed <= 0) {
+      return t(widget.language, 'validationEnterPositiveNumber');
+    }
+    return null;
+  }
+
+  double _davaBiyaranExpense(Land land) {
+    const davaBiyaranTypes = {'expenseTypeMedicine', 'expenseTypeSeeds'};
+
+    return land.expenseEntries
+        .where((entry) => davaBiyaranTypes.contains(entry.type))
+        .fold(0, (sum, entry) => sum + entry.amount);
+  }
+
+  double _majuriKharch(Land land) {
+    if (land.laborEntries.isNotEmpty) {
+      return land.laborEntries.fold(0, (sum, labor) => sum + labor.total);
+    }
+    return land.laborRupees;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final selectedLand = widget.selectedLand;
+    final davaBiyaranExpense = selectedLand == null
+        ? 0.0
+        : _davaBiyaranExpense(selectedLand);
+    final majuriKharch = selectedLand == null
+        ? 0.0
+        : _majuriKharch(selectedLand);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -73,51 +116,57 @@ class _HomeTabState extends State<HomeTab> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    t(widget.language, 'addNewLand'),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t(widget.language, 'addNewLand'),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  buildInput(
-                    TextInputConfig(
-                      _nameCtrl,
-                      t(widget.language, 'landName'),
-                      Icons.landscape,
+                    const SizedBox(height: 12),
+                    buildInput(
+                      TextInputConfig(
+                        _nameCtrl,
+                        t(widget.language, 'landName'),
+                        Icons.landscape,
+                        validator: _requiredValidator,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  buildInput(
-                    TextInputConfig(
-                      _sizeCtrl,
-                      t(widget.language, 'landSize'),
-                      Icons.straighten,
-                      number: true,
+                    const SizedBox(height: 10),
+                    buildInput(
+                      TextInputConfig(
+                        _sizeCtrl,
+                        t(widget.language, 'landSize'),
+                        Icons.straighten,
+                        number: true,
+                        validator: _positiveNumberValidator,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  buildInput(
-                    TextInputConfig(
-                      _locationCtrl,
-                      t(widget.language, 'location'),
-                      Icons.location_on,
+                    const SizedBox(height: 10),
+                    buildInput(
+                      TextInputConfig(
+                        _locationCtrl,
+                        t(widget.language, 'location'),
+                        Icons.location_on,
+                        validator: _requiredValidator,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: Text(t(widget.language, 'addLandButton')),
-                      onPressed: _submit,
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: Text(t(widget.language, 'addLandButton')),
+                        onPressed: _submit,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -125,7 +174,7 @@ class _HomeTabState extends State<HomeTab> {
         ],
 
         // ── Dashboard / No Land Selected ───────────────────────────────────
-        if (widget.selectedLand == null)
+        if (selectedLand == null)
           Center(child: Text(t(widget.language, 'noLandSelected')))
         else ...[
           Text(
@@ -138,27 +187,27 @@ class _HomeTabState extends State<HomeTab> {
               final cards = [
                 statCard(
                   t(widget.language, 'incomeLabel'),
-                  '₹ ${widget.selectedLand!.income.toStringAsFixed(2)}',
+                  '₹ ${selectedLand.income.toStringAsFixed(2)}',
                   Colors.teal,
                 ),
                 statCard(
                   t(widget.language, 'expensesLabel'),
-                  '₹ ${widget.selectedLand!.expenses.toStringAsFixed(2)}',
+                  '₹ ${selectedLand.expenses.toStringAsFixed(2)}',
                   Colors.red,
                 ),
                 statCard(
                   t(widget.language, 'cropProductionLabel'),
-                  '${widget.selectedLand!.cropProductionKg.toStringAsFixed(2)} kg',
+                  '${selectedLand.cropProductionKg.toStringAsFixed(2)} kg',
                   Colors.orange,
                 ),
                 statCard(
                   t(widget.language, 'fertilizerLabel'),
-                  '₹ ${widget.selectedLand!.fertilizerKg.toStringAsFixed(2)}',
+                  '₹ ${davaBiyaranExpense.toStringAsFixed(2)}',
                   Colors.green,
                 ),
                 statCard(
                   t(widget.language, 'laborHoursLabel'),
-                  '₹ ${widget.selectedLand!.laborRupees.toStringAsFixed(2)}',
+                  '₹ ${majuriKharch.toStringAsFixed(2)}',
                   Colors.blue,
                 ),
                 statCard(
