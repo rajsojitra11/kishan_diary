@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/animal.dart';
 import '../models/land.dart';
@@ -10,6 +11,7 @@ import '../screens/expense_screen.dart';
 import '../screens/home_tab.dart';
 import '../screens/income_screen.dart';
 import '../screens/labour_screen.dart';
+import '../screens/login_screen.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/custom_app_bar.dart';
@@ -25,7 +27,18 @@ import '../widgets/text_input_config.dart';
 ///
 /// Each tab is a separate widget defined in its own screen file.
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.initialUserName,
+    this.initialUserEmail,
+    this.initialUserBirthdate,
+    this.initialUserPassword,
+  });
+
+  final String? initialUserName;
+  final String? initialUserEmail;
+  final String? initialUserBirthdate;
+  final String? initialUserPassword;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -33,12 +46,39 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   AppLanguage _language = AppLanguage.gujarati;
+  static const String _defaultProfileImagePath =
+      'lib/assets/images/register.png';
+  final ImagePicker _imagePicker = ImagePicker();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final List<Land> _lands = [];
   final List<Animal> _animals = [];
   Land? _selectedLand;
   int _navIndex = 0;
   final List<int> _tabHistory = [0];
+  late String _profileName;
+  late String _profileEmail;
+  late String _profileBirthdate;
+  late String _profilePassword;
+  Uint8List? _profileImageBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialName = widget.initialUserName?.trim() ?? '';
+    _profileName = initialName.isNotEmpty
+        ? initialName
+        : t(_language, 'loggedUserDefaultName');
+    _profileEmail = widget.initialUserEmail?.trim() ?? '';
+    _profileBirthdate = widget.initialUserBirthdate?.trim() ?? '';
+    _profilePassword = widget.initialUserPassword ?? '';
+  }
+
+  ImageProvider get _profileImageProvider {
+    if (_profileImageBytes != null) {
+      return MemoryImage(_profileImageBytes!);
+    }
+    return const AssetImage(_defaultProfileImagePath);
+  }
 
   double get _animalIncomeGlobal {
     return _animals.fold(0, (sum, animal) => sum + animal.totalAmount);
@@ -158,6 +198,60 @@ class _HomeScreenState extends State<HomeScreen> {
       return t(_language, 'validationEnterPositiveNumber');
     }
     return null;
+  }
+
+  String? _emailValidator(String? value) {
+    final email = (value ?? '').trim();
+    if (email.isEmpty) {
+      return t(_language, 'validationRequiredField');
+    }
+    if (!RegExp(r'^[\w.\-]+@([\w\-]+\.)+[A-Za-z]{2,}$').hasMatch(email)) {
+      return t(_language, 'validationEnterValidEmail');
+    }
+    return null;
+  }
+
+  Future<Uint8List?> _pickProfileImage(ImageSource source) async {
+    final pickedFile = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 900,
+    );
+
+    if (pickedFile == null) {
+      return null;
+    }
+
+    return pickedFile.readAsBytes();
+  }
+
+  Future<Uint8List?> _showProfileImagePickerOptions() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera),
+              title: Text(t(_language, 'profileImageCameraOption')),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: Text(t(_language, 'profileImageGalleryOption')),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) {
+      return null;
+    }
+
+    return _pickProfileImage(source);
   }
 
   // ── Dialogs ────────────────────────────────────────────────────────────────
@@ -311,6 +405,181 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _showUpdateProfileDialog() async {
+    final nameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final birthdateCtrl = TextEditingController();
+    final passwordCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    nameCtrl.text = _profileName;
+    emailCtrl.text = _profileEmail;
+    birthdateCtrl.text = _profileBirthdate;
+    passwordCtrl.text = _profilePassword;
+    Uint8List? tempProfileImageBytes = _profileImageBytes;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, dialogSetState) => AlertDialog(
+          title: Text(t(_language, 'updateProfileTitle')),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.grey.shade200,
+                    backgroundImage: tempProfileImageBytes != null
+                        ? MemoryImage(tempProfileImageBytes!)
+                        : const AssetImage(_defaultProfileImagePath)
+                              as ImageProvider,
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final pickedBytes =
+                          await _showProfileImagePickerOptions();
+                      if (pickedBytes == null) {
+                        return;
+                      }
+                      dialogSetState(() {
+                        tempProfileImageBytes = pickedBytes;
+                      });
+                    },
+                    icon: const Icon(Icons.image_outlined),
+                    label: Text(t(_language, 'updateProfileImage')),
+                  ),
+                  const SizedBox(height: 8),
+                  buildInput(
+                    TextInputConfig(
+                      nameCtrl,
+                      t(_language, 'updateProfileName'),
+                      Icons.person,
+                      validator: _requiredValidator,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  buildInput(
+                    TextInputConfig(
+                      emailCtrl,
+                      t(_language, 'updateProfileEmail'),
+                      Icons.email,
+                      validator: _emailValidator,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: birthdateCtrl,
+                    readOnly: true,
+                    validator: _requiredValidator,
+                    decoration: InputDecoration(
+                      labelText: t(_language, 'updateProfileBirthdate'),
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.calendar_today),
+                    ),
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime(
+                          now.year - 18,
+                          now.month,
+                          now.day,
+                        ),
+                        firstDate: DateTime(1900),
+                        lastDate: now,
+                      );
+
+                      if (pickedDate == null) {
+                        return;
+                      }
+
+                      birthdateCtrl.text =
+                          '${pickedDate.day.toString().padLeft(2, '0')}/${pickedDate.month.toString().padLeft(2, '0')}/${pickedDate.year}';
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: passwordCtrl,
+                    obscureText: true,
+                    validator: _requiredValidator,
+                    decoration: InputDecoration(
+                      labelText: t(_language, 'updateProfilePassword'),
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.lock),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(t(_language, 'cancelButton')),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (!(formKey.currentState?.validate() ?? false)) {
+                  return;
+                }
+
+                setState(() {
+                  _profileName = nameCtrl.text.trim();
+                  _profileEmail = emailCtrl.text.trim();
+                  _profileBirthdate = birthdateCtrl.text.trim();
+                  _profilePassword = passwordCtrl.text;
+                  _profileImageBytes = tempProfileImageBytes;
+                });
+
+                Navigator.pop(dialogContext);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(t(_language, 'profileUpdatedMessage')),
+                  ),
+                );
+              },
+              child: Text(t(_language, 'saveButton')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmLogout() async {
+    final shouldLogout =
+        await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text(t(_language, 'logoutConfirmTitle')),
+            content: Text(t(_language, 'logoutConfirmMessage')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(t(_language, 'cancelButton')),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(t(_language, 'drawerLogout')),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldLogout || !mounted) {
+      return;
+    }
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   // ── Nav Bar ────────────────────────────────────────────────────────────────
 
   Widget _buildNavBar() {
@@ -420,135 +689,240 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // ── Drawer ─────────────────────────────────────────────────────────────
         drawer: Drawer(
-          child: Column(
-            children: [
-              // Header
-              UserAccountsDrawerHeader(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green.shade700, Colors.green.shade300],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                accountName: Text(t(_language, 'drawerHeader')),
-                accountEmail: const Text('v1.0'),
-                currentAccountPicture: const CircleAvatar(
-                  backgroundColor: Colors.white,
-                  child: Icon(Icons.agriculture, color: Colors.green, size: 32),
-                ),
-              ),
-
-              // Language picker
-              ListTile(
-                leading: const Icon(Icons.language, color: Colors.green),
-                title: Text(t(_language, 'drawerLanguage')),
-                onTap: () {
-                  Navigator.pop(context);
-                  showModalBottomSheet(
-                    context: context,
-                    builder: (_) => Container(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: AppLanguage.values.map((lang) {
-                          return RadioListTile<AppLanguage>(
-                            title: Text(appLanguageNames[lang]!),
-                            value: lang,
-                            groupValue: _language,
-                            onChanged: (v) {
-                              if (v != null) {
-                                setState(() => _language = v);
-                                Navigator.pop(context);
-                              }
-                            },
-                          );
-                        }).toList(),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      // Header
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.green.shade700,
+                              Colors.green.shade300,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 42,
+                              backgroundColor: Colors.white,
+                              backgroundImage: _profileImageProvider,
+                              onBackgroundImageError: (_, __) {},
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _profileName,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              t(_language, 'drawerHeader'),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
 
-              // Land selector
-              ExpansionTile(
-                leading: const Icon(Icons.map, color: Colors.green),
-                title: Text(t(_language, 'selectLandHeading')),
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.add, color: Colors.green),
-                    title: Text(t(_language, 'drawerAddLand')),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showAddLandDialog();
-                    },
-                  ),
-                  if (_lands.isEmpty)
-                    ListTile(
-                      dense: true,
-                      title: Text(t(_language, 'noLandSelected')),
-                      onTap: () => Navigator.pop(context),
-                    )
-                  else
-                    ..._lands.map((land) {
-                      final isSelected = land == _selectedLand;
-                      return ListTile(
-                        selected: isSelected,
-                        selectedTileColor: Colors.green.shade50,
-                        leading: Icon(
-                          Icons.landscape,
-                          color: isSelected ? Colors.green : Colors.grey,
+                      const SizedBox(height: 4),
+                      ListTile(
+                        leading: const Icon(
+                          Icons.person_outline,
+                          color: Colors.green,
                         ),
-                        title: Text('${land.name} (${land.location})'),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.green),
-                          tooltip: t(_language, 'editLandTooltip'),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _showEditLandDialog(land);
-                          },
-                        ),
+                        title: Text(t(_language, 'drawerUpdateProfile')),
                         onTap: () {
-                          _selectLand(land);
                           Navigator.pop(context);
+                          Future.delayed(
+                            Duration.zero,
+                            _showUpdateProfileDialog,
+                          );
                         },
-                      );
-                    }),
-                ],
-              ),
+                      ),
+                      const Divider(height: 1),
 
-              // Clear all
-              ListTile(
-                leading: const Icon(Icons.clear_all, color: Colors.red),
-                title: Text(t(_language, 'drawerClear')),
-                onTap: () {
-                  Navigator.pop(context);
-                  _confirmClearAll();
-                },
-              ),
-
-              // About
-              ListTile(
-                leading: const Icon(Icons.info_outline, color: Colors.blue),
-                title: Text(t(_language, 'drawerAbout')),
-                onTap: () {
-                  Navigator.pop(context);
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: Text(t(_language, 'drawerAbout')),
-                      content: Text(t(_language, 'aboutAppDescription')),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(t(_language, 'okButton')),
+                      // Language picker
+                      ListTile(
+                        leading: const Icon(
+                          Icons.language,
+                          color: Colors.green,
                         ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
+                        title: Text(t(_language, 'drawerLanguage')),
+                        onTap: () {
+                          Navigator.pop(context);
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (_) => Container(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: AppLanguage.values.map((lang) {
+                                  return RadioListTile<AppLanguage>(
+                                    title: Text(appLanguageNames[lang]!),
+                                    value: lang,
+                                    groupValue: _language,
+                                    onChanged: (v) {
+                                      if (v != null) {
+                                        setState(() => _language = v);
+                                        Navigator.pop(context);
+                                      }
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Land selector
+                      ExpansionTile(
+                        leading: const Icon(Icons.map, color: Colors.green),
+                        title: Text(t(_language, 'selectLandHeading')),
+                        children: [
+                          ListTile(
+                            leading: const Icon(Icons.add, color: Colors.green),
+                            title: Text(t(_language, 'drawerAddLand')),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showAddLandDialog();
+                            },
+                          ),
+                          if (_lands.isEmpty)
+                            ListTile(
+                              dense: true,
+                              title: Text(t(_language, 'noLandSelected')),
+                              onTap: () => Navigator.pop(context),
+                            )
+                          else
+                            ..._lands.map((land) {
+                              final isSelected = land == _selectedLand;
+                              return ListTile(
+                                selected: isSelected,
+                                selectedTileColor: Colors.green.shade50,
+                                leading: Icon(
+                                  Icons.landscape,
+                                  color: isSelected
+                                      ? Colors.green
+                                      : Colors.grey,
+                                ),
+                                title: Text('${land.name} (${land.location})'),
+                                trailing: IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: Colors.green,
+                                  ),
+                                  tooltip: t(_language, 'editLandTooltip'),
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _showEditLandDialog(land);
+                                  },
+                                ),
+                                onTap: () {
+                                  _selectLand(land);
+                                  Navigator.pop(context);
+                                },
+                              );
+                            }),
+                        ],
+                      ),
+
+                      // Clear all
+                      ListTile(
+                        leading: const Icon(Icons.clear_all, color: Colors.red),
+                        title: Text(t(_language, 'drawerClear')),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _confirmClearAll();
+                        },
+                      ),
+
+                      // About
+                      ListTile(
+                        leading: const Icon(
+                          Icons.info_outline,
+                          color: Colors.blue,
+                        ),
+                        title: Text(t(_language, 'drawerAbout')),
+                        onTap: () {
+                          Navigator.pop(context);
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: Text(t(_language, 'drawerAbout')),
+                              content: Text(
+                                t(_language, 'aboutAppDescription'),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(t(_language, 'okButton')),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      // Terms & Conditions
+                      ListTile(
+                        leading: const Icon(
+                          Icons.policy_outlined,
+                          color: Colors.deepPurple,
+                        ),
+                        title: Text(t(_language, 'drawerTermsConditions')),
+                        onTap: () {
+                          Navigator.pop(context);
+                          showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: Text(
+                                t(_language, 'drawerTermsConditions'),
+                              ),
+                              content: Text(
+                                t(_language, 'termsConditionsDescription'),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: Text(t(_language, 'okButton')),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: Text(t(_language, 'drawerLogout')),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Future.delayed(Duration.zero, _confirmLogout);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
 

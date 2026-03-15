@@ -341,6 +341,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Enter a valid 10-digit mobile number',
     AppLanguage.gujarati: 'માન્ય 10 અંકનો મોબાઇલ નંબર દાખલ કરો',
   },
+  'validationEnterValidEmail': {
+    AppLanguage.english: 'Enter a valid email address',
+    AppLanguage.gujarati: 'માન્ય ઇમેઇલ સરનામું દાખલ કરો',
+  },
   'selectLandFirst': {
     AppLanguage.english: 'Select a land first',
     AppLanguage.gujarati: 'સૌપ્રથમ જમીન પસંદ કરો',
@@ -357,6 +361,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Kishan Diary Menu',
     AppLanguage.gujarati: 'કિસાન ડાયરી મેનૂ',
   },
+  'loggedUserDefaultName': {
+    AppLanguage.english: 'Farmer',
+    AppLanguage.gujarati: 'ખેડૂત',
+  },
   'drawerLanguage': {
     AppLanguage.english: 'Change Language',
     AppLanguage.gujarati: 'ભાષા બદલો',
@@ -365,9 +373,71 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'About App',
     AppLanguage.gujarati: 'એપ વિશે',
   },
+  'drawerTermsConditions': {
+    AppLanguage.english: 'Terms & Conditions',
+    AppLanguage.gujarati: 'નિયમો અને શરતો',
+  },
+  'termsConditionsDescription': {
+    AppLanguage.english:
+        'Use this app responsibly. Keep your records accurate and do not share private farm data with unknown users.',
+    AppLanguage.gujarati:
+        'આ એપનો જવાબદારીપૂર્વક ઉપયોગ કરો. તમારી વિગતો સાચી રાખો અને અજાણી વ્યક્તિઓ સાથે ખાનગી ખેતીનો ડેટા શેર ન કરો.',
+  },
   'drawerClear': {
     AppLanguage.english: 'Clear All Data',
     AppLanguage.gujarati: 'બધો ડેટા સાફ કરો',
+  },
+  'drawerUpdateProfile': {
+    AppLanguage.english: 'Update Profile',
+    AppLanguage.gujarati: 'પ્રોફાઇલ અપડેટ કરો',
+  },
+  'drawerLogout': {
+    AppLanguage.english: 'Logout',
+    AppLanguage.gujarati: 'લોગઆઉટ',
+  },
+  'logoutConfirmTitle': {
+    AppLanguage.english: 'Logout',
+    AppLanguage.gujarati: 'લોગઆઉટ',
+  },
+  'logoutConfirmMessage': {
+    AppLanguage.english: 'Are you sure you want to logout?',
+    AppLanguage.gujarati: 'શું તમે ખાતરી કરો છો કે તમે લોગઆઉટ કરવા માંગો છો?',
+  },
+  'updateProfileTitle': {
+    AppLanguage.english: 'Update Profile',
+    AppLanguage.gujarati: 'પ્રોફાઇલ અપડેટ કરો',
+  },
+  'updateProfileName': {
+    AppLanguage.english: 'Name',
+    AppLanguage.gujarati: 'નામ',
+  },
+  'updateProfileEmail': {
+    AppLanguage.english: 'Email',
+    AppLanguage.gujarati: 'ઇમેઇલ',
+  },
+  'updateProfileBirthdate': {
+    AppLanguage.english: 'Birthdate',
+    AppLanguage.gujarati: 'જન્મ તારીખ',
+  },
+  'updateProfilePassword': {
+    AppLanguage.english: 'Password',
+    AppLanguage.gujarati: 'પાસવર્ડ',
+  },
+  'updateProfileImage': {
+    AppLanguage.english: 'Update Profile Image',
+    AppLanguage.gujarati: 'પ્રોફાઇલ ફોટો અપડેટ કરો',
+  },
+  'profileImageCameraOption': {
+    AppLanguage.english: 'Take Photo',
+    AppLanguage.gujarati: 'ફોટો ખેંચો',
+  },
+  'profileImageGalleryOption': {
+    AppLanguage.english: 'Choose from Gallery',
+    AppLanguage.gujarati: 'ગેલેરીમાંથી પસંદ કરો',
+  },
+  'profileUpdatedMessage': {
+    AppLanguage.english: 'Profile updated successfully',
+    AppLanguage.gujarati: 'પ્રોફાઇલ સફળતાપૂર્વક અપડેટ થઈ',
   },
   'deleteAllDataTitle': {
     AppLanguage.english: 'Delete All Data',
