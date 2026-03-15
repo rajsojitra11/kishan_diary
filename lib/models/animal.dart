@@ -7,7 +7,7 @@ class Animal {
   Animal({required this.name, List<AnimalRecord>? records})
     : records = records ?? [];
 
-  double get totalAmount => records.fold(0, (sum, item) => sum + item.amount);
+  double get totalAmount => records.fold(0.0, (sum, item) => sum + item.amount);
 
-  double get totalMilk => records.fold(0, (sum, item) => sum + item.milk);
+  double get totalMilk => records.fold(0.0, (sum, item) => sum + item.milk);
 }

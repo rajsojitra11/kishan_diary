@@ -24,7 +24,7 @@ class AnimalScreen extends StatefulWidget {
 
 class _AnimalScreenState extends State<AnimalScreen> {
   double get _totalAnimalIncome {
-    return widget.animals.fold(0, (sum, animal) => sum + animal.totalAmount);
+    return widget.animals.fold(0.0, (sum, animal) => sum + animal.totalAmount);
   }
 
   void _notifyAnimalsChanged() {

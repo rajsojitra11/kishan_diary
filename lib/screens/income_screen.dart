@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 
 import '../models/income_entry.dart';
 import '../models/land.dart';
@@ -33,6 +34,32 @@ class _IncomeScreenState extends State<IncomeScreen> {
   ];
 
   String _typeLabel(String key) => t(widget.language, key);
+
+  double? _tryParseNumber(String? value) {
+    final normalized = (value ?? '').trim().replaceAll(',', '.');
+    if (normalized.isEmpty) {
+      return null;
+    }
+    return double.tryParse(normalized);
+  }
+
+  String? _validatePositiveNumber(String? value) {
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty) {
+      return t(widget.language, 'validationRequiredField');
+    }
+
+    final amount = _tryParseNumber(raw);
+    if (amount == null) {
+      return t(widget.language, 'validationEnterValidNumber');
+    }
+
+    if (amount <= 0) {
+      return t(widget.language, 'validationEnterPositiveNumber');
+    }
+
+    return null;
+  }
 
   String _formatDate(DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
@@ -94,7 +121,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
     final formKey = GlobalKey<FormState>();
     String selectedType = _normalizeIncomeType(initialEntry?.type);
     String? selectedBillPhotoPath = initialEntry?.billPhotoPath;
-    dynamic selectedBillPhotoBytes = initialEntry?.billPhotoBytes;
+    Uint8List? selectedBillPhotoBytes = initialEntry?.billPhotoBytes;
 
     final entry = await showDialog<IncomeEntry>(
       context: context,
@@ -108,6 +135,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
                 firstDate: DateTime(2000),
                 lastDate: DateTime(2100),
               );
+
+              if (!dialogContext.mounted) {
+                return;
+              }
 
               if (pickedDate != null) {
                 setDialogState(() {
@@ -128,6 +159,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
               }
 
               final bytes = await file.readAsBytes();
+
+              if (!dialogContext.mounted) {
+                return;
+              }
 
               setDialogState(() {
                 selectedBillPhotoPath = file.path;
@@ -181,32 +216,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
                             prefixIcon: const Icon(Icons.currency_rupee),
                           ),
                           autovalidateMode: AutovalidateMode.onUserInteraction,
-                          validator: (value) {
-                            final raw = value?.trim() ?? '';
-                            if (raw.isEmpty) {
-                              return t(
-                                widget.language,
-                                'validationRequiredField',
-                              );
-                            }
-
-                            final amount = double.tryParse(raw);
-                            if (amount == null) {
-                              return t(
-                                widget.language,
-                                'validationEnterValidNumber',
-                              );
-                            }
-
-                            if (amount <= 0) {
-                              return t(
-                                widget.language,
-                                'validationEnterPositiveNumber',
-                              );
-                            }
-
-                            return null;
-                          },
+                          validator: _validatePositiveNumber,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
@@ -287,7 +297,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: Image.memory(
-                              selectedBillPhotoBytes,
+                              selectedBillPhotoBytes!,
                               width: 120,
                               height: 80,
                               fit: BoxFit.cover,
@@ -316,7 +326,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
                       return;
                     }
 
-                    final amount = double.parse(amountController.text.trim());
+                    final amount = _tryParseNumber(amountController.text);
+                    if (amount == null || amount <= 0) {
+                      return;
+                    }
                     final date = dateController.text.trim();
                     final note = noteController.text.trim();
 
@@ -339,10 +352,6 @@ class _IncomeScreenState extends State<IncomeScreen> {
         );
       },
     );
-
-    amountController.dispose();
-    noteController.dispose();
-    dateController.dispose();
     return entry;
   }
 
@@ -352,7 +361,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
     }
 
     final entry = await _showIncomeForm();
-    if (entry == null) {
+    if (!mounted || entry == null) {
       return;
     }
 
@@ -370,7 +379,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
     final existing = widget.selectedLand!.incomeEntries[index];
     final updated = await _showIncomeForm(initialEntry: existing);
-    if (updated == null) {
+    if (!mounted || updated == null) {
       return;
     }
 
@@ -408,6 +417,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
     );
 
     if (confirmed != true) {
+      return;
+    }
+
+    if (!mounted) {
       return;
     }
 
@@ -465,6 +478,138 @@ class _IncomeScreenState extends State<IncomeScreen> {
     );
   }
 
+  Widget _buildMobileIncomeRecords(List<IncomeEntry> entries) {
+    return Column(
+      children: entries.asMap().entries.map((item) {
+        final index = item.key;
+        final record = item.value;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _typeLabel(record.type),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${t(widget.language, 'incomeAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${t(widget.language, 'incomeDateLabel')}: ${record.date}',
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: t(widget.language, 'viewIncomeBillTitle'),
+                      onPressed: () => _viewBillPhoto(record),
+                      icon: const Icon(
+                        Icons.remove_red_eye,
+                        color: Colors.teal,
+                      ),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      tooltip: t(widget.language, 'incomeUpdateButton'),
+                      onPressed: () => _editIncome(index),
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      tooltip: t(widget.language, 'deleteButton'),
+                      onPressed: () => _deleteIncome(index),
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDesktopIncomeRecords(List<IncomeEntry> entries) {
+    return Column(
+      children: entries.asMap().entries.map((item) {
+        final index = item.key;
+        final record = item.value;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            dense: true,
+            visualDensity: const VisualDensity(vertical: -1),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 2,
+            ),
+            leading: CircleAvatar(
+              backgroundColor: Colors.teal.shade100,
+              child: const Icon(Icons.currency_rupee, color: Colors.teal),
+            ),
+            title: Text(
+              _typeLabel(record.type),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${t(widget.language, 'incomeAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
+                ),
+                Text(
+                  '${t(widget.language, 'incomeDateLabel')}: ${record.date}',
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: t(widget.language, 'viewIncomeBillTitle'),
+                  onPressed: () => _viewBillPhoto(record),
+                  icon: const Icon(Icons.remove_red_eye, color: Colors.teal),
+                  iconSize: 20,
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  tooltip: t(widget.language, 'incomeUpdateButton'),
+                  onPressed: () => _editIncome(index),
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  iconSize: 20,
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  tooltip: t(widget.language, 'deleteButton'),
+                  onPressed: () => _deleteIncome(index),
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  iconSize: 20,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.selectedLand == null) {
@@ -476,100 +621,57 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
     final entries = widget.selectedLand!.incomeEntries;
 
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              t(widget.language, 'navIncome'),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            statCard(
-              t(widget.language, 'incomeLabel'),
-              '₹ ${widget.selectedLand!.income.toStringAsFixed(2)}',
-              Colors.teal,
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _addIncome,
-                icon: const Icon(Icons.add),
-                label: Text(t(widget.language, 'incomeAddButton')),
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (entries.isEmpty)
-              Text(t(widget.language, 'incomeNoRecords'))
-            else
-              ...entries.asMap().entries.map((item) {
-                final index = item.key;
-                final record = item.value;
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    isThreeLine: record.note.trim().isNotEmpty,
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.teal.shade100,
-                      child: const Icon(
-                        Icons.currency_rupee,
-                        color: Colors.teal,
-                      ),
-                    ),
-                    title: Text(
-                      _typeLabel(record.type),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${t(widget.language, 'incomeAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
-                        ),
-                        Text(
-                          '${t(widget.language, 'incomeDateLabel')}: ${record.date}',
-                        ),
-                        if (record.note.trim().isNotEmpty)
-                          Text(
-                            '${t(widget.language, 'incomeNoteListLabel')}: ${record.note}',
-                          ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: t(widget.language, 'viewIncomeBillTitle'),
-                          onPressed: () => _viewBillPhoto(record),
-                          icon: const Icon(
-                            Icons.remove_red_eye,
-                            color: Colors.teal,
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: t(widget.language, 'incomeUpdateButton'),
-                          onPressed: () => _editIncome(index),
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                        ),
-                        IconButton(
-                          tooltip: t(widget.language, 'deleteButton'),
-                          onPressed: () => _deleteIncome(index),
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-          ],
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t(widget.language, 'navIncome'),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-      ),
+        const SizedBox(height: 12),
+        statCard(
+          t(widget.language, 'incomeLabel'),
+          '₹ ${widget.selectedLand!.income.toStringAsFixed(2)}',
+          Colors.teal,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _addIncome,
+            icon: const Icon(Icons.add),
+            label: Text(t(widget.language, 'incomeAddButton')),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (entries.isEmpty)
+          Text(t(widget.language, 'incomeNoRecords'))
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 700) {
+                return _buildMobileIncomeRecords(entries);
+              }
+              return _buildDesktopIncomeRecords(entries);
+            },
+          ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 700) {
+          return content;
+        }
+
+        return Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(padding: const EdgeInsets.all(16), child: content),
+        );
+      },
     );
   }
 }

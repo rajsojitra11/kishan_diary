@@ -19,8 +19,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'જમીનનું નામ',
   },
   'landSize': {
-    AppLanguage.english: 'Land Size (acre)',
-    AppLanguage.gujarati: 'જમીનનું કદ (એકર)',
+    AppLanguage.english: 'Land Size (bigha)',
+    AppLanguage.gujarati: 'જમીનનું કદ (વીઘા)',
   },
   'location': {AppLanguage.english: 'Location', AppLanguage.gujarati: 'સ્થળ'},
   'addLandButton': {
@@ -462,6 +462,14 @@ const Map<String, Map<AppLanguage, String>> translations = {
         'Try the Kishan Diary app to manage farm income, expenses, crop, and labor records.',
     AppLanguage.gujarati:
         'ખેતીની આવક, ખર્ચ, પાક અને મજૂરી રેકોર્ડ માટે કિસાન ડાયરી એપ જરૂર અજમાવો.',
+  },
+  'downloadPdfTooltip': {
+    AppLanguage.english: 'Download PDF',
+    AppLanguage.gujarati: 'PDF ડાઉનલોડ કરો',
+  },
+  'downloadNoData': {
+    AppLanguage.english: 'No records available on this page',
+    AppLanguage.gujarati: 'આ પેજમાં કોઈ રેકોર્ડ ઉપલબ્ધ નથી',
   },
   'editLandTooltip': {
     AppLanguage.english: 'Edit Land',

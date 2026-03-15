@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:typed_data';
 
 import '../models/expense_entry.dart';
 import '../models/land.dart';
@@ -34,6 +35,40 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
   String _typeLabel(String key) => t(widget.language, key);
 
+  double? _tryParseNumber(String? value) {
+    final normalized = (value ?? '').trim().replaceAll(',', '.');
+    if (normalized.isEmpty) {
+      return null;
+    }
+    return double.tryParse(normalized);
+  }
+
+  String? _validatePositiveNumber(String? value) {
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty) {
+      return t(widget.language, 'validationRequiredField');
+    }
+
+    final amount = _tryParseNumber(raw);
+    if (amount == null) {
+      return t(widget.language, 'validationEnterValidNumber');
+    }
+
+    if (amount <= 0) {
+      return t(widget.language, 'validationEnterPositiveNumber');
+    }
+
+    return null;
+  }
+
+  String _normalizeExpenseType(String? value) {
+    if (value != null && _expenseTypeKeys.contains(value)) {
+      return value;
+    }
+
+    return _expenseTypeKeys.first;
+  }
+
   String _formatDate(DateTime date) {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
@@ -67,13 +102,13 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     const davaBiyaranTypes = {'expenseTypeMedicine', 'expenseTypeSeeds'};
 
     land.expenses = land.expenseEntries.fold(
-      0,
+      0.0,
       (sum, entry) => sum + entry.amount,
     );
 
     land.fertilizerKg = land.expenseEntries
         .where((entry) => davaBiyaranTypes.contains(entry.type))
-        .fold(0, (sum, entry) => sum + entry.amount);
+        .fold(0.0, (sum, entry) => sum + entry.amount);
   }
 
   Future<ExpenseEntry?> _showExpenseForm({ExpenseEntry? initialEntry}) async {
@@ -87,9 +122,9 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       text: initialEntry?.date ?? '',
     );
     final formKey = GlobalKey<FormState>();
-    String selectedType = initialEntry?.type ?? _expenseTypeKeys.first;
+    String selectedType = _normalizeExpenseType(initialEntry?.type);
     String? selectedBillPhotoPath = initialEntry?.billPhotoPath;
-    dynamic selectedBillPhotoBytes = initialEntry?.billPhotoBytes;
+    Uint8List? selectedBillPhotoBytes = initialEntry?.billPhotoBytes;
 
     final entry = await showDialog<ExpenseEntry>(
       context: context,
@@ -103,6 +138,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 firstDate: DateTime(2000),
                 lastDate: DateTime(2100),
               );
+
+              if (!dialogContext.mounted) {
+                return;
+              }
 
               if (pickedDate != null) {
                 setDialogState(() {
@@ -123,6 +162,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               }
 
               final bytes = await file.readAsBytes();
+
+              if (!dialogContext.mounted) {
+                return;
+              }
 
               setDialogState(() {
                 selectedBillPhotoPath = file.path;
@@ -176,32 +219,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                             prefixIcon: const Icon(Icons.currency_rupee),
                           ),
                           autovalidateMode: AutovalidateMode.onUserInteraction,
-                          validator: (value) {
-                            final raw = value?.trim() ?? '';
-                            if (raw.isEmpty) {
-                              return t(
-                                widget.language,
-                                'validationRequiredField',
-                              );
-                            }
-
-                            final amount = double.tryParse(raw);
-                            if (amount == null) {
-                              return t(
-                                widget.language,
-                                'validationEnterValidNumber',
-                              );
-                            }
-
-                            if (amount <= 0) {
-                              return t(
-                                widget.language,
-                                'validationEnterPositiveNumber',
-                              );
-                            }
-
-                            return null;
-                          },
+                          validator: _validatePositiveNumber,
                         ),
                         const SizedBox(height: 10),
                         TextFormField(
@@ -282,7 +300,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                           ClipRRect(
                             borderRadius: BorderRadius.circular(10),
                             child: Image.memory(
-                              selectedBillPhotoBytes,
+                              selectedBillPhotoBytes!,
                               width: 120,
                               height: 80,
                               fit: BoxFit.cover,
@@ -311,7 +329,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                       return;
                     }
 
-                    final amount = double.parse(amountController.text.trim());
+                    final amount = _tryParseNumber(amountController.text);
+                    if (amount == null || amount <= 0) {
+                      return;
+                    }
                     final date = dateController.text.trim();
                     final note = noteController.text.trim();
 
@@ -334,10 +355,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         );
       },
     );
-
-    amountController.dispose();
-    noteController.dispose();
-    dateController.dispose();
     return entry;
   }
 
@@ -347,7 +364,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     }
 
     final entry = await _showExpenseForm();
-    if (entry == null) {
+    if (!mounted || entry == null) {
       return;
     }
 
@@ -365,7 +382,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
     final existing = widget.selectedLand!.expenseEntries[index];
     final updated = await _showExpenseForm(initialEntry: existing);
-    if (updated == null) {
+    if (!mounted || updated == null) {
       return;
     }
 
@@ -403,6 +420,10 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     );
 
     if (confirmed != true) {
+      return;
+    }
+
+    if (!mounted) {
       return;
     }
 
@@ -460,6 +481,138 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     );
   }
 
+  Widget _buildMobileExpenseRecords(List<ExpenseEntry> entries) {
+    return Column(
+      children: entries.asMap().entries.map((item) {
+        final index = item.key;
+        final record = item.value;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _typeLabel(record.type),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${t(widget.language, 'expenseAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${t(widget.language, 'expenseDateLabel')}: ${record.date}',
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: t(widget.language, 'viewBillTitle'),
+                      onPressed: () => _viewBillPhoto(record),
+                      icon: const Icon(
+                        Icons.remove_red_eye,
+                        color: Colors.teal,
+                      ),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      tooltip: t(widget.language, 'expenseUpdateButton'),
+                      onPressed: () => _editExpense(index),
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    IconButton(
+                      tooltip: t(widget.language, 'deleteButton'),
+                      onPressed: () => _deleteExpense(index),
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      iconSize: 20,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildDesktopExpenseRecords(List<ExpenseEntry> entries) {
+    return Column(
+      children: entries.asMap().entries.map((item) {
+        final index = item.key;
+        final record = item.value;
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            dense: true,
+            visualDensity: const VisualDensity(vertical: -1),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 2,
+            ),
+            leading: CircleAvatar(
+              backgroundColor: Colors.orange.shade100,
+              child: const Icon(Icons.receipt_long, color: Colors.orange),
+            ),
+            title: Text(
+              _typeLabel(record.type),
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${t(widget.language, 'expenseAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
+                ),
+                Text(
+                  '${t(widget.language, 'expenseDateLabel')}: ${record.date}',
+                ),
+              ],
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: t(widget.language, 'viewBillTitle'),
+                  onPressed: () => _viewBillPhoto(record),
+                  icon: const Icon(Icons.remove_red_eye, color: Colors.teal),
+                  iconSize: 20,
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  tooltip: t(widget.language, 'expenseUpdateButton'),
+                  onPressed: () => _editExpense(index),
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  iconSize: 20,
+                  visualDensity: VisualDensity.compact,
+                ),
+                IconButton(
+                  tooltip: t(widget.language, 'deleteButton'),
+                  onPressed: () => _deleteExpense(index),
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  iconSize: 20,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.selectedLand == null) {
@@ -471,100 +624,57 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
     final entries = widget.selectedLand!.expenseEntries;
 
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              t(widget.language, 'navExpense'),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            statCard(
-              t(widget.language, 'expensesLabel'),
-              '₹ ${widget.selectedLand!.expenses.toStringAsFixed(2)}',
-              Colors.red,
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _addExpense,
-                icon: const Icon(Icons.add),
-                label: Text(t(widget.language, 'expenseAddButton')),
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (entries.isEmpty)
-              Text(t(widget.language, 'expenseNoRecords'))
-            else
-              ...entries.asMap().entries.map((item) {
-                final index = item.key;
-                final record = item.value;
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    isThreeLine: record.note.trim().isNotEmpty,
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.orange.shade100,
-                      child: const Icon(
-                        Icons.receipt_long,
-                        color: Colors.orange,
-                      ),
-                    ),
-                    title: Text(
-                      _typeLabel(record.type),
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${t(widget.language, 'expenseAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
-                        ),
-                        Text(
-                          '${t(widget.language, 'expenseDateLabel')}: ${record.date}',
-                        ),
-                        if (record.note.trim().isNotEmpty)
-                          Text(
-                            '${t(widget.language, 'expenseNoteListLabel')}: ${record.note}',
-                          ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: t(widget.language, 'viewBillTitle'),
-                          onPressed: () => _viewBillPhoto(record),
-                          icon: const Icon(
-                            Icons.remove_red_eye,
-                            color: Colors.teal,
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: t(widget.language, 'expenseUpdateButton'),
-                          onPressed: () => _editExpense(index),
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                        ),
-                        IconButton(
-                          tooltip: t(widget.language, 'deleteButton'),
-                          onPressed: () => _deleteExpense(index),
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-          ],
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t(widget.language, 'navExpense'),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-      ),
+        const SizedBox(height: 12),
+        statCard(
+          t(widget.language, 'expensesLabel'),
+          '₹ ${widget.selectedLand!.expenses.toStringAsFixed(2)}',
+          Colors.red,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _addExpense,
+            icon: const Icon(Icons.add),
+            label: Text(t(widget.language, 'expenseAddButton')),
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (entries.isEmpty)
+          Text(t(widget.language, 'expenseNoRecords'))
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 700) {
+                return _buildMobileExpenseRecords(entries);
+              }
+              return _buildDesktopExpenseRecords(entries);
+            },
+          ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 700) {
+          return content;
+        }
+
+        return Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(padding: const EdgeInsets.all(16), child: content),
+        );
+      },
     );
   }
 }

@@ -42,19 +42,28 @@ class _LabourScreenState extends State<LabourScreen> {
 
   // ── Computed totals ───────────────────────────────────────────────────────
   double get _totalPaid =>
-      _upadEntries.fold(0, (sum, entry) => sum + entry.amount);
+      _upadEntries.fold(0.0, (sum, entry) => sum + entry.amount);
 
   double get _totalWage =>
-      _laborEntries.fold(0, (sum, labor) => sum + labor.total);
+      _laborEntries.fold(0.0, (sum, labor) => sum + labor.total);
 
-  double get _totalPending =>
-      _laborEntries.fold(0, (sum, labor) => sum + _totalPendingForLabor(labor));
+  double get _totalPending => _laborEntries.fold(
+    0.0,
+    (sum, labor) => sum + _totalPendingForLabor(labor),
+  );
 
   List<LaborEntry> get _laborEntries =>
       widget.selectedLand?.laborEntries ?? const [];
 
   List<UpadEntry> get _upadEntries =>
       widget.selectedLand?.upadEntries ?? const [];
+
+  String _formatDays(double days) {
+    if (days == days.truncateToDouble()) {
+      return days.toInt().toString();
+    }
+    return days.toString();
+  }
 
   void _syncLaborMetric() {
     final land = widget.selectedLand;
@@ -63,7 +72,7 @@ class _LabourScreenState extends State<LabourScreen> {
     }
 
     land.laborRupees = land.laborEntries.fold(
-      0,
+      0.0,
       (sum, labor) => sum + labor.total,
     );
   }
@@ -71,12 +80,12 @@ class _LabourScreenState extends State<LabourScreen> {
   double _totalUpadForLabor(String laborName) {
     return _upadEntries
         .where((entry) => entry.laborName == laborName)
-        .fold(0, (sum, entry) => sum + entry.amount);
+        .fold(0.0, (sum, entry) => sum + entry.amount);
   }
 
   double _totalPendingForLabor(LaborEntry labor) {
     final pending = labor.total - _totalUpadForLabor(labor.name);
-    return pending < 0 ? 0 : pending;
+    return pending < 0 ? 0.0 : pending;
   }
 
   Widget _buildOverallSummaryCards() {
@@ -147,7 +156,12 @@ class _LabourScreenState extends State<LabourScreen> {
     final name = _nameCtrl.text.trim();
     final mobile = _mobileCtrl.text.trim();
 
-    final entry = LaborEntry(name: name, mobile: mobile, days: 0, dailyRate: 0);
+    final entry = LaborEntry(
+      name: name,
+      mobile: mobile,
+      days: 0.0,
+      dailyRate: 0.0,
+    );
 
     setState(() {
       selectedLand.laborEntries.add(entry);
@@ -367,7 +381,7 @@ class _LabourScreenState extends State<LabourScreen> {
                   child: const Icon(Icons.person, color: Colors.blue),
                 ),
                 title: Text(
-                  '${labor.name}  •  ${labor.days} ${t(widget.language, 'laborDay')}',
+                  '${labor.name}  •  ${_formatDays(labor.days)} ${t(widget.language, 'laborDay')}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 subtitle: Column(

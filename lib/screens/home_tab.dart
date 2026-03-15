@@ -84,12 +84,12 @@ class _HomeTabState extends State<HomeTab> {
 
     return land.expenseEntries
         .where((entry) => davaBiyaranTypes.contains(entry.type))
-        .fold(0, (sum, entry) => sum + entry.amount);
+        .fold(0.0, (sum, entry) => sum + entry.amount);
   }
 
   double _majuriKharch(Land land) {
     if (land.laborEntries.isNotEmpty) {
-      return land.laborEntries.fold(0, (sum, labor) => sum + labor.total);
+      return land.laborEntries.fold(0.0, (sum, labor) => sum + labor.total);
     }
     return land.laborRupees;
   }

@@ -44,16 +44,31 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
   late List<UpadEntry> _upadEntries;
 
   double get _totalUpadAmount =>
-      _upadEntries.fold(0, (sum, entry) => sum + entry.amount);
+      _upadEntries.fold(0.0, (sum, entry) => sum + entry.amount);
 
   int get _totalUpadCount => _upadEntries.length;
+
+  double? _tryParseNumber(String value) {
+    final normalized = value.trim().replaceAll(',', '.');
+    if (normalized.isEmpty) {
+      return null;
+    }
+    return double.tryParse(normalized);
+  }
+
+  String _formatDays(double days) {
+    if (days == days.truncateToDouble()) {
+      return days.toInt().toString();
+    }
+    return days.toString();
+  }
 
   @override
   void initState() {
     super.initState();
     _nameController.text = widget.initialEntry.name;
     _mobileController.text = widget.initialEntry.mobile;
-    _daysController.text = widget.initialEntry.days.toString();
+    _daysController.text = _formatDays(widget.initialEntry.days);
     _dailyRateController.text = widget.initialEntry.dailyRate.toString();
     _totalController.text = widget.initialEntry.total.toStringAsFixed(2);
     _daysController.addListener(_calculateTotal);
@@ -62,8 +77,8 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
   }
 
   void _calculateTotal() {
-    final days = int.tryParse(_daysController.text.trim()) ?? 0;
-    final rate = double.tryParse(_dailyRateController.text.trim()) ?? 0;
+    final days = _tryParseNumber(_daysController.text) ?? 0.0;
+    final rate = _tryParseNumber(_dailyRateController.text) ?? 0.0;
     final total = days * rate;
     setState(() {
       _totalController.text = total.toStringAsFixed(2);
@@ -127,12 +142,12 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     return null;
   }
 
-  String? _positiveIntValidator(String? value) {
+  String? _positiveDayValidator(String? value) {
     final raw = value?.trim() ?? '';
     if (raw.isEmpty) {
       return t(widget.language, 'validationRequiredField');
     }
-    final parsed = int.tryParse(raw);
+    final parsed = _tryParseNumber(raw);
     if (parsed == null) {
       return t(widget.language, 'validationEnterValidNumber');
     }
@@ -267,8 +282,8 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
 
     final name = _nameController.text.trim();
     final mobile = _mobileController.text.trim();
-    final days = int.parse(_daysController.text.trim());
-    final dailyRate = double.parse(_dailyRateController.text.trim());
+    final days = _tryParseNumber(_daysController.text) ?? 0.0;
+    final dailyRate = _tryParseNumber(_dailyRateController.text) ?? 0.0;
 
     final updatedLabor = LaborEntry(
       name: name,
@@ -398,14 +413,16 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _daysController,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     labelText: t(widget.language, 'laborDay'),
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.calendar_today),
                   ),
                   autovalidateMode: AutovalidateMode.onUserInteraction,
-                  validator: _positiveIntValidator,
+                  validator: _positiveDayValidator,
                 ),
                 const SizedBox(height: 10),
                 TextFormField(

@@ -108,6 +108,36 @@ class _CropScreenState extends State<CropScreen> {
     }
   }
 
+  String _normalizeWeightUnit(String? value) {
+    return value == 'man' ? 'man' : 'kg';
+  }
+
+  double? _tryParseNumber(String? value) {
+    final normalized = (value ?? '').trim().replaceAll(',', '.');
+    if (normalized.isEmpty) {
+      return null;
+    }
+    return double.tryParse(normalized);
+  }
+
+  String? _validatePositiveNumber(String? value) {
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty) {
+      return t(widget.language, 'validationRequiredField');
+    }
+
+    final parsed = _tryParseNumber(raw);
+    if (parsed == null) {
+      return t(widget.language, 'validationEnterValidNumber');
+    }
+
+    if (parsed <= 0) {
+      return t(widget.language, 'validationEnterPositiveNumber');
+    }
+
+    return null;
+  }
+
   String _cropTypeLabel(String cropTypeKeyOrValue) {
     if (_cropTypeKeys.contains(cropTypeKeyOrValue)) {
       return t(widget.language, cropTypeKeyOrValue);
@@ -149,9 +179,9 @@ class _CropScreenState extends State<CropScreen> {
     var selectedCropType = editingEntry == null
         ? _cropTypeKeys.first
         : _normalizeCropTypeValue(editingEntry.cropType);
-    var selectedWeightUnit = editingEntry?.weightUnit ?? 'kg';
+    var selectedWeightUnit = _normalizeWeightUnit(editingEntry?.weightUnit);
 
-    await showDialog(
+    final entry = await showDialog<CropEntry>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
@@ -201,29 +231,7 @@ class _CropScreenState extends State<CropScreen> {
                           prefixIcon: const Icon(Icons.straighten),
                         ),
                         autovalidateMode: AutovalidateMode.onUserInteraction,
-                        validator: (value) {
-                          final raw = value?.trim() ?? '';
-                          if (raw.isEmpty) {
-                            return t(
-                              widget.language,
-                              'validationRequiredField',
-                            );
-                          }
-                          final parsed = double.tryParse(raw);
-                          if (parsed == null) {
-                            return t(
-                              widget.language,
-                              'validationEnterValidNumber',
-                            );
-                          }
-                          if (parsed <= 0) {
-                            return t(
-                              widget.language,
-                              'validationEnterPositiveNumber',
-                            );
-                          }
-                          return null;
-                        },
+                        validator: _validatePositiveNumber,
                       ),
                       const SizedBox(height: 10),
                       TextFormField(
@@ -237,29 +245,7 @@ class _CropScreenState extends State<CropScreen> {
                           prefixIcon: const Icon(Icons.scale),
                         ),
                         autovalidateMode: AutovalidateMode.onUserInteraction,
-                        validator: (value) {
-                          final raw = value?.trim() ?? '';
-                          if (raw.isEmpty) {
-                            return t(
-                              widget.language,
-                              'validationRequiredField',
-                            );
-                          }
-                          final parsed = double.tryParse(raw);
-                          if (parsed == null) {
-                            return t(
-                              widget.language,
-                              'validationEnterValidNumber',
-                            );
-                          }
-                          if (parsed <= 0) {
-                            return t(
-                              widget.language,
-                              'validationEnterPositiveNumber',
-                            );
-                          }
-                          return null;
-                        },
+                        validator: _validatePositiveNumber,
                       ),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
@@ -300,27 +286,24 @@ class _CropScreenState extends State<CropScreen> {
                       return;
                     }
 
-                    final landSize = double.parse(landSizeCtrl.text.trim());
-                    final cropWeight = double.parse(cropWeightCtrl.text.trim());
+                    final landSize = _tryParseNumber(landSizeCtrl.text);
+                    final cropWeight = _tryParseNumber(cropWeightCtrl.text);
+                    if (landSize == null || landSize <= 0) {
+                      return;
+                    }
+                    if (cropWeight == null || cropWeight <= 0) {
+                      return;
+                    }
 
-                    final entry = CropEntry(
-                      cropType: selectedCropType,
-                      landSize: landSize,
-                      cropWeight: cropWeight,
-                      weightUnit: selectedWeightUnit,
+                    Navigator.pop(
+                      dialogContext,
+                      CropEntry(
+                        cropType: selectedCropType,
+                        landSize: landSize,
+                        cropWeight: cropWeight,
+                        weightUnit: selectedWeightUnit,
+                      ),
                     );
-
-                    setState(() {
-                      if (isEditing) {
-                        selectedLand.cropEntries[editingIndex] = entry;
-                      } else {
-                        selectedLand.cropEntries.add(entry);
-                      }
-                      _recalculateCropProduction();
-                    });
-
-                    widget.onSaved();
-                    Navigator.pop(dialogContext);
                   },
                   child: Text(
                     isEditing
@@ -335,8 +318,20 @@ class _CropScreenState extends State<CropScreen> {
       },
     );
 
-    landSizeCtrl.dispose();
-    cropWeightCtrl.dispose();
+    if (!mounted || entry == null) {
+      return;
+    }
+
+    setState(() {
+      if (isEditing) {
+        selectedLand.cropEntries[editingIndex] = entry;
+      } else {
+        selectedLand.cropEntries.add(entry);
+      }
+      _recalculateCropProduction();
+    });
+
+    widget.onSaved();
   }
 
   Future<void> _deleteCrop(int index) async {
@@ -488,48 +483,57 @@ class _CropScreenState extends State<CropScreen> {
       );
     }
 
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              t(widget.language, 'navCrop'),
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            statCard(
-              t(widget.language, 'cropProductionLabel'),
-              '${selectedLand.cropProductionKg.toStringAsFixed(2)} kg',
-              Colors.orange,
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: Text(t(widget.language, 'addCropButton')),
-                onPressed: _showCropDialog,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (selectedLand.cropEntries.isEmpty)
-              Text(t(widget.language, 'noCropRecords'))
-            else
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < 700) {
-                    return _buildMobileCropRecords(selectedLand);
-                  }
-                  return _buildDesktopCropTable(selectedLand);
-                },
-              ),
-          ],
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          t(widget.language, 'navCrop'),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-      ),
+        const SizedBox(height: 12),
+        statCard(
+          t(widget.language, 'cropProductionLabel'),
+          '${selectedLand.cropProductionKg.toStringAsFixed(2)} kg',
+          Colors.orange,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.add),
+            label: Text(t(widget.language, 'addCropButton')),
+            onPressed: _showCropDialog,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (selectedLand.cropEntries.isEmpty)
+          Text(t(widget.language, 'noCropRecords'))
+        else
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 700) {
+                return _buildMobileCropRecords(selectedLand);
+              }
+              return _buildDesktopCropTable(selectedLand);
+            },
+          ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 700) {
+          return content;
+        }
+
+        return Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(padding: const EdgeInsets.all(16), child: content),
+        );
+      },
     );
   }
 }

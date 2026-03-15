@@ -8,6 +8,7 @@ PreferredSizeWidget buildKishanAppBar({
   required AppLanguage language,
   String? title,
   bool showMenu = false,
+  VoidCallback? onDownload,
 }) {
   final appBarTitle = title ?? t(language, 'appTitle');
 
@@ -55,6 +56,12 @@ PreferredSizeWidget buildKishanAppBar({
       ),
     ),
     actions: [
+      if (onDownload != null)
+        IconButton(
+          tooltip: t(language, 'downloadPdfTooltip'),
+          icon: const Icon(Icons.download, size: 28),
+          onPressed: onDownload,
+        ),
       IconButton(
         tooltip: t(language, 'shareAppTooltip'),
         icon: const Icon(Icons.share, size: 28),

@@ -1,7 +1,7 @@
 class LaborEntry {
   final String name;
   final String mobile;
-  final int days;
+  final double days;
   final double dailyRate;
 
   LaborEntry({

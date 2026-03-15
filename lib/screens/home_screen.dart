@@ -13,6 +13,7 @@ import '../screens/income_screen.dart';
 import '../screens/labour_screen.dart';
 import '../screens/login_screen.dart';
 import '../utils/localization.dart';
+import '../utils/pdf_export.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/text_input_config.dart';
@@ -81,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   double get _animalIncomeGlobal {
-    return _animals.fold(0, (sum, animal) => sum + animal.totalAmount);
+    return _animals.fold(0.0, (sum, animal) => sum + animal.totalAmount);
   }
 
   // ── Land Operations ────────────────────────────────────────────────────────
@@ -580,6 +581,26 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _downloadCurrentPageRecords() async {
+    final exported = await exportCurrentPagePdf(
+      language: _language,
+      navIndex: _navIndex,
+      lands: _lands,
+      selectedLand: _selectedLand,
+      animals: _animals,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!exported) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(t(_language, 'downloadNoData'))));
+    }
+  }
+
   // ── Nav Bar ────────────────────────────────────────────────────────────────
 
   Widget _buildNavBar() {
@@ -937,7 +958,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: _currentTab(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: IconButton(
+                    tooltip: t(_language, 'downloadPdfTooltip'),
+                    icon: const Icon(Icons.download),
+                    onPressed: _downloadCurrentPageRecords,
+                  ),
+                ),
+                _currentTab(),
+              ],
+            ),
           ),
         ),
 
