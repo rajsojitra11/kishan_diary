@@ -19,13 +19,18 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _mobileController = TextEditingController();
+  final _passwordController = TextEditingController();
   static const String _loginLogoPath =
       'android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png';
   static const String _loginBackgroundPath = 'lib/assets/images/download.jpg';
+  bool _showPasswordField = false;
+  bool _obscurePassword = true;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
     _mobileController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -36,6 +41,16 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     if (!RegExp(r'^\d{10}$').hasMatch(mobile)) {
       return 'Enter valid 10 digit mobile number';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (!_showPasswordField) {
+      return null;
+    }
+    if ((value ?? '').trim().isEmpty) {
+      return 'Please enter password';
     }
     return null;
   }
@@ -61,40 +76,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return '${parts[2]}/${parts[1]}/${parts[0]}';
   }
 
-  Future<String?> _askPassword() async {
-    final passwordController = TextEditingController();
-    final password = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Enter Password'),
-          content: TextField(
-            controller: passwordController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: 'Password',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () =>
-                  Navigator.pop(dialogContext, passwordController.text.trim()),
-              child: const Text('Login'),
-            ),
-          ],
-        );
-      },
-    );
-    passwordController.dispose();
-    return password;
-  }
-
   Future<void> _handleLogin() async {
+    if (_isSubmitting) {
+      return;
+    }
+
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -102,6 +88,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final mobile = _mobileController.text.trim();
 
     try {
+      setState(() {
+        _isSubmitting = true;
+      });
+
       final check = await ApiService.instance.mobileCheck(mobile);
       final exists = check['exists'] == true;
 
@@ -124,11 +114,21 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final password = await _askPassword();
-      if (!mounted) {
+      if (!_showPasswordField) {
+        setState(() {
+          _showPasswordField = true;
+          _isSubmitting = false;
+        });
         return;
       }
-      if (password == null || password.isEmpty) {
+
+      final password = _passwordController.text.trim();
+      if (password.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
         return;
       }
 
@@ -182,6 +182,12 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login failed, please try again.')),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -264,6 +270,14 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _mobileController,
+                        onChanged: (_) {
+                          if (_showPasswordField) {
+                            setState(() {
+                              _showPasswordField = false;
+                              _passwordController.clear();
+                            });
+                          }
+                        },
                         keyboardType: TextInputType.phone,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
@@ -322,6 +336,55 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         validator: _validateMobile,
                       ),
+                      if (_showPasswordField) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Password',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(color: Colors.green.shade900),
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            hintText: 'Password',
+                            filled: true,
+                            fillColor: Colors.white.withValues(alpha: 0.72),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 18,
+                            ),
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: Colors.green.shade700,
+                                width: 2,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                              borderSide: BorderSide(
+                                color: Colors.green.shade900,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          validator: _validatePassword,
+                        ),
+                      ],
                       const SizedBox(height: 18),
                       SizedBox(
                         height: 56,
@@ -349,8 +412,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(28),
                               ),
                             ),
-                            child: const Text(
-                              'Login',
+                            child: Text(
+                              _showPasswordField ? 'Login' : 'Continue',
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w600,
