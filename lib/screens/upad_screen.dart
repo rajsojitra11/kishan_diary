@@ -63,12 +63,28 @@ class _UpadScreenState extends State<UpadScreen> {
     return '$day/$month/${date.year}';
   }
 
+  double? _tryParseNumber(String? value) {
+    final normalized = (value ?? '').trim().replaceAll(',', '.');
+    if (normalized.isEmpty) {
+      return null;
+    }
+    return double.tryParse(normalized);
+  }
+
   void _saveUpad() {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
-    final amount = double.parse(_amountController.text.trim());
+    final amount = _tryParseNumber(_amountController.text);
+    if (amount == null || amount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(t(widget.language, 'validationEnterValidNumber')),
+        ),
+      );
+      return;
+    }
     final note = _noteController.text.trim();
     final date = _dateController.text.trim();
 
@@ -177,7 +193,7 @@ class _UpadScreenState extends State<UpadScreen> {
                     if (raw.isEmpty) {
                       return t(widget.language, 'validationRequiredField');
                     }
-                    final amount = double.tryParse(raw);
+                    final amount = _tryParseNumber(raw);
                     if (amount == null) {
                       return t(widget.language, 'validationEnterValidNumber');
                     }
@@ -233,8 +249,6 @@ class _UpadScreenState extends State<UpadScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              Text(t(widget.language, 'upadNoRecords')),
-              const SizedBox(height: 10),
               if (laborUpad.isEmpty)
                 Text(t(widget.language, 'upadNoRecords'))
               else

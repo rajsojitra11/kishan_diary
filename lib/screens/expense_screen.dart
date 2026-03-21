@@ -733,43 +733,55 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Widget _buildMobileExpenseRecords(List<ExpenseEntry> entries) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: entries.asMap().entries.map((item) {
         final index = item.key;
         final record = item.value;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _typeLabel(record.type),
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '${t(widget.language, 'expenseAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${t(widget.language, 'expenseDateLabel')}: ${record.date}',
-                ),
-                const SizedBox(height: 4),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.receipt_long,
+                        size: 18,
+                        color: colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _typeLabel(record.type),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                     IconButton(
                       tooltip: t(widget.language, 'viewBillTitle'),
                       onPressed: () => _viewBillPhoto(record),
-                      icon: const Icon(
-                        Icons.remove_red_eye,
-                        color: Colors.teal,
+                      icon: Icon(
+                        Icons.remove_red_eye_outlined,
+                        color: colorScheme.tertiary,
                       ),
                       iconSize: 20,
                       visualDensity: VisualDensity.compact,
@@ -777,16 +789,86 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                     IconButton(
                       tooltip: t(widget.language, 'expenseUpdateButton'),
                       onPressed: () => _editExpense(index),
-                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        color: colorScheme.primary,
+                      ),
                       iconSize: 20,
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
                       tooltip: t(widget.language, 'deleteButton'),
                       onPressed: () => _deleteExpense(index),
-                      icon: const Icon(Icons.delete, color: Colors.red),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: colorScheme.error,
+                      ),
                       iconSize: 20,
                       visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t(widget.language, 'expenseAmountLabel'),
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(color: colorScheme.error),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '₹ ${record.amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t(widget.language, 'expenseDateLabel'),
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              record.date,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -799,6 +881,8 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   }
 
   Widget _buildDesktopExpenseRecords(List<ExpenseEntry> entries) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: entries.asMap().entries.map((item) {
         final index = item.key;
@@ -826,6 +910,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
               children: [
                 Text(
                   '${t(widget.language, 'expenseAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
+                  style: TextStyle(color: colorScheme.error),
                 ),
                 Text(
                   '${t(widget.language, 'expenseDateLabel')}: ${record.date}',

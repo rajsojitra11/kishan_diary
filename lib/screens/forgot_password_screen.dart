@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 import '../utils/api_service.dart';
 
@@ -68,6 +69,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return null;
   }
 
+  Future<bool> _hasInternetConnection() async {
+    try {
+      final response = await http
+          .get(Uri.parse('https://clients3.google.com/generate_204'))
+          .timeout(const Duration(seconds: 5));
+      return response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _showNoInternetPopup() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('No Internet Connection'),
+        content: const Text(
+          'Please turn on your mobile internet or Wi-Fi and try again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
   InputDecoration _darkInputDecoration(
     String label, {
     Widget? suffixIcon,
@@ -116,12 +146,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
   }
 
-  void _updatePassword() {
-    _resetPassword();
-  }
-
   Future<void> _resetPassword() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final hasInternet = await _hasInternetConnection();
+    if (!hasInternet) {
+      if (!mounted) {
+        return;
+      }
+      await _showNoInternetPopup();
       return;
     }
 
@@ -265,8 +300,37 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: _updatePassword,
+                        onPressed: _resetPassword,
                         child: const Text('Update Password'),
+                      ),
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.36),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.support_agent, color: Colors.white),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Help line no.: 8469283448',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),

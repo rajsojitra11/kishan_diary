@@ -61,10 +61,6 @@ class _LoginScreenState extends State<LoginScreen> {
     ).push(MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()));
   }
 
-  void _onLogin() {
-    _handleLogin();
-  }
-
   String _toDisplayDate(String? serverDate) {
     if (serverDate == null || serverDate.trim().isEmpty) {
       return '';
@@ -403,7 +399,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ],
                           ),
                           child: ElevatedButton(
-                            onPressed: _onLogin,
+                            onPressed: _isSubmitting ? null : _handleLogin,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               foregroundColor: Colors.white,

@@ -102,7 +102,7 @@ Future<bool> exportAllDataPdf({
     return false;
   }
 
-  final title = t(language, 'appTitle');
+  final title = _pdfAppTitle(language);
   final reportTitle = t(language, 'pdfAllDataTitle');
   final generatedLabel = t(language, 'pdfGeneratedOn');
 
@@ -815,4 +815,11 @@ String _localizedTypeLabel(AppLanguage language, String keyOrLabel) {
     return keyOrLabel;
   }
   return localized;
+}
+
+String _pdfAppTitle(AppLanguage language) {
+  if (language == AppLanguage.gujarati) {
+    return 'કિશાન ડાયરી';
+  }
+  return t(language, 'appTitle');
 }

@@ -13,6 +13,19 @@ class AnimalRecordController extends ApiController
 {
     public function __construct(private readonly LandMetricsService $landMetricsService) {}
 
+    private function animalTotals(Animal $animal): array
+    {
+        $totals = $animal->records()
+            ->selectRaw('COALESCE(SUM(amount), 0) as total_amount')
+            ->selectRaw('COALESCE(SUM(milk_liter), 0) as total_milk')
+            ->first();
+
+        return [
+            'total_amount' => (float) ($totals?->total_amount ?? 0),
+            'total_milk' => (float) ($totals?->total_milk ?? 0),
+        ];
+    }
+
     public function index(Request $request, Animal $animal): JsonResponse
     {
         $animal = $this->ownedAnimal($request, $animal);
@@ -46,11 +59,7 @@ class AnimalRecordController extends ApiController
         ]);
 
         $animalIncomeGlobal = $this->landMetricsService->syncAnimalIncomeForUser($request->user());
-
-        $totals = [
-            'total_amount' => (float) $animal->records()->sum('amount'),
-            'total_milk' => (float) $animal->records()->sum('milk_liter'),
-        ];
+        $totals = $this->animalTotals($animal);
 
         return $this->success([
             'record' => $this->recordPayload($record->fresh()),
@@ -67,11 +76,7 @@ class AnimalRecordController extends ApiController
         $animalRecord->delete();
 
         $animalIncomeGlobal = $this->landMetricsService->syncAnimalIncomeForUser($request->user());
-
-        $totals = [
-            'total_amount' => (float) $animal->records()->sum('amount'),
-            'total_milk' => (float) $animal->records()->sum('milk_liter'),
-        ];
+        $totals = $this->animalTotals($animal);
 
         return $this->success([
             'deleted' => true,

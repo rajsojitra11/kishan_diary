@@ -258,7 +258,9 @@ class _CropScreenState extends State<CropScreen> {
     var selectedCropType = editingEntry == null
         ? _cropTypeKeys.first
         : _normalizeCropTypeValue(editingEntry.cropType);
-    var selectedWeightUnit = _normalizeWeightUnit(editingEntry?.weightUnit);
+    var selectedWeightUnit = isEditing
+        ? _normalizeWeightUnit(editingEntry?.weightUnit)
+        : 'man';
 
     final entry = await showDialog<CropEntry>(
       context: context,
@@ -539,6 +541,8 @@ class _CropScreenState extends State<CropScreen> {
   }
 
   Widget _buildMobileCropRecords(Land selectedLand) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: selectedLand.cropEntries.asMap().entries.map((entry) {
         final index = entry.key;
@@ -547,39 +551,120 @@ class _CropScreenState extends State<CropScreen> {
             ? t(widget.language, 'weightUnitMan')
             : t(widget.language, 'weightUnitKg');
 
-        return Card(
+        return Container(
           margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _cropTypeLabel(record.cropType),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${t(widget.language, 'landSize')}: ${record.landSize.toStringAsFixed(2)}',
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${t(widget.language, 'cropWeight')}: ${record.cropWeight.toStringAsFixed(2)} $unitLabel',
-                ),
-                const SizedBox(height: 8),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.grass,
+                        size: 18,
+                        color: colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _cropTypeLabel(record.cropType),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                     IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      tooltip: t(widget.language, 'updateCropButton'),
+                      icon: Icon(
+                        Icons.edit_outlined,
+                        color: colorScheme.primary,
+                      ),
                       onPressed: () => _showCropDialog(editingIndex: index),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
+                      tooltip: t(widget.language, 'deleteButton'),
+                      icon: Icon(
+                        Icons.delete_outline,
+                        color: colorScheme.error,
+                      ),
                       onPressed: () => _deleteCrop(index),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t(widget.language, 'landSize'),
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              record.landSize.toStringAsFixed(2),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              t(widget.language, 'cropWeight'),
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${record.cropWeight.toStringAsFixed(2)} $unitLabel',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),

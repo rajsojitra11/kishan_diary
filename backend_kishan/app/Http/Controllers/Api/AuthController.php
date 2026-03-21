@@ -40,7 +40,7 @@ class AuthController extends ApiController
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:191', 'unique:users,email'],
+            'email' => ['nullable', 'email', 'max:191', 'unique:users,email'],
             'mobile' => ['required', 'regex:/^\d{10}$/', 'unique:users,mobile'],
             'birth_date' => ['required', 'string'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
@@ -51,7 +51,7 @@ class AuthController extends ApiController
 
         $user = User::create([
             'name' => $validated['name'],
-            'email' => $validated['email'],
+            'email' => $validated['email'] ?? null,
             'mobile' => $validated['mobile'],
             'birth_date' => $birthDate,
             'password' => $validated['password'],

@@ -60,9 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     if (widget.mobileNumber.trim().isEmpty) {
-      setState(() {
-        _mobileController.text = pendingMobile.trim();
-      });
+      _mobileController.text = pendingMobile.trim();
     }
   }
 
@@ -146,10 +144,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _birthdateController.text =
           '${pickedDate.day.toString().padLeft(2, '0')}/${pickedDate.month.toString().padLeft(2, '0')}/${pickedDate.year}';
     });
-  }
-
-  void _submit() {
-    _register();
   }
 
   Future<void> _register() async {
@@ -327,7 +321,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
-                        onPressed: _submit,
+                        onPressed: _register,
                         child: const Text('Submit'),
                       ),
                     ],

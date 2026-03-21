@@ -57,7 +57,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   AppLanguage _language = AppLanguage.gujarati;
   static const String _defaultProfileImagePath =
       'lib/assets/images/register.png';
@@ -81,6 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final initialName = widget.initialUserName?.trim() ?? '';
     _profileName = initialName.isNotEmpty
         ? initialName
@@ -89,6 +90,21 @@ class _HomeScreenState extends State<HomeScreen> {
     _profileBirthdate = widget.initialUserBirthdate?.trim() ?? '';
     _profilePassword = widget.initialUserPassword ?? '';
     _bootstrapData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      _persistSelectedLand();
+    }
   }
 
   Future<void> _bootstrapData() async {
@@ -107,11 +123,39 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final profileData = await ApiService.instance.me();
       _applyProfileFromPayload(profileData);
+      final savedSelectedLandId = await AppSession.getSelectedLandId();
+      final savedSelectedLandName = await AppSession.getSelectedLandName();
 
-      final landsPayload = await ApiService.instance.getLands();
-      final animalsPayload = await ApiService.instance.getAnimals();
+      final responses = await Future.wait([
+        ApiService.instance.getLands(),
+        ApiService.instance.getAnimals(),
+      ]);
+      final landsPayload = responses[0] as List<Map<String, dynamic>>;
+      final animalsPayload = responses[1] as Map<String, dynamic>;
 
       final mappedLands = landsPayload.map(_landFromApi).toList();
+      Land? selectedLand;
+      if (savedSelectedLandId != null) {
+        for (final land in mappedLands) {
+          if (land.id == savedSelectedLandId) {
+            selectedLand = land;
+            break;
+          }
+        }
+      }
+      if (selectedLand == null &&
+          savedSelectedLandName != null &&
+          savedSelectedLandName.trim().isNotEmpty) {
+        final normalizedSavedName = savedSelectedLandName.trim().toLowerCase();
+        for (final land in mappedLands) {
+          if (land.name.trim().toLowerCase() == normalizedSavedName) {
+            selectedLand = land;
+            break;
+          }
+        }
+      }
+      selectedLand ??= mappedLands.isNotEmpty ? mappedLands.first : null;
+
       final mappedAnimals = ((animalsPayload['animals'] as List?) ?? [])
           .map((item) => _animalFromApi((item as Map).cast<String, dynamic>()))
           .toList();
@@ -127,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _animals
           ..clear()
           ..addAll(mappedAnimals);
-        _selectedLand = _lands.isNotEmpty ? _lands.first : null;
+        _selectedLand = selectedLand;
         _initialLoading = false;
       });
     } on ApiException catch (error) {
@@ -314,6 +358,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Land Operations ────────────────────────────────────────────────────────
 
+  Future<void> _persistSelectedLand() async {
+    final landName = _selectedLand?.name.trim();
+    final landId = _selectedLand?.id;
+    if (landName == null || landName.isEmpty) {
+      await AppSession.clearSelectedLandName();
+    } else {
+      await AppSession.saveSelectedLandName(landName);
+    }
+    if (landId == null) {
+      await AppSession.clearSelectedLandId();
+      return;
+    }
+    await AppSession.saveSelectedLandId(landId);
+  }
+
+  void _setHomeTabAsActive() {
+    _navIndex = 0;
+    _tabHistory
+      ..remove(0)
+      ..add(0);
+  }
+
   Future<bool> _addLandFromValues(
     String name,
     double size,
@@ -334,10 +400,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _lands.add(land);
         _selectedLand = land;
-        _navIndex = 0;
-        _tabHistory
-          ..remove(0)
-          ..add(0);
+        _setHomeTabAsActive();
       });
       return true;
     } on ApiException catch (error) {
@@ -360,14 +423,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _selectLand(Land land) {
+  Future<void> _selectLand(Land land) async {
+    if (_selectedLand?.id == land.id) {
+      return;
+    }
+
     setState(() {
       _selectedLand = land;
-      _navIndex = 0;
-      _tabHistory
-        ..remove(0)
-        ..add(0);
+      _setHomeTabAsActive();
     });
+    await _persistSelectedLand();
   }
 
   Future<void> _confirmClearAll() async {
@@ -407,11 +472,11 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _lands.clear();
         _selectedLand = null;
-        _navIndex = 0;
-        _tabHistory
-          ..remove(0)
-          ..add(0);
+        _setHomeTabAsActive();
       });
+
+      await AppSession.clearSelectedLandId();
+      await AppSession.clearSelectedLandName();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t(_language, 'disableAllDataDone'))),
@@ -464,12 +529,11 @@ class _HomeScreenState extends State<HomeScreen> {
         _lands.removeWhere((item) => item.id == land.id);
         if (_selectedLand?.id == land.id) {
           _selectedLand = _lands.isNotEmpty ? _lands.first : null;
-          _navIndex = 0;
-          _tabHistory
-            ..remove(0)
-            ..add(0);
+          _setHomeTabAsActive();
         }
       });
+
+      await _persistSelectedLand();
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -1550,8 +1614,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ],
                                 ),
-                                onTap: () {
-                                  _selectLand(land);
+                                onTap: () async {
+                                  await _selectLand(land);
+                                  if (!context.mounted) {
+                                    return;
+                                  }
                                   Navigator.pop(context);
                                 },
                               );

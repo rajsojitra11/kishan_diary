@@ -16,7 +16,7 @@ class HomeTab extends StatefulWidget {
   final double animalIncomeGlobal;
   final Future<bool> Function(String name, double size, String location)
   onAddLand;
-  final ValueChanged<Land> onChangeLand;
+  final Future<void> Function(Land) onChangeLand;
 
   const HomeTab({
     super.key,
@@ -153,9 +153,7 @@ class _HomeTabState extends State<HomeTab> {
       },
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      suggestionCtrl.dispose();
-    });
+    suggestionCtrl.dispose();
 
     if (!mounted || message == null || message.trim().isEmpty) {
       return;
@@ -204,14 +202,6 @@ class _HomeTabState extends State<HomeTab> {
       return t(widget.language, 'validationEnterPositiveNumber');
     }
     return null;
-  }
-
-  double _davaBiyaranExpense(Land land) {
-    const davaBiyaranTypes = {'expenseTypeMedicine', 'expenseTypeSeeds'};
-
-    return land.expenseEntries
-        .where((entry) => davaBiyaranTypes.contains(entry.type))
-        .fold(0.0, (sum, entry) => sum + entry.amount);
   }
 
   double _majuriKharch(Land land) {
@@ -641,11 +631,18 @@ class _HomeTabState extends State<HomeTab> {
                         ),
                       )
                       .toList(),
-                  onChanged: (land) {
-                    if (land == null || identical(land, selectedLand)) {
+                  onChanged: (land) async {
+                    if (land == null) {
                       return;
                     }
-                    widget.onChangeLand(land);
+                    if (selectedLand.id != null && land.id == selectedLand.id) {
+                      return;
+                    }
+                    if (selectedLand.id == null &&
+                        identical(land, selectedLand)) {
+                      return;
+                    }
+                    await widget.onChangeLand(land);
                   },
                 );
               },

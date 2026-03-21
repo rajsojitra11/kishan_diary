@@ -10,10 +10,14 @@ class LandMetricsService
     public function recalculateLand(Land $land): Land
     {
         $incomeTotal = (float) $land->incomeEntries()->sum('amount');
-        $expenseTotal = (float) $land->expenseEntries()->sum('amount');
-        $fertilizerKg = (float) $land->expenseEntries()
-            ->whereIn('expense_type', ['expenseTypeMedicine', 'expenseTypeSeeds'])
-            ->sum('amount');
+        $expenseAggregates = $land->expenseEntries()
+            ->selectRaw('COALESCE(SUM(amount), 0) as expense_total')
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN expense_type IN ('expenseTypeMedicine', 'expenseTypeSeeds') THEN amount ELSE 0 END), 0) as fertilizer_kg"
+            )
+            ->first();
+        $expenseTotal = (float) ($expenseAggregates?->expense_total ?? 0);
+        $fertilizerKg = (float) ($expenseAggregates?->fertilizer_kg ?? 0);
         $cropProductionKg = (float) $land->cropEntries()->sum('crop_weight_kg');
         $laborRupees = (float) $land->laborEntries()->sum('total_wage');
 
