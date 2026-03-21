@@ -1,7 +1,14 @@
 FROM php:8.2-fpm-alpine as base
 
 # Install system dependencies and PHP extensions
-RUN apk add --no-cache bash git unzip libpq icu-libs icu-dev oniguruma-dev libzip-dev zlib-dev libpng-dev libxml2-dev \
+RUN apk add --no-cache \
+    bash git unzip \
+    libpq libpq-dev \
+    icu-libs icu-dev \
+    oniguruma-dev \
+    libzip-dev zlib-dev \
+    libpng-dev \
+    libxml2-dev \
     && docker-php-ext-install pdo pdo_pgsql pgsql mbstring bcmath zip intl xml
 
 # Install Composer
