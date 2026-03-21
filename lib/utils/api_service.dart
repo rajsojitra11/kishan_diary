@@ -21,25 +21,31 @@ class ApiService {
   ApiService._();
 
   static final ApiService instance = ApiService._();
-  static const String _androidDefaultApiBase = 'http://192.168.1.8:8000/api/v1';
+  static const String _androidDefaultApiBase =
+      'https://kishan-diary.onrender.com/api/v1';
 
   static String get _baseUrl {
-    final configured = const String.fromEnvironment('API_BASE_URL');
+    var configured = const String.fromEnvironment('API_BASE_URL');
     if (configured.trim().isNotEmpty) {
+      // Force HTTPS — Render.com (and most production hosts) redirect http→https
+      // which causes POST/DELETE requests to fail silently (body is dropped on redirect).
+      if (configured.startsWith('http://')) {
+        configured = configured.replaceFirst('http://', 'https://');
+      }
       return configured.endsWith('/api/v1')
           ? configured
           : '${configured.replaceAll(RegExp(r'/$'), '')}/api/v1';
     }
 
     if (kIsWeb) {
-      return 'http://127.0.0.1:8000/api/v1';
+      return 'https://kishan-diary.onrender.com/api/v1';
     }
 
     if (Platform.isAndroid) {
       return _androidDefaultApiBase;
     }
 
-    return 'http://127.0.0.1:8000/api/v1';
+    return 'https://kishan-diary.onrender.com/api/v1';
   }
 
   Uri _uri(String path, {Map<String, String>? query}) {
@@ -51,12 +57,6 @@ class ApiService {
     return uri.replace(queryParameters: query);
   }
 
-  String _backendUnavailableMessage() {
-    final apiBase = _baseUrl.replaceAll(RegExp(r'/api/v1$'), '');
-    return 'Backend server not running or not reachable. '
-        'Start Laravel with: php artisan serve --host=0.0.0.0 --port=8000 '
-        'and run app with API_BASE_URL=$apiBase';
-  }
 
   Future<Map<String, String>> _headers({
     bool auth = true,
@@ -80,16 +80,26 @@ class ApiService {
   }
 
   Future<dynamic> _decodeResponse(http.Response response) async {
+    // Log every response for developer debugging
+    debugPrint('[API] ${response.statusCode} — ${response.request?.url}');
+
     Map<String, dynamic> payload;
 
     try {
       payload = jsonDecode(response.body) as Map<String, dynamic>;
     } catch (_) {
+      // Server returned non-JSON (HTML error page, nginx page, redirect, etc.)
+      final preview = response.body.length > 300
+          ? '${response.body.substring(0, 300)}...'
+          : response.body;
+      debugPrint('[API] Non-JSON body: $preview');
       throw ApiException(
-        'Invalid server response',
+        'Server error (HTTP ${response.statusCode}). Please try again.',
         statusCode: response.statusCode,
       );
     }
+
+    debugPrint('[API] Response body: $payload');
 
     final success = payload['success'] == true;
 
@@ -97,10 +107,28 @@ class ApiService {
       return payload['data'];
     }
 
+    // Build a readable error from Laravel's response
+    final serverMessage = payload['message']?.toString();
+    final errors = payload['errors'] as Map<String, dynamic>?;
+
+    String displayMessage;
+    if (errors != null && errors.isNotEmpty) {
+      // Combine all validation field errors into one readable string
+      final errorLines = errors.entries.map((e) {
+        final msgs = (e.value as List?)?.map((m) => m.toString()).join(', ') ?? e.value.toString();
+        return msgs;
+      }).toList();
+      displayMessage = errorLines.join('\n');
+    } else {
+      displayMessage = serverMessage ?? 'Request failed (HTTP ${response.statusCode})';
+    }
+
+    debugPrint('[API] Error $displayMessage');
+
     throw ApiException(
-      payload['message']?.toString() ?? 'Request failed',
+      displayMessage,
       statusCode: response.statusCode,
-      errors: payload['errors'] as Map<String, dynamic>?,
+      errors: errors,
     );
   }
 
@@ -117,44 +145,46 @@ class ApiService {
       json: method != 'GET' && method != 'DELETE',
     );
 
+    debugPrint('[API] $method $uri');
+
     late http.Response response;
 
     try {
+      final Future<http.Response> call;
       switch (method) {
         case 'GET':
-          response = await http.get(uri, headers: headers);
+          call = http.get(uri, headers: headers);
           break;
         case 'POST':
-          response = await http.post(
-            uri,
-            headers: headers,
-            body: jsonEncode(body ?? {}),
-          );
+          call = http.post(uri, headers: headers, body: jsonEncode(body ?? {}));
           break;
         case 'PUT':
-          response = await http.put(
-            uri,
-            headers: headers,
-            body: jsonEncode(body ?? {}),
-          );
+          call = http.put(uri, headers: headers, body: jsonEncode(body ?? {}));
           break;
         case 'PATCH':
-          response = await http.patch(
-            uri,
-            headers: headers,
-            body: jsonEncode(body ?? {}),
-          );
+          call = http.patch(uri, headers: headers, body: jsonEncode(body ?? {}));
           break;
         case 'DELETE':
-          response = await http.delete(uri, headers: headers);
+          call = http.delete(uri, headers: headers);
           break;
         default:
           throw ApiException('Unsupported HTTP method: $method');
       }
-    } on http.ClientException {
-      throw ApiException(_backendUnavailableMessage());
-    } on SocketException {
-      throw ApiException(_backendUnavailableMessage());
+      // 30s timeout — Render free tier can take ~30s on cold start
+      response = await call.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw ApiException(
+          'Server is starting up, please wait a moment and try again.',
+        ),
+      );
+    } on ApiException {
+      rethrow;
+    } on http.ClientException catch (e) {
+      debugPrint('[API] ClientException: $e');
+      throw ApiException('No internet connection. Please check your network.');
+    } on SocketException catch (e) {
+      debugPrint('[API] SocketException: $e');
+      throw ApiException('Cannot reach server. Please check your internet.');
     }
 
     return _decodeResponse(response);
@@ -198,12 +228,21 @@ class ApiService {
     late http.Response response;
 
     try {
-      final streamedResponse = await request.send();
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw ApiException(
+          'Server is starting up, please wait a moment and try again.',
+        ),
+      );
       response = await http.Response.fromStream(streamedResponse);
-    } on http.ClientException {
-      throw ApiException(_backendUnavailableMessage());
-    } on SocketException {
-      throw ApiException(_backendUnavailableMessage());
+    } on ApiException {
+      rethrow;
+    } on http.ClientException catch (e) {
+      debugPrint('[API] Multipart ClientException: $e');
+      throw ApiException('No internet connection. Please check your network.');
+    } on SocketException catch (e) {
+      debugPrint('[API] Multipart SocketException: $e');
+      throw ApiException('Cannot reach server. Please check your internet.');
     }
 
     return _decodeResponse(response);

@@ -19,12 +19,11 @@ WORKDIR /var/www/html
 # Copy app files
 COPY . .
 
-# Install PHP dependencies (optimized for production)
+# Install PHP dependencies only (NO config:cache here — env vars aren't available at build time,
+# caching here bakes empty/wrong DB settings and causes 500 errors on first request)
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist \
-    && php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache \
-    && chown -R www-data:www-data storage bootstrap/cache
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod +x start.sh
 
 # Expose port for Laravel
 EXPOSE 8080
@@ -32,5 +31,5 @@ EXPOSE 8080
 # Use www-data user for security
 USER www-data
 
-# Start Laravel with PHP's built-in server
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
+# start.sh: clears stale cache, re-caches with real env vars, runs migrations, starts server
+CMD ["bash", "start.sh"]
