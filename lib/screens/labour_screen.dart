@@ -676,14 +676,50 @@ class _LabourScreenState extends State<LabourScreen> {
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '${t(widget.language, 'laborTotalPaid')} ${totalUpad.toStringAsFixed(2)}',
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.currency_rupee,
+                            size: 14,
+                            color: Colors.teal,
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              '${t(widget.language, 'laborTotalPaid')} ${totalUpad.toStringAsFixed(2)}',
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${t(widget.language, 'laborTotalPending')} ${totalPending.toStringAsFixed(2)}',
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.currency_rupee,
+                            size: 14,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              '${t(widget.language, 'laborTotalPending')} ${totalPending.toStringAsFixed(2)}',
+                            ),
+                          ),
+                        ],
                       ),
-                      Text(
-                        '${t(widget.language, 'laborTotalWage')} ${labor.total.toStringAsFixed(2)}',
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.currency_rupee,
+                            size: 14,
+                            color: Colors.indigo,
+                          ),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              '${t(widget.language, 'laborTotalWage')} ${labor.total.toStringAsFixed(2)}',
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -691,7 +727,7 @@ class _LabourScreenState extends State<LabourScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        icon: const Icon(Icons.note_alt, color: Colors.blue),
                         onPressed: () => _startEditByEntry(labor),
                       ),
                       IconButton(

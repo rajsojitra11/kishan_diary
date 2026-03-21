@@ -88,6 +88,33 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(t(widget.language, 'contactPageIntro')),
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t(widget.language, 'contactHelpHeadline'),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            t(widget.language, 'contactHelpThankYou'),
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       '${t(widget.language, 'contactMobileLabel')}: 8469283448',
@@ -95,7 +122,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '${t(widget.language, 'contactEmailLabel')}: rajsojitra52@gmail.com',
+                      '${t(widget.language, 'contactEmailLabel')}: kishandiary01@gmail.com',
                       style: const TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 20),

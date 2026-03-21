@@ -41,6 +41,9 @@ Widget statCard(String title, String value, Color color) {
 }
 
 IconData _iconForStat(String title) {
+  if (title.contains('Profit') || title.contains('નફો')) {
+    return Icons.trending_up;
+  }
   if (title.contains('Labor') ||
       title.contains('મજૂર') ||
       title.contains('မ')) {

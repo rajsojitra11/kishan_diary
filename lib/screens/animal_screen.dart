@@ -125,6 +125,95 @@ class _AnimalScreenState extends State<AnimalScreen> {
     );
   }
 
+  void _showEditAnimalDialog(Animal animal) {
+    final nameController = TextEditingController(text: animal.name);
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(t(widget.language, 'editAnimalTitle')),
+        content: Form(
+          key: formKey,
+          child: buildInput(
+            TextInputConfig(
+              nameController,
+              t(widget.language, 'animalNameLabel'),
+              Icons.pets,
+              validator: (value) {
+                final name = value?.trim() ?? '';
+                if (name.isEmpty) {
+                  return t(widget.language, 'validationRequiredField');
+                }
+
+                final exists = widget.animals.any(
+                  (item) =>
+                      !identical(item, animal) &&
+                      item.name.toLowerCase() == name.toLowerCase(),
+                );
+
+                if (exists) {
+                  return t(widget.language, 'animalExists');
+                }
+
+                return null;
+              },
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(t(widget.language, 'cancelButton')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (!(formKey.currentState?.validate() ?? false)) {
+                return;
+              }
+
+              final updatedName = nameController.text.trim();
+              if (updatedName == animal.name) {
+                Navigator.pop(context);
+                return;
+              }
+
+              try {
+                if (animal.id != null) {
+                  final payload = await ApiService.instance.updateAnimal(
+                    animal.id!,
+                    updatedName,
+                  );
+                  final animalPayload = ((payload['animal'] as Map?) ?? {})
+                      .cast<String, dynamic>();
+                  animal.name =
+                      animalPayload['animal_name']?.toString() ?? updatedName;
+                } else {
+                  animal.name = updatedName;
+                }
+
+                if (!mounted) {
+                  return;
+                }
+
+                _notifyAnimalsChanged();
+                Navigator.pop(context);
+              } on ApiException catch (error) {
+                if (!mounted) {
+                  return;
+                }
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(error.message)));
+              }
+            },
+            child: Text(t(widget.language, 'saveButton')),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _openAnimalDetail(Animal animal) {
     Navigator.push(
       context,
@@ -190,7 +279,17 @@ class _AnimalScreenState extends State<AnimalScreen> {
                       subtitle: Text(
                         '₹ ${animal.totalAmount.toStringAsFixed(2)} • ${animal.totalMilk.toStringAsFixed(2)} L',
                       ),
-                      trailing: const Icon(Icons.chevron_right),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.blue),
+                            tooltip: t(widget.language, 'editAnimalTitle'),
+                            onPressed: () => _showEditAnimalDialog(animal),
+                          ),
+                          const Icon(Icons.chevron_right),
+                        ],
+                      ),
                       onTap: () => _openAnimalDetail(animal),
                     ),
                   );

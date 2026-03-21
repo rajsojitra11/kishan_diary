@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/animal.dart';
+import '../models/animal_record.dart';
+import '../models/crop_entry.dart';
+import '../models/expense_entry.dart';
+import '../models/income_entry.dart';
 import '../models/land.dart';
+import '../models/labor_entry.dart';
+import '../models/upad_entry.dart';
 import '../screens/animal_screen.dart';
 import '../screens/about_app_screen.dart';
 import '../screens/contact_us_screen.dart';
@@ -54,6 +61,8 @@ class _HomeScreenState extends State<HomeScreen> {
   AppLanguage _language = AppLanguage.gujarati;
   static const String _defaultProfileImagePath =
       'lib/assets/images/register.png';
+  static const String _whatsAppGroupUrl =
+      'https://chat.whatsapp.com/GIw3SmtRce46176ibwomjy?mode=gi_t';
   final ImagePicker _imagePicker = ImagePicker();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final List<Land> _lands = [];
@@ -218,6 +227,74 @@ class _HomeScreenState extends State<HomeScreen> {
       name: item['animal_name']?.toString() ?? '',
       totalAmountCached: _toDouble(item['total_amount']),
       totalMilkCached: _toDouble(item['total_milk']),
+    );
+  }
+
+  IncomeEntry _incomeEntryFromApi(Map<String, dynamic> item) {
+    return IncomeEntry(
+      id: _toInt(item['id']),
+      type: item['income_type']?.toString() ?? 'incomeTypeCropSale',
+      amount: _toDouble(item['amount']),
+      date: _toDisplayDate(item['entry_date']?.toString()),
+      note: item['note']?.toString() ?? '',
+      billPhotoPath: item['bill_photo_path']?.toString(),
+      billPhotoUrl: item['bill_photo_url']?.toString(),
+    );
+  }
+
+  ExpenseEntry _expenseEntryFromApi(Map<String, dynamic> item) {
+    return ExpenseEntry(
+      id: _toInt(item['id']),
+      type: item['expense_type']?.toString() ?? 'expenseTypeMedicine',
+      amount: _toDouble(item['amount']),
+      date: _toDisplayDate(item['entry_date']?.toString()),
+      note: item['note']?.toString() ?? '',
+      billPhotoPath: item['bill_photo_path']?.toString(),
+      billPhotoUrl: item['bill_photo_url']?.toString(),
+    );
+  }
+
+  CropEntry _cropEntryFromApi(Map<String, dynamic> item) {
+    return CropEntry(
+      id: _toInt(item['id']),
+      cropType: item['crop_type']?.toString() ?? 'cropTypeWheat',
+      landSize: _toDouble(item['land_size']),
+      cropWeight: _toDouble(item['crop_weight']),
+      weightUnit: item['weight_unit']?.toString() == 'man' ? 'man' : 'kg',
+    );
+  }
+
+  LaborEntry _laborEntryFromApi(Map<String, dynamic> item) {
+    return LaborEntry(
+      id: _toInt(item['id']),
+      name: item['labor_name']?.toString() ?? '',
+      mobile: item['mobile']?.toString() ?? '',
+      days: _toDouble(item['total_days']),
+      dailyRate: _toDouble(item['daily_rate']),
+    );
+  }
+
+  UpadEntry _upadEntryFromApi(Map<String, dynamic> item, LaborEntry labor) {
+    final snapshot = item['labor_name_snapshot']?.toString();
+    return UpadEntry(
+      id: _toInt(item['id']),
+      laborEntryId: _toInt(item['labor_entry_id']) ?? labor.id,
+      landId: _toInt(item['land_id']),
+      laborName: snapshot == null || snapshot.trim().isEmpty
+          ? labor.name
+          : snapshot,
+      amount: _toDouble(item['amount']),
+      note: item['note']?.toString() ?? '',
+      date: _toDisplayDate(item['payment_date']?.toString()),
+    );
+  }
+
+  AnimalRecord _animalRecordFromApi(Map<String, dynamic> item) {
+    return AnimalRecord(
+      id: _toInt(item['id']),
+      amount: _toDouble(item['amount']),
+      milk: _toDouble(item['milk_liter']),
+      date: _toDisplayDate(item['record_date']?.toString()),
     );
   }
 
@@ -696,6 +773,11 @@ class _HomeScreenState extends State<HomeScreen> {
     nameCtrl.text = _profileName;
     emailCtrl.text = _profileEmail;
     birthdateCtrl.text = _profileBirthdate;
+    if (birthdateCtrl.text.trim().isEmpty) {
+      final today = DateTime.now();
+      birthdateCtrl.text =
+          '${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}';
+    }
     passwordCtrl.text = _profilePassword;
     Uint8List? tempProfileImageBytes = _profileImageBytes;
     String? tempProfileImageUrl = _profileImageUrl;
@@ -969,6 +1051,163 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadAllRecordsForPdf() async {
+    for (final land in _lands) {
+      if (land.id == null) {
+        continue;
+      }
+
+      final incomePayload = await ApiService.instance.getIncomeEntries(
+        land.id!,
+      );
+      final incomeEntries = ((incomePayload['income_entries'] as List?) ?? [])
+          .map(
+            (item) =>
+                _incomeEntryFromApi((item as Map).cast<String, dynamic>()),
+          )
+          .toList();
+
+      final expensePayload = await ApiService.instance.getExpenseEntries(
+        land.id!,
+      );
+      final expenseEntries =
+          ((expensePayload['expense_entries'] as List?) ?? [])
+              .map(
+                (item) =>
+                    _expenseEntryFromApi((item as Map).cast<String, dynamic>()),
+              )
+              .toList();
+
+      final cropPayload = await ApiService.instance.getCropEntries(land.id!);
+      final cropEntries = ((cropPayload['crop_entries'] as List?) ?? [])
+          .map(
+            (item) => _cropEntryFromApi((item as Map).cast<String, dynamic>()),
+          )
+          .toList();
+
+      final laborPayload = await ApiService.instance.getLaborEntries(land.id!);
+      final laborEntries = ((laborPayload['labor_entries'] as List?) ?? [])
+          .map(
+            (item) => _laborEntryFromApi((item as Map).cast<String, dynamic>()),
+          )
+          .toList();
+
+      final upadEntries = <UpadEntry>[];
+      for (final labor in laborEntries) {
+        if (labor.id == null) {
+          continue;
+        }
+        final upadPayload = await ApiService.instance.getUpadEntries(labor.id!);
+        final entries = ((upadPayload['upad_entries'] as List?) ?? [])
+            .map(
+              (item) => _upadEntryFromApi(
+                (item as Map).cast<String, dynamic>(),
+                labor,
+              ),
+            )
+            .toList();
+        upadEntries.addAll(entries);
+      }
+
+      land.incomeEntries
+        ..clear()
+        ..addAll(incomeEntries);
+      land.expenseEntries
+        ..clear()
+        ..addAll(expenseEntries);
+      land.cropEntries
+        ..clear()
+        ..addAll(cropEntries);
+      land.laborEntries
+        ..clear()
+        ..addAll(laborEntries);
+      land.upadEntries
+        ..clear()
+        ..addAll(upadEntries);
+
+      land.income = _toDouble(incomePayload['total_income']);
+      land.expenses = _toDouble(expensePayload['total_expense']);
+      land.cropProductionKg = _toDouble(
+        cropPayload['crop_production_kg_total'],
+      );
+      land.laborRupees = _toDouble(
+        ((laborPayload['totals'] as Map?)?['total_wage']),
+      );
+    }
+
+    for (final animal in _animals) {
+      if (animal.id == null) {
+        continue;
+      }
+      final payload = await ApiService.instance.getAnimalRecords(animal.id!);
+      final records = ((payload['records'] as List?) ?? [])
+          .map(
+            (item) =>
+                _animalRecordFromApi((item as Map).cast<String, dynamic>()),
+          )
+          .toList();
+      animal.records
+        ..clear()
+        ..addAll(records);
+      animal.totalAmountCached = _toDouble(
+        ((payload['totals'] as Map?)?['total_amount']),
+      );
+      animal.totalMilkCached = _toDouble(
+        ((payload['totals'] as Map?)?['total_milk']),
+      );
+    }
+  }
+
+  Future<void> _downloadAllDataRecords() async {
+    try {
+      await _loadAllRecordsForPdf();
+      if (mounted) {
+        setState(() {});
+      }
+
+      final exported = await exportAllDataPdf(
+        language: _language,
+        lands: _lands,
+        animals: _animals,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      if (!exported) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(t(_language, 'downloadAllNoData'))),
+        );
+      }
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to download all data PDF.')),
+      );
+    }
+  }
+
+  Future<void> _openWhatsAppGroup() async {
+    final uri = Uri.parse(_whatsAppGroupUrl);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t(_language, 'whatsAppOpenError'))),
+      );
+    }
+  }
+
   void _openDrawerInfoPage(Widget page) {
     final navigator = Navigator.of(context);
     navigator.pop();
@@ -1075,6 +1314,7 @@ class _HomeScreenState extends State<HomeScreen> {
           language: _language,
           animalIncomeGlobal: _animalIncomeGlobal,
           onAddLand: _addLandFromValues,
+          onChangeLand: _selectLand,
         );
     }
   }
@@ -1327,6 +1567,28 @@ class _HomeScreenState extends State<HomeScreen> {
                           );
                         },
                       ),
+                      ListTile(
+                        leading: const FaIcon(
+                          FontAwesomeIcons.whatsapp,
+                          color: Colors.green,
+                        ),
+                        title: Text(t(_language, 'drawerWhatsAppGroup')),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _openWhatsAppGroup();
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(
+                          Icons.picture_as_pdf,
+                          color: Colors.red,
+                        ),
+                        title: Text(t(_language, 'drawerDownloadAllData')),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _downloadAllDataRecords();
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -1366,14 +1628,15 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: IconButton(
-                    tooltip: t(_language, 'downloadPdfTooltip'),
-                    icon: const Icon(Icons.download),
-                    onPressed: _downloadCurrentPageRecords,
+                if (_navIndex != 0)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: IconButton(
+                      tooltip: t(_language, 'downloadPdfTooltip'),
+                      icon: const Icon(Icons.download),
+                      onPressed: _downloadCurrentPageRecords,
+                    ),
                   ),
-                ),
                 _currentTab(),
               ],
             ),

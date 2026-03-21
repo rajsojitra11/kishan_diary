@@ -251,7 +251,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
       text: initialEntry?.note ?? '',
     );
     final dateController = TextEditingController(
-      text: initialEntry?.date ?? '',
+      text: initialEntry?.date ?? _formatDate(DateTime.now()),
     );
     final formKey = GlobalKey<FormState>();
     String selectedType = _normalizeIncomeType(initialEntry?.type);

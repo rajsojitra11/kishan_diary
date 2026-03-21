@@ -57,7 +57,7 @@ Future<bool> exportCurrentPagePdf({
         ),
         pw.SizedBox(height: 6),
         pw.Text(
-          'Generated: ${DateTime.now().toLocal()}',
+          '${t(language, 'pdfGeneratedOn')}: ${DateTime.now().toLocal()}',
           style: pw.TextStyle(font: baseFont, fontSize: 10),
         ),
         pw.SizedBox(height: 12),
@@ -78,6 +78,73 @@ Future<bool> exportCurrentPagePdf({
     ],
     subject: pageTitle,
     text: pageTitle,
+  );
+
+  return true;
+}
+
+Future<bool> exportAllDataPdf({
+  required AppLanguage language,
+  required List<Land> lands,
+  required List<Animal> animals,
+}) async {
+  final baseFont = await _resolvePdfBaseFont();
+  final boldFont = await _resolvePdfBoldFont(baseFont);
+  final doc = pw.Document();
+
+  final widgets = _buildAllDataWidgets(
+    language: language,
+    lands: lands,
+    animals: animals,
+  );
+
+  if (widgets.isEmpty) {
+    return false;
+  }
+
+  final title = t(language, 'appTitle');
+  final reportTitle = t(language, 'pdfAllDataTitle');
+  final generatedLabel = t(language, 'pdfGeneratedOn');
+
+  doc.addPage(
+    pw.MultiPage(
+      pageTheme: pw.PageTheme(
+        margin: const pw.EdgeInsets.all(24),
+        theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
+      ),
+      build: (context) => [
+        pw.Text(
+          '$title • $reportTitle',
+          style: pw.TextStyle(
+            font: boldFont,
+            fontSize: 18,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.green800,
+          ),
+        ),
+        pw.SizedBox(height: 6),
+        pw.Text(
+          '$generatedLabel: ${DateTime.now().toLocal()}',
+          style: pw.TextStyle(font: baseFont, fontSize: 10),
+        ),
+        pw.SizedBox(height: 12),
+        ...widgets,
+      ],
+    ),
+  );
+
+  final bytes = await doc.save();
+
+  await Share.shareXFiles(
+    [
+      XFile.fromData(
+        Uint8List.fromList(bytes),
+        mimeType: 'application/pdf',
+        name: 'kishan_diary_all_data.pdf',
+      ),
+    ],
+    subject: '$title • $reportTitle',
+    text: '$title • $reportTitle',
   );
 
   return true;
@@ -114,6 +181,261 @@ List<pw.Widget> _buildPageWidgets({
     default:
       return const [];
   }
+}
+
+List<pw.Widget> _buildAllDataWidgets({
+  required AppLanguage language,
+  required List<Land> lands,
+  required List<Animal> animals,
+}) {
+  if (lands.isEmpty && animals.isEmpty) {
+    return const [];
+  }
+
+  final widgets = <pw.Widget>[];
+
+  if (lands.isNotEmpty) {
+    widgets.add(_sectionTitle(t(language, 'selectLandHeading')));
+    widgets.add(
+      _table(
+        headers: [
+          t(language, 'landName'),
+          t(language, 'landSize'),
+          t(language, 'location'),
+        ],
+        rows: lands
+            .map(
+              (land) => [
+                land.name,
+                land.size.toStringAsFixed(2),
+                land.location,
+              ],
+            )
+            .toList(),
+      ),
+    );
+    widgets.add(pw.SizedBox(height: 12));
+  }
+
+  for (final land in lands) {
+    final totalIncome = land.incomeEntries.isNotEmpty
+        ? land.incomeEntries.fold(0.0, (sum, item) => sum + item.amount)
+        : land.income;
+    final laborTotal = land.laborEntries.isNotEmpty
+        ? land.laborEntries.fold(0.0, (sum, item) => sum + item.total)
+        : land.laborRupees;
+    final totalExpenseEntries = land.expenseEntries.isNotEmpty
+        ? land.expenseEntries.fold(0.0, (sum, item) => sum + item.amount)
+        : land.expenses;
+    final totalExpense = totalExpenseEntries + laborTotal;
+    final totalCrop = land.cropEntries.isNotEmpty
+        ? land.cropEntries.fold(0.0, (sum, item) => sum + item.cropWeightKg)
+        : land.cropProductionKg;
+
+    widgets.add(_sectionTitle('${t(language, 'landName')}: ${land.name}'));
+    widgets.add(
+      _table(
+        headers: [
+          t(language, 'incomeLabel'),
+          t(language, 'expensesLabel'),
+          t(language, 'profitLabel'),
+          t(language, 'cropProductionLabel'),
+        ],
+        rows: [
+          [
+            totalIncome.toStringAsFixed(2),
+            totalExpense.toStringAsFixed(2),
+            (totalIncome - totalExpense).toStringAsFixed(2),
+            totalCrop.toStringAsFixed(2),
+          ],
+        ],
+      ),
+    );
+
+    if (land.incomeEntries.isNotEmpty) {
+      widgets.add(pw.SizedBox(height: 8));
+      widgets.add(_sectionTitle(t(language, 'navIncome')));
+      widgets.add(
+        _table(
+          headers: [
+            t(language, 'incomeTypeLabel'),
+            t(language, 'incomeAmountLabel'),
+            t(language, 'incomeDateLabel'),
+            t(language, 'incomeNoteListLabel'),
+          ],
+          rows: land.incomeEntries
+              .map(
+                (entry) => [
+                  _localizedTypeLabel(language, entry.type),
+                  entry.amount.toStringAsFixed(2),
+                  entry.date,
+                  entry.note,
+                ],
+              )
+              .toList(),
+        ),
+      );
+    }
+
+    if (land.expenseEntries.isNotEmpty) {
+      widgets.add(pw.SizedBox(height: 8));
+      widgets.add(_sectionTitle(t(language, 'navExpense')));
+      widgets.add(
+        _table(
+          headers: [
+            t(language, 'expenseTypeLabel'),
+            t(language, 'expenseAmountLabel'),
+            t(language, 'expenseDateLabel'),
+            t(language, 'expenseNoteListLabel'),
+          ],
+          rows: land.expenseEntries
+              .map(
+                (entry) => [
+                  _localizedTypeLabel(language, entry.type),
+                  entry.amount.toStringAsFixed(2),
+                  entry.date,
+                  entry.note,
+                ],
+              )
+              .toList(),
+        ),
+      );
+    }
+
+    if (land.cropEntries.isNotEmpty) {
+      widgets.add(pw.SizedBox(height: 8));
+      widgets.add(_sectionTitle(t(language, 'navCrop')));
+      widgets.add(
+        _table(
+          headers: [
+            t(language, 'cropType'),
+            t(language, 'landSize'),
+            t(language, 'cropWeight'),
+            t(language, 'weightUnit'),
+          ],
+          rows: land.cropEntries
+              .map(
+                (entry) => [
+                  _localizedTypeLabel(language, entry.cropType),
+                  entry.landSize.toStringAsFixed(2),
+                  entry.cropWeight.toStringAsFixed(2),
+                  entry.weightUnit == 'man'
+                      ? t(language, 'weightUnitMan')
+                      : t(language, 'weightUnitKg'),
+                ],
+              )
+              .toList(),
+        ),
+      );
+    }
+
+    if (land.laborEntries.isNotEmpty) {
+      widgets.add(pw.SizedBox(height: 8));
+      widgets.add(_sectionTitle(t(language, 'navLabor')));
+      widgets.add(
+        _table(
+          headers: [
+            t(language, 'laborName'),
+            t(language, 'laborMobile'),
+            t(language, 'laborDay'),
+            t(language, 'laborDailyWage'),
+            t(language, 'laborTotalWage'),
+          ],
+          rows: land.laborEntries
+              .map(
+                (entry) => [
+                  entry.name,
+                  entry.mobile,
+                  _formatDays(entry.days),
+                  entry.dailyRate.toStringAsFixed(2),
+                  entry.total.toStringAsFixed(2),
+                ],
+              )
+              .toList(),
+        ),
+      );
+    }
+
+    if (land.upadEntries.isNotEmpty) {
+      widgets.add(pw.SizedBox(height: 8));
+      widgets.add(_sectionTitle(t(language, 'upadSectionTitle')));
+      widgets.add(
+        _table(
+          headers: [
+            t(language, 'laborName'),
+            t(language, 'upadAmount'),
+            t(language, 'upadDate'),
+            t(language, 'upadNote'),
+          ],
+          rows: land.upadEntries
+              .map(
+                (entry) => [
+                  entry.laborName,
+                  entry.amount.toStringAsFixed(2),
+                  entry.date,
+                  entry.note,
+                ],
+              )
+              .toList(),
+        ),
+      );
+    }
+
+    widgets.add(pw.SizedBox(height: 12));
+  }
+
+  if (animals.isNotEmpty) {
+    widgets.add(_sectionTitle(t(language, 'navAnimal')));
+    widgets.add(
+      _table(
+        headers: [
+          t(language, 'animalNameLabel'),
+          t(language, 'animalTotalAmountLabel'),
+          t(language, 'animalTotalMilkLabel'),
+        ],
+        rows: animals
+            .map(
+              (animal) => [
+                animal.name,
+                animal.totalAmount.toStringAsFixed(2),
+                animal.totalMilk.toStringAsFixed(2),
+              ],
+            )
+            .toList(),
+      ),
+    );
+
+    for (final animal in animals) {
+      if (animal.records.isEmpty) {
+        continue;
+      }
+
+      widgets.add(pw.SizedBox(height: 8));
+      widgets.add(
+        _sectionTitle('${animal.name} • ${t(language, 'animalRecordsLabel')}'),
+      );
+      widgets.add(
+        _table(
+          headers: [
+            t(language, 'animalDateLabel'),
+            t(language, 'animalAmountLabel'),
+            t(language, 'animalMilkLabel'),
+          ],
+          rows: animal.records
+              .map(
+                (record) => [
+                  record.date,
+                  record.amount.toStringAsFixed(2),
+                  record.milk.toStringAsFixed(2),
+                ],
+              )
+              .toList(),
+        ),
+      );
+    }
+  }
+
+  return widgets;
 }
 
 List<pw.Widget> _buildHomeWidgets(
@@ -485,4 +807,12 @@ String _formatDays(double days) {
     return days.toInt().toString();
   }
   return days.toString();
+}
+
+String _localizedTypeLabel(AppLanguage language, String keyOrLabel) {
+  final localized = t(language, keyOrLabel);
+  if (localized == keyOrLabel) {
+    return keyOrLabel;
+  }
+  return localized;
 }

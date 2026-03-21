@@ -155,9 +155,14 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     );
 
     if (picked != null) {
-      controller.text =
-          '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      controller.text = _formatDate(picked);
     }
+  }
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 
   String? _requiredValidator(String? value) {
@@ -213,7 +218,9 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
       text: existing == null ? '' : existing.amount.toString(),
     );
     final noteController = TextEditingController(text: existing?.note ?? '');
-    final dateController = TextEditingController(text: existing?.date ?? '');
+    final dateController = TextEditingController(
+      text: existing?.date ?? _formatDate(DateTime.now()),
+    );
     final formKey = GlobalKey<FormState>();
 
     showDialog(

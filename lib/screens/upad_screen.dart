@@ -31,6 +31,12 @@ class _UpadScreenState extends State<UpadScreen> {
   int? _editingIndex;
 
   @override
+  void initState() {
+    super.initState();
+    _dateController.text = _formatDate(DateTime.now());
+  }
+
+  @override
   void dispose() {
     _amountController.dispose();
     _noteController.dispose();
@@ -47,9 +53,14 @@ class _UpadScreenState extends State<UpadScreen> {
     );
 
     if (picked != null) {
-      controller.text =
-          '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+      controller.text = _formatDate(picked);
     }
+  }
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 
   void _saveUpad() {
@@ -80,7 +91,7 @@ class _UpadScreenState extends State<UpadScreen> {
     setState(() {
       _amountController.clear();
       _noteController.clear();
-      _dateController.clear();
+      _dateController.text = _formatDate(DateTime.now());
       _editingIndex = null;
     });
   }

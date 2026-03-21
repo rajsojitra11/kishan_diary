@@ -69,6 +69,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _dateController.text = _formatDate(DateTime.now());
     _loadRecords();
   }
 
@@ -288,7 +289,7 @@ class _AnimalDetailScreenState extends State<AnimalDetailScreen> {
       _recordFormKey.currentState?.reset();
       _amountController.clear();
       _milkController.clear();
-      _dateController.clear();
+      _dateController.text = _formatDate(DateTime.now());
       _showRecordValidation = false;
     });
   }

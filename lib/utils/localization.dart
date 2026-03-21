@@ -153,6 +153,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Expenses',
     AppLanguage.gujarati: 'ખર્ચ',
   },
+  'profitLabel': {AppLanguage.english: 'Profit', AppLanguage.gujarati: 'નફો'},
   'expenseRecordsLabel': {
     AppLanguage.english: 'Expense Records',
     AppLanguage.gujarati: 'ખર્ચ નોંધો',
@@ -383,6 +384,14 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Contact Us',
     AppLanguage.gujarati: 'સંપર્ક કરો',
   },
+  'drawerWhatsAppGroup': {
+    AppLanguage.english: 'Join WhatsApp Group',
+    AppLanguage.gujarati: 'WhatsApp ગ્રુપ જોડાઓ',
+  },
+  'whatsAppOpenError': {
+    AppLanguage.english: 'Unable to open WhatsApp group link.',
+    AppLanguage.gujarati: 'WhatsApp ગ્રુપ લિંક ખોલવામાં અસમર્થ.',
+  },
   'termsConditionsDescription': {
     AppLanguage.english:
         'Use this app responsibly. Keep your records accurate and do not share private farm data with unknown users.',
@@ -478,9 +487,25 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Download PDF',
     AppLanguage.gujarati: 'PDF ડાઉનલોડ કરો',
   },
+  'drawerDownloadAllData': {
+    AppLanguage.english: 'Download All Data (PDF)',
+    AppLanguage.gujarati: 'બધા ડેટાનો PDF ડાઉનલોડ કરો',
+  },
+  'pdfAllDataTitle': {
+    AppLanguage.english: 'All Data Report (PDF)',
+    AppLanguage.gujarati: 'તમામ ડેટાનો અહેવાલ (PDF)',
+  },
+  'pdfGeneratedOn': {
+    AppLanguage.english: 'Generated on',
+    AppLanguage.gujarati: 'તૈયાર થયેલ તારીખ',
+  },
   'downloadNoData': {
     AppLanguage.english: 'No records available on this page',
     AppLanguage.gujarati: 'આ પેજમાં કોઈ રેકોર્ડ ઉપલબ્ધ નથી',
+  },
+  'downloadAllNoData': {
+    AppLanguage.english: 'No records available to export',
+    AppLanguage.gujarati: 'નિકાસ કરવા માટે કોઈ રેકોર્ડ ઉપલબ્ધ નથી',
   },
   'editLandTooltip': {
     AppLanguage.english: 'Edit Land',
@@ -576,6 +601,18 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'For support, feedback, or issue reporting:',
     AppLanguage.gujarati: 'સપોર્ટ, પ્રતિસાદ અથવા સમસ્યા માટે સંપર્ક કરો:',
   },
+  'contactHelpHeadline': {
+    AppLanguage.english:
+        'Do you have any questions or need help? We are here to support you!',
+    AppLanguage.gujarati:
+        'શું તમને કોઈ પ્રશ્નો છે કે મદદની જરૂર છે? અમે અહીં મદદ માટે છીએ!',
+  },
+  'contactHelpThankYou': {
+    AppLanguage.english:
+        'Feel free to contact us anytime. Thank you for using Kissan Yadi!',
+    AppLanguage.gujarati:
+        'કોઈ પણ સમયે અમારો સંપર્ક કરો. Kissan Yadi વાપરવા માટે તમારું આભાર!',
+  },
   'contactMobileLabel': {
     AppLanguage.english: 'Mobile',
     AppLanguage.gujarati: 'મોબાઇલ',
@@ -615,6 +652,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
   'addAnimalButton': {
     AppLanguage.english: 'Add Animal',
     AppLanguage.gujarati: 'પશુ ઉમેરો',
+  },
+  'editAnimalTitle': {
+    AppLanguage.english: 'Edit Animal Name',
+    AppLanguage.gujarati: 'પશુનું નામ સંપાદિત કરો',
   },
   'animalNameLabel': {
     AppLanguage.english: 'Animal Name',

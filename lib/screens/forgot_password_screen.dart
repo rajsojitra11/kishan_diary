@@ -23,6 +23,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   DateTime? _selectedBirthdate;
 
   @override
+  void initState() {
+    super.initState();
+    final today = DateTime.now();
+    _selectedBirthdate = today;
+    _birthdateController.text =
+        '${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}';
+  }
+
+  @override
   void dispose() {
     _mobileController.dispose();
     _birthdateController.dispose();

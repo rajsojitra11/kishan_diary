@@ -32,6 +32,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     _mobileController.text = widget.mobileNumber;
+    final today = DateTime.now();
+    _selectedBirthdate = today;
+    _birthdateController.text =
+        '${today.day.toString().padLeft(2, '0')}/${today.month.toString().padLeft(2, '0')}/${today.year}';
     _loadPendingMobile();
   }
 
