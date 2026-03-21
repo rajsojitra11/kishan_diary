@@ -56,8 +56,6 @@ class _HomeTabState extends State<HomeTab> {
   final TextEditingController _nameCtrl = TextEditingController();
   final TextEditingController _sizeCtrl = TextEditingController();
   final TextEditingController _locationCtrl = TextEditingController();
-  final _suggestionFormKey = GlobalKey<FormState>();
-  final TextEditingController _suggestionCtrl = TextEditingController();
   bool _isSubmittingSuggestion = false;
   bool _isIncomeExpanded = false;
   bool _isExpenseExpanded = false;
@@ -68,29 +66,19 @@ class _HomeTabState extends State<HomeTab> {
     _nameCtrl.dispose();
     _sizeCtrl.dispose();
     _locationCtrl.dispose();
-    _suggestionCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _submitSuggestion() async {
-    if (!(_suggestionFormKey.currentState?.validate() ?? false)) {
-      return;
-    }
-
-    final message = _suggestionCtrl.text.trim();
-    if (message.isEmpty) {
+  Future<void> _submitSuggestionMessage(String message) async {
+    if (message.trim().isEmpty) {
       return;
     }
 
     FocusScope.of(context).unfocus();
-    setState(() {
-      _suggestionCtrl.clear();
-      _suggestionFormKey.currentState?.reset();
-      _isSubmittingSuggestion = true;
-    });
+    setState(() => _isSubmittingSuggestion = true);
 
     try {
-      await ApiService.instance.submitSuggestion(message);
+      await ApiService.instance.submitSuggestion(message.trim());
 
       if (!mounted) {
         return;
@@ -106,11 +94,74 @@ class _HomeTabState extends State<HomeTab> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t(widget.language, 'contactSuggestionError'))),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSubmittingSuggestion = false);
       }
     }
+  }
+
+  Future<void> _showSuggestionDialog() async {
+    final suggestionCtrl = TextEditingController();
+
+    final message = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(t(widget.language, 'contactSuggestionTitle')),
+          content: TextField(
+            controller: suggestionCtrl,
+            minLines: 3,
+            maxLines: 5,
+            decoration: InputDecoration(
+              hintText: t(widget.language, 'contactSuggestionHint'),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(t(widget.language, 'cancelButton')),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                final text = suggestionCtrl.text.trim();
+                if (text.isEmpty) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        t(widget.language, 'validationRequiredField'),
+                      ),
+                    ),
+                  );
+                  return;
+                }
+                Navigator.pop(dialogContext, text);
+              },
+              icon: const Icon(Icons.send),
+              label: Text(t(widget.language, 'contactSuggestionSubmit')),
+            ),
+          ],
+        );
+      },
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      suggestionCtrl.dispose();
+    });
+
+    if (!mounted || message == null || message.trim().isEmpty) {
+      return;
+    }
+
+    await _submitSuggestionMessage(message);
   }
 
   Future<void> _submit() async {
@@ -548,26 +599,55 @@ class _HomeTabState extends State<HomeTab> {
           ),
           if (widget.lands.length > 1) ...[
             const SizedBox(height: 8),
-            DropdownButtonFormField<Land>(
-              value: selectedLand,
-              decoration: InputDecoration(
-                labelText: t(widget.language, 'selectLandHeading'),
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.swap_horiz),
-              ),
-              items: widget.lands
-                  .map(
-                    (land) => DropdownMenuItem<Land>(
-                      value: land,
-                      child: Text('${land.name} (${land.location})'),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (land) {
-                if (land == null || identical(land, selectedLand)) {
-                  return;
-                }
-                widget.onChangeLand(land);
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isCompact = constraints.maxWidth < 420;
+                final selectedSize = selectedLand.size.toStringAsFixed(2);
+
+                return DropdownButtonFormField<Land>(
+                  isExpanded: true,
+                  value: selectedLand,
+                  decoration: InputDecoration(
+                    isDense: isCompact,
+                    labelText: t(widget.language, 'selectLandHeading'),
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.swap_horiz),
+                    suffixText: isCompact
+                        ? selectedSize
+                        : '${t(widget.language, 'landSize')}: $selectedSize',
+                    suffixStyle: TextStyle(fontSize: isCompact ? 12 : 13),
+                  ),
+                  selectedItemBuilder: (context) => widget.lands
+                      .map(
+                        (land) => Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '${land.name} - ${land.size.toStringAsFixed(2)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  items: widget.lands
+                      .map(
+                        (land) => DropdownMenuItem<Land>(
+                          value: land,
+                          child: Text(
+                            '${land.name} - ${t(widget.language, 'landSize')}: ${land.size.toStringAsFixed(2)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (land) {
+                    if (land == null || identical(land, selectedLand)) {
+                      return;
+                    }
+                    widget.onChangeLand(land);
+                  },
+                );
               },
             ),
           ],
@@ -634,52 +714,12 @@ class _HomeTabState extends State<HomeTab> {
             },
           ),
           const SizedBox(height: 16),
-          Card(
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Form(
-                key: _suggestionFormKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      t(widget.language, 'contactSuggestionTitle'),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _suggestionCtrl,
-                      minLines: 3,
-                      maxLines: 5,
-                      decoration: InputDecoration(
-                        hintText: t(widget.language, 'contactSuggestionHint'),
-                        border: const OutlineInputBorder(),
-                      ),
-                      validator: _requiredValidator,
-                    ),
-                    const SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _isSubmittingSuggestion
-                            ? null
-                            : _submitSuggestion,
-                        icon: const Icon(Icons.send),
-                        label: Text(
-                          t(widget.language, 'contactSuggestionSubmit'),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isSubmittingSuggestion ? null : _showSuggestionDialog,
+              icon: const Icon(Icons.feedback_outlined),
+              label: Text(t(widget.language, 'contactSuggestionSubmit')),
             ),
           ),
         ],

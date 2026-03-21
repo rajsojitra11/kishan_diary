@@ -211,6 +211,16 @@ class _LabourScreenState extends State<LabourScreen> {
     return days.toString();
   }
 
+  String _formatAmount(double amount) {
+    if (amount == amount.truncateToDouble()) {
+      return amount.toInt().toString();
+    }
+    return amount
+        .toStringAsFixed(2)
+        .replaceFirst(RegExp(r'0+$'), '')
+        .replaceFirst(RegExp(r'\.$'), '');
+  }
+
   void _syncLaborMetric() {
     final land = widget.selectedLand;
     if (land == null) {
@@ -247,17 +257,17 @@ class _LabourScreenState extends State<LabourScreen> {
         final cards = [
           statCard(
             t(widget.language, 'laborTotalPaid'),
-            '₹ ${_totalPaid.toStringAsFixed(2)}',
+            '₹ ${_formatAmount(_totalPaid)}',
             Colors.teal,
           ),
           statCard(
             t(widget.language, 'laborTotalPending'),
-            '₹ ${_totalPending.toStringAsFixed(2)}',
+            '₹ ${_formatAmount(_totalPending)}',
             Colors.red,
           ),
           statCard(
             t(widget.language, 'laborTotalWage'),
-            '₹ ${_totalWage.toStringAsFixed(2)}',
+            '₹ ${_formatAmount(_totalWage)}',
             Colors.indigo,
           ),
         ];
@@ -670,8 +680,10 @@ class _LabourScreenState extends State<LabourScreen> {
                     child: const Icon(Icons.person, color: Colors.blue),
                   ),
                   title: Text(
-                    '${labor.name}  •  ${_formatDays(labor.days)} ${t(widget.language, 'laborDay')}',
+                    '${labor.name}  •  ${_formatDays(labor.days)} ${t(widget.language, 'laborWord')}',
                     style: const TextStyle(fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -685,10 +697,17 @@ class _LabourScreenState extends State<LabourScreen> {
                           ),
                           const SizedBox(width: 2),
                           Expanded(
-                            child: Text(
-                              '${t(widget.language, 'laborTotalPaid')} ${totalUpad.toStringAsFixed(2)}',
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                t(widget.language, 'laborTotalPaid'),
+                                maxLines: 1,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 6),
+                          Text(_formatAmount(totalUpad), maxLines: 1),
                         ],
                       ),
                       Row(
@@ -700,10 +719,17 @@ class _LabourScreenState extends State<LabourScreen> {
                           ),
                           const SizedBox(width: 2),
                           Expanded(
-                            child: Text(
-                              '${t(widget.language, 'laborTotalPending')} ${totalPending.toStringAsFixed(2)}',
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                t(widget.language, 'laborTotalPending'),
+                                maxLines: 1,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 6),
+                          Text(_formatAmount(totalPending), maxLines: 1),
                         ],
                       ),
                       Row(
@@ -715,10 +741,17 @@ class _LabourScreenState extends State<LabourScreen> {
                           ),
                           const SizedBox(width: 2),
                           Expanded(
-                            child: Text(
-                              '${t(widget.language, 'laborTotalWage')} ${labor.total.toStringAsFixed(2)}',
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                t(widget.language, 'laborTotalWage'),
+                                maxLines: 1,
+                              ),
                             ),
                           ),
+                          const SizedBox(width: 6),
+                          Text(_formatAmount(labor.total), maxLines: 1),
                         ],
                       ),
                     ],
@@ -726,13 +759,42 @@ class _LabourScreenState extends State<LabourScreen> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(
-                        icon: const Icon(Icons.note_alt, color: Colors.blue),
-                        onPressed: () => _startEditByEntry(labor),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.blue.shade200),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(
+                            Icons.note_alt,
+                            color: Colors.blue,
+                            size: 20,
+                          ),
+                          onPressed: () => _startEditByEntry(labor),
+                        ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _confirmRemoveByEntry(labor),
+                      const SizedBox(width: 8),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.red.shade200),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Colors.red,
+                            size: 20,
+                          ),
+                          onPressed: () => _confirmRemoveByEntry(labor),
+                        ),
                       ),
                     ],
                   ),

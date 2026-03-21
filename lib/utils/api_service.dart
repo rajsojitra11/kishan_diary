@@ -221,26 +221,30 @@ class ApiService {
 
   Future<Map<String, dynamic>> register({
     required String name,
-    required String email,
+    String? email,
     required String mobile,
     required String birthDate,
     required String password,
     required String passwordConfirmation,
     String preferredLanguage = 'gu',
   }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      'mobile': mobile,
+      'birth_date': birthDate,
+      'password': password,
+      'password_confirmation': passwordConfirmation,
+      'preferred_language': preferredLanguage,
+    };
+    if (email != null && email.trim().isNotEmpty) {
+      body['email'] = email.trim();
+    }
+
     final data = await _request(
       'POST',
       '/auth/register',
       auth: false,
-      body: {
-        'name': name,
-        'email': email,
-        'mobile': mobile,
-        'birth_date': birthDate,
-        'password': password,
-        'password_confirmation': passwordConfirmation,
-        'preferred_language': preferredLanguage,
-      },
+      body: body,
     );
 
     return (data as Map).cast<String, dynamic>();

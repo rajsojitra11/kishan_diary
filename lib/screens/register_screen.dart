@@ -97,7 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _emailValidator(String? value) {
     final email = (value ?? '').trim();
     if (email.isEmpty) {
-      return 'Please enter email';
+      return null;
     }
     if (!RegExp(r'^[\w.\-]+@([\w\-]+\.)+[A-Za-z]{2,}$').hasMatch(email)) {
       return 'Enter valid email';
@@ -167,7 +167,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final registerData = await ApiService.instance.register(
         name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
+        email: _emailController.text.trim().isEmpty
+            ? null
+            : _emailController.text.trim(),
         mobile: _mobileController.text.trim(),
         birthDate: _birthdateController.text.trim(),
         password: _passwordController.text,
@@ -289,7 +291,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         keyboardType: TextInputType.emailAddress,
                         style: const TextStyle(color: Colors.white),
                         cursorColor: Colors.white,
-                        decoration: _darkInputDecoration('Email'),
+                        decoration: _darkInputDecoration('Email (Optional)'),
                         validator: _emailValidator,
                       ),
                       const SizedBox(height: 12),

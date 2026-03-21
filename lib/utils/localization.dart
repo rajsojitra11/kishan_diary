@@ -464,6 +464,12 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati:
         'શું તમે ખાતરી કરો છો કે તમે આ એકાઉન્ટ માટે બધી જમીનના રેકોર્ડ નિષ્ક્રિય કરવા માંગો છો?',
   },
+  'deleteAllDataNote': {
+    AppLanguage.english:
+        'After disabling, your land records will not be visible here.',
+    AppLanguage.gujarati:
+        'નિષ્ક્રિય કરવાથી તમારી બધી જમીનનો રેકોર્ડ અહીં દેખાશે નહીં.',
+  },
   'disableAllDataDone': {
     AppLanguage.english: 'All land records disabled. You can add new lands.',
     AppLanguage.gujarati:
@@ -638,6 +644,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Thank you! Your suggestion has been submitted.',
     AppLanguage.gujarati: 'આભાર! તમારું સૂચન સફળતાપૂર્વક મોકલાયું છે.',
   },
+  'contactSuggestionError': {
+    AppLanguage.english: 'Failed to submit suggestion. Please try again.',
+    AppLanguage.gujarati: 'સૂચન મોકલી શકાયું નથી. કૃપા કરીને ફરી પ્રયાસ કરો.',
+  },
   'okButton': {AppLanguage.english: 'OK', AppLanguage.gujarati: 'બરાબર'},
   'navHome': {AppLanguage.english: 'Home', AppLanguage.gujarati: 'હોમ'},
   'navIncome': {AppLanguage.english: 'Income', AppLanguage.gujarati: 'આવક'},
@@ -734,6 +744,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Labor Days',
     AppLanguage.gujarati: 'મજૂરીના દિવસો',
   },
+  'laborWord': {AppLanguage.english: 'Labor', AppLanguage.gujarati: 'મજૂરી'},
   'laborDailyWage': {
     AppLanguage.english: 'Daily Wage',
     AppLanguage.gujarati: 'એક દિવસની મજૂરી',

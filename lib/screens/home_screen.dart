@@ -376,7 +376,9 @@ class _HomeScreenState extends State<HomeScreen> {
           context: context,
           builder: (_) => AlertDialog(
             title: Text(t(_language, 'deleteAllDataTitle')),
-            content: Text(t(_language, 'deleteAllDataConfirm')),
+            content: Text(
+              '${t(_language, 'deleteAllDataConfirm')}\n\n${t(_language, 'deleteAllDataNote')}',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -1220,6 +1222,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Nav Bar ────────────────────────────────────────────────────────────────
 
+  Widget _navIcon(Widget icon, {required bool selected}) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: selected
+            ? Colors.green.withAlpha(30)
+            : Colors.grey.withAlpha(22),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: selected
+              ? Colors.green.withAlpha(90)
+              : Colors.grey.withAlpha(90),
+          width: 1,
+        ),
+      ),
+      child: icon,
+    );
+  }
+
   Widget _buildNavBar() {
     return BottomNavigationBar(
       currentIndex: _navIndex,
@@ -1231,27 +1252,39 @@ class _HomeScreenState extends State<HomeScreen> {
       type: BottomNavigationBarType.fixed,
       items: [
         BottomNavigationBarItem(
-          icon: const Icon(Icons.home),
+          icon: _navIcon(const Icon(Icons.home), selected: false),
+          activeIcon: _navIcon(const Icon(Icons.home), selected: true),
           label: t(_language, 'navHome'),
         ),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.currency_rupee),
+          icon: _navIcon(const Icon(Icons.currency_rupee), selected: false),
+          activeIcon: _navIcon(
+            const Icon(Icons.currency_rupee),
+            selected: true,
+          ),
           label: t(_language, 'navIncome'),
         ),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.receipt_long),
+          icon: _navIcon(const Icon(Icons.receipt_long), selected: false),
+          activeIcon: _navIcon(const Icon(Icons.receipt_long), selected: true),
           label: t(_language, 'navExpense'),
         ),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.eco),
+          icon: _navIcon(const Icon(Icons.eco), selected: false),
+          activeIcon: _navIcon(const Icon(Icons.eco), selected: true),
           label: t(_language, 'navCrop'),
         ),
         BottomNavigationBarItem(
-          icon: const Icon(Icons.group),
+          icon: _navIcon(const Icon(Icons.group), selected: false),
+          activeIcon: _navIcon(const Icon(Icons.group), selected: true),
           label: t(_language, 'navLabor'),
         ),
         BottomNavigationBarItem(
-          icon: const FaIcon(FontAwesomeIcons.cow),
+          icon: _navIcon(const FaIcon(FontAwesomeIcons.cow), selected: false),
+          activeIcon: _navIcon(
+            const FaIcon(FontAwesomeIcons.cow),
+            selected: true,
+          ),
           label: t(_language, 'navAnimal'),
         ),
       ],
