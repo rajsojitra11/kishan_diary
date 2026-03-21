@@ -33,8 +33,19 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     'expenseTypeLightBill',
     'expenseTypeOther',
   ];
+  String _selectedExpenseTypeFilter = 'expenseTypeAll';
 
   String _typeLabel(String key) => t(widget.language, key);
+
+  List<ExpenseEntry> _filteredEntries(List<ExpenseEntry> entries) {
+    if (_selectedExpenseTypeFilter == 'expenseTypeAll') {
+      return entries;
+    }
+
+    return entries
+        .where((entry) => entry.type == _selectedExpenseTypeFilter)
+        .toList();
+  }
 
   bool _loading = false;
 
@@ -855,14 +866,18 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.selectedLand == null) {
+    final selectedLand = widget.selectedLand;
+
+    if (selectedLand == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 32),
         child: Center(child: Text(t(widget.language, 'noLandSelected'))),
       );
     }
 
-    final entries = widget.selectedLand!.expenseEntries;
+    final entries = selectedLand.expenseEntries;
+    final filteredEntries = _filteredEntries(entries);
+    final expenseTabs = ['expenseTypeAll', ..._expenseTypeKeys];
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -874,7 +889,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
         const SizedBox(height: 12),
         statCard(
           t(widget.language, 'expensesLabel'),
-          '₹ ${widget.selectedLand!.expenses.toStringAsFixed(2)}',
+          '₹ ${selectedLand.expenses.toStringAsFixed(2)}',
           Colors.red,
         ),
         const SizedBox(height: 12),
@@ -887,17 +902,38 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: expenseTabs.map((typeKey) {
+              final isSelected = _selectedExpenseTypeFilter == typeKey;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(_typeLabel(typeKey)),
+                  selected: isSelected,
+                  onSelected: (_) {
+                    setState(() {
+                      _selectedExpenseTypeFilter = typeKey;
+                    });
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 12),
         if (_loading)
           const Center(child: CircularProgressIndicator())
-        else if (entries.isEmpty)
+        else if (filteredEntries.isEmpty)
           Text(t(widget.language, 'expenseNoRecords'))
         else
           LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth < 700) {
-                return _buildMobileExpenseRecords(entries);
+                return _buildMobileExpenseRecords(filteredEntries);
               }
-              return _buildDesktopExpenseRecords(entries);
+              return _buildDesktopExpenseRecords(filteredEntries);
             },
           ),
       ],

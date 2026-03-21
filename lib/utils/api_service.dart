@@ -21,6 +21,7 @@ class ApiService {
   ApiService._();
 
   static final ApiService instance = ApiService._();
+  static const String _androidDefaultApiBase = 'http://192.168.1.8:8000/api/v1';
 
   static String get _baseUrl {
     final configured = const String.fromEnvironment('API_BASE_URL');
@@ -35,7 +36,7 @@ class ApiService {
     }
 
     if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000/api/v1';
+      return _androidDefaultApiBase;
     }
 
     return 'http://127.0.0.1:8000/api/v1';
@@ -48,6 +49,13 @@ class ApiService {
       return uri;
     }
     return uri.replace(queryParameters: query);
+  }
+
+  String _backendUnavailableMessage() {
+    final apiBase = _baseUrl.replaceAll(RegExp(r'/api/v1$'), '');
+    return 'Backend server not running or not reachable. '
+        'Start Laravel with: php artisan serve --host=0.0.0.0 --port=8000 '
+        'and run app with API_BASE_URL=$apiBase';
   }
 
   Future<Map<String, String>> _headers({
@@ -144,13 +152,9 @@ class ApiService {
           throw ApiException('Unsupported HTTP method: $method');
       }
     } on http.ClientException {
-      throw ApiException(
-        'Cannot connect to server. Start backend with: php artisan serve --host=127.0.0.1 --port=8000',
-      );
+      throw ApiException(_backendUnavailableMessage());
     } on SocketException {
-      throw ApiException(
-        'Cannot connect to server. Start backend with: php artisan serve --host=127.0.0.1 --port=8000',
-      );
+      throw ApiException(_backendUnavailableMessage());
     }
 
     return _decodeResponse(response);
@@ -197,13 +201,9 @@ class ApiService {
       final streamedResponse = await request.send();
       response = await http.Response.fromStream(streamedResponse);
     } on http.ClientException {
-      throw ApiException(
-        'Cannot connect to server. Start backend with: php artisan serve --host=127.0.0.1 --port=8000',
-      );
+      throw ApiException(_backendUnavailableMessage());
     } on SocketException {
-      throw ApiException(
-        'Cannot connect to server. Start backend with: php artisan serve --host=127.0.0.1 --port=8000',
-      );
+      throw ApiException(_backendUnavailableMessage());
     }
 
     return _decodeResponse(response);
@@ -339,6 +339,15 @@ class ApiService {
 
   Future<void> clearAllData() async {
     await _request('DELETE', '/me/all-data');
+  }
+
+  Future<Map<String, dynamic>> submitSuggestion(String message) async {
+    final data = await _request(
+      'POST',
+      '/me/suggestions',
+      body: {'message': message},
+    );
+    return (data as Map).cast<String, dynamic>();
   }
 
   Future<Map<String, dynamic>> dashboardSummary() async {

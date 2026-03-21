@@ -113,4 +113,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\AnimalRecord::class);
     }
+
+    public function suggestions(): HasMany
+    {
+        return $this->hasMany(\App\Models\Suggestion::class);
+    }
 }

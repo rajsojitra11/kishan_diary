@@ -158,7 +158,7 @@ class IncomeEntryController extends ApiController
 
     private function ownedLand(Request $request, Land $land): Land
     {
-        if ($land->user_id !== $request->user()->id) {
+        if ($land->user_id !== $request->user()->id || !$land->is_active) {
             abort(404);
         }
 
@@ -167,7 +167,11 @@ class IncomeEntryController extends ApiController
 
     private function ownedEntry(Request $request, IncomeEntry $entry): IncomeEntry
     {
-        if ($entry->user_id !== $request->user()->id) {
+        if (
+            $entry->user_id !== $request->user()->id ||
+            !$entry->land ||
+            !$entry->land->is_active
+        ) {
             abort(404);
         }
 

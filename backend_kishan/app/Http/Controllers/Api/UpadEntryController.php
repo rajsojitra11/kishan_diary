@@ -98,7 +98,11 @@ class UpadEntryController extends ApiController
 
     private function ownedLabor(Request $request, LaborEntry $laborEntry): LaborEntry
     {
-        if ($laborEntry->user_id !== $request->user()->id) {
+        if (
+            $laborEntry->user_id !== $request->user()->id ||
+            !$laborEntry->land ||
+            !$laborEntry->land->is_active
+        ) {
             abort(404);
         }
 
@@ -107,7 +111,11 @@ class UpadEntryController extends ApiController
 
     private function ownedUpad(Request $request, UpadEntry $upadEntry): UpadEntry
     {
-        if ($upadEntry->user_id !== $request->user()->id) {
+        if (
+            $upadEntry->user_id !== $request->user()->id ||
+            !$upadEntry->land ||
+            !$upadEntry->land->is_active
+        ) {
             abort(404);
         }
 

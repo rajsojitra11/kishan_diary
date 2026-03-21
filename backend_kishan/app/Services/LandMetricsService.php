@@ -32,7 +32,7 @@ class LandMetricsService
     {
         $animalIncomeGlobal = (float) $user->animalRecords()->sum('amount');
 
-        $user->lands()->update([
+        $user->lands()->where('is_active', true)->update([
             'animal_income_total' => $animalIncomeGlobal,
         ]);
 

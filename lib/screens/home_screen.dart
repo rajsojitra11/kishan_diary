@@ -6,12 +6,15 @@ import 'package:image_picker/image_picker.dart';
 import '../models/animal.dart';
 import '../models/land.dart';
 import '../screens/animal_screen.dart';
+import '../screens/about_app_screen.dart';
+import '../screens/contact_us_screen.dart';
 import '../screens/crop_screen.dart';
 import '../screens/expense_screen.dart';
 import '../screens/home_tab.dart';
 import '../screens/income_screen.dart';
 import '../screens/labour_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/rules_regulation_screen.dart';
 import '../utils/api_service.dart';
 import '../utils/app_session.dart';
 import '../utils/localization.dart';
@@ -234,7 +237,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Land Operations ────────────────────────────────────────────────────────
 
-  void _addLandFromValues(String name, double size, String location) async {
+  Future<bool> _addLandFromValues(
+    String name,
+    double size,
+    String location,
+  ) async {
     try {
       final payload = await ApiService.instance.createLand(
         name: name,
@@ -244,7 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final land = _landFromApi(payload);
 
       if (!mounted) {
-        return;
+        return false;
       }
 
       setState(() {
@@ -255,13 +262,24 @@ class _HomeScreenState extends State<HomeScreen> {
           ..remove(0)
           ..add(0);
       });
+      return true;
     } on ApiException catch (error) {
       if (!mounted) {
-        return;
+        return false;
       }
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
+      return false;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to add land. Please try again.'),
+          ),
+        );
+      }
+      return false;
     }
   }
 
@@ -271,18 +289,6 @@ class _HomeScreenState extends State<HomeScreen> {
       _navIndex = 0;
       _tabHistory
         ..remove(0)
-        ..add(0);
-    });
-  }
-
-  void _clearAll() {
-    setState(() {
-      _lands.clear();
-      _animals.clear();
-      _selectedLand = null;
-      _navIndex = 0;
-      _tabHistory
-        ..clear()
         ..add(0);
     });
   }
@@ -314,7 +320,77 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       await ApiService.instance.clearAllData();
-      _clearAll();
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _lands.clear();
+        _selectedLand = null;
+        _navIndex = 0;
+        _tabHistory
+          ..remove(0)
+          ..add(0);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t(_language, 'disableAllDataDone'))),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    }
+  }
+
+  Future<void> _confirmDisableLand(Land land) async {
+    final shouldDisable =
+        await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text(t(_language, 'disableLandTitle')),
+            content: Text(t(_language, 'disableLandConfirm')),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(t(_language, 'cancelButton')),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(t(_language, 'deleteButton')),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!shouldDisable) {
+      return;
+    }
+
+    try {
+      if (land.id != null) {
+        await ApiService.instance.deleteLand(land.id!);
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _lands.removeWhere((item) => item.id == land.id);
+        if (_selectedLand?.id == land.id) {
+          _selectedLand = _lands.isNotEmpty ? _lands.first : null;
+          _navIndex = 0;
+          _tabHistory
+            ..remove(0)
+            ..add(0);
+        }
+      });
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -893,6 +969,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _openDrawerInfoPage(Widget page) {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    navigator.push(MaterialPageRoute(builder: (_) => page)).then((_) {
+      if (mounted) {
+        _scaffoldKey.currentState?.openDrawer();
+      }
+    });
+  }
+
   // ── Nav Bar ────────────────────────────────────────────────────────────────
 
   Widget _buildNavBar() {
@@ -1161,16 +1247,35 @@ class _HomeScreenState extends State<HomeScreen> {
                                       : Colors.grey,
                                 ),
                                 title: Text('${land.name} (${land.location})'),
-                                trailing: IconButton(
-                                  icon: const Icon(
-                                    Icons.edit,
-                                    color: Colors.green,
-                                  ),
-                                  tooltip: t(_language, 'editLandTooltip'),
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _showEditLandDialog(land);
-                                  },
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.edit,
+                                        color: Colors.green,
+                                      ),
+                                      tooltip: t(_language, 'editLandTooltip'),
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        _showEditLandDialog(land);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                      tooltip: t(
+                                        _language,
+                                        'disableLandTooltip',
+                                      ),
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        _confirmDisableLand(land);
+                                      },
+                                    ),
+                                  ],
                                 ),
                                 onTap: () {
                                   _selectLand(land);
@@ -1181,16 +1286,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
 
-                      // Clear all
-                      ListTile(
-                        leading: const Icon(Icons.clear_all, color: Colors.red),
-                        title: Text(t(_language, 'drawerClear')),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _confirmClearAll();
-                        },
-                      ),
-
                       // About
                       ListTile(
                         leading: const Icon(
@@ -1199,21 +1294,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         title: Text(t(_language, 'drawerAbout')),
                         onTap: () {
-                          Navigator.pop(context);
-                          showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: Text(t(_language, 'drawerAbout')),
-                              content: Text(
-                                t(_language, 'aboutAppDescription'),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text(t(_language, 'okButton')),
-                                ),
-                              ],
-                            ),
+                          _openDrawerInfoPage(
+                            AboutAppScreen(language: _language),
                           );
                         },
                       ),
@@ -1226,23 +1308,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         title: Text(t(_language, 'drawerTermsConditions')),
                         onTap: () {
-                          Navigator.pop(context);
-                          showDialog(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: Text(
-                                t(_language, 'drawerTermsConditions'),
-                              ),
-                              content: Text(
-                                t(_language, 'termsConditionsDescription'),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: Text(t(_language, 'okButton')),
-                                ),
-                              ],
-                            ),
+                          _openDrawerInfoPage(
+                            RulesRegulationScreen(language: _language),
+                          );
+                        },
+                      ),
+
+                      // Contact Us
+                      ListTile(
+                        leading: const Icon(
+                          Icons.contact_mail,
+                          color: Colors.teal,
+                        ),
+                        title: Text(t(_language, 'drawerContactUs')),
+                        onTap: () {
+                          _openDrawerInfoPage(
+                            ContactUsScreen(language: _language),
                           );
                         },
                       ),
@@ -1250,6 +1331,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.clear_all, color: Colors.red),
+                  title: Text(t(_language, 'drawerClear')),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmClearAll();
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.logout, color: Colors.red),
                   title: Text(t(_language, 'drawerLogout')),

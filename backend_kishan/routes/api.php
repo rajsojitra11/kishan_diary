@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\LandController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\SuggestionController;
 use App\Http\Controllers\Api\UpadEntryController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/me/profile-image', [ProfileController::class, 'updateProfileImage']);
         Route::patch('/me/language', [ProfileController::class, 'updateLanguage']);
         Route::delete('/me/all-data', [AppDataController::class, 'clearAllData']);
+        Route::post('/me/suggestions', [SuggestionController::class, 'store']);
 
         Route::get('/dashboard/summary', [DashboardController::class, 'summary']);
         Route::get('/reports/current-page', [ReportController::class, 'currentPage']);

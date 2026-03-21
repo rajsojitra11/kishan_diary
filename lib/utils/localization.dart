@@ -44,8 +44,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'મજૂરી ખર્ચ',
   },
   'fertilizerLabel': {
-    AppLanguage.english: 'Fertilizer & Seeds',
-    AppLanguage.gujarati: 'દવા-બિયારણ',
+    AppLanguage.english: 'Medicine & Seeds Expense',
+    AppLanguage.gujarati: 'દવા-બિયારણ ખર્ચ',
   },
   'incomeLabel': {AppLanguage.english: 'Income', AppLanguage.gujarati: 'આવક'},
   'incomeAddButton': {
@@ -60,6 +60,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Income Type',
     AppLanguage.gujarati: 'આવક પ્રકાર',
   },
+  'incomeTypeAll': {AppLanguage.english: 'All', AppLanguage.gujarati: 'બધા'},
   'incomeAmountLabel': {
     AppLanguage.english: 'Amount',
     AppLanguage.gujarati: 'રકમ',
@@ -168,6 +169,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Expense Type',
     AppLanguage.gujarati: 'ખર્ચ પ્રકાર',
   },
+  'expenseTypeAll': {AppLanguage.english: 'All', AppLanguage.gujarati: 'બધા'},
   'expenseAmountLabel': {
     AppLanguage.english: 'Amount',
     AppLanguage.gujarati: 'રકમ',
@@ -377,6 +379,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Terms & Conditions',
     AppLanguage.gujarati: 'નિયમો અને શરતો',
   },
+  'drawerContactUs': {
+    AppLanguage.english: 'Contact Us',
+    AppLanguage.gujarati: 'સંપર્ક કરો',
+  },
   'termsConditionsDescription': {
     AppLanguage.english:
         'Use this app responsibly. Keep your records accurate and do not share private farm data with unknown users.',
@@ -384,8 +390,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
         'આ એપનો જવાબદારીપૂર્વક ઉપયોગ કરો. તમારી વિગતો સાચી રાખો અને અજાણી વ્યક્તિઓ સાથે ખાનગી ખેતીનો ડેટા શેર ન કરો.',
   },
   'drawerClear': {
-    AppLanguage.english: 'Clear All Data',
-    AppLanguage.gujarati: 'બધો ડેટા સાફ કરો',
+    AppLanguage.english: 'Disable All Lands',
+    AppLanguage.gujarati: 'બધી જમીન નિષ્ક્રિય કરો',
   },
   'drawerUpdateProfile': {
     AppLanguage.english: 'Update Profile',
@@ -440,14 +446,19 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'પ્રોફાઇલ સફળતાપૂર્વક અપડેટ થઈ',
   },
   'deleteAllDataTitle': {
-    AppLanguage.english: 'Delete All Data',
-    AppLanguage.gujarati: 'બધો ડેટા કાઢી નાખો',
+    AppLanguage.english: 'Disable All Lands',
+    AppLanguage.gujarati: 'બધી જમીન નિષ્ક્રિય કરો',
   },
   'deleteAllDataConfirm': {
     AppLanguage.english:
-        'Are you sure you want to delete all data? This action cannot be undone.',
+        'Are you sure you want to disable all land records for this account?',
     AppLanguage.gujarati:
-        'શું તમે ખરેખર બધી માહિતી કાઢી નાખવા માંગો છો? આ ક્રિયા પાછી કરી શકાશે નહીં.',
+        'શું તમે ખાતરી કરો છો કે તમે આ એકાઉન્ટ માટે બધી જમીનના રેકોર્ડ નિષ્ક્રિય કરવા માંગો છો?',
+  },
+  'disableAllDataDone': {
+    AppLanguage.english: 'All land records disabled. You can add new lands.',
+    AppLanguage.gujarati:
+        'બધા જમીન રેકોર્ડ નિષ્ક્રિય થયા. તમે નવી જમીન ઉમેરી શકો છો.',
   },
   'drawerAddLand': {
     AppLanguage.english: 'Add Land',
@@ -475,11 +486,120 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Edit Land',
     AppLanguage.gujarati: 'જમીન સંપાદિત કરો',
   },
+  'disableLandTooltip': {
+    AppLanguage.english: 'Disable Land',
+    AppLanguage.gujarati: 'જમીન નિષ્ક્રિય કરો',
+  },
+  'disableLandTitle': {
+    AppLanguage.english: 'Disable Land',
+    AppLanguage.gujarati: 'જમીન નિષ્ક્રિય કરો',
+  },
+  'disableLandConfirm': {
+    AppLanguage.english:
+        'Are you sure you want to disable this land? Records will be kept but hidden.',
+    AppLanguage.gujarati:
+        'શું તમે આ જમીન નિષ્ક્રિય કરવા માંગો છો? રેકોર્ડ રહેશે, પરંતુ છુપાઈ જશે.',
+  },
   'aboutAppDescription': {
     AppLanguage.english:
         'Kishan Diary — land tracking and expense management app.',
     AppLanguage.gujarati:
         'કિસાન ડાયરી — જમીન ટ્રેકિંગ અને ખર્ચ વ્યવસ્થાપન માટેની એપ.',
+  },
+  'aboutPageTitle': {
+    AppLanguage.english: 'About Kishan Diary',
+    AppLanguage.gujarati: 'કિસાન ડાયરી વિશે',
+  },
+  'aboutPageIntro': {
+    AppLanguage.english:
+        'Kishan Diary helps farmers manage land, income, expenses, crops, labor, and animal records in one place.',
+    AppLanguage.gujarati:
+        'કિસાન ડાયરી ખેડુતોને જમીન, આવક, ખર્ચ, પાક, મજૂરી અને પશુ રેકોર્ડ એક જ જગ્યાએ સંભાળવામાં મદદ કરે છે.',
+  },
+  'aboutPageFeaturesTitle': {
+    AppLanguage.english: 'Main Features',
+    AppLanguage.gujarati: 'મુખ્ય સુવિધાઓ',
+  },
+  'aboutFeature1': {
+    AppLanguage.english: 'Land-wise financial tracking',
+    AppLanguage.gujarati: 'જમીન મુજબ નાણાકીય ટ્રેકિંગ',
+  },
+  'aboutFeature2': {
+    AppLanguage.english: 'Income, expense, and crop records',
+    AppLanguage.gujarati: 'આવક, ખર્ચ અને પાક રેકોર્ડ',
+  },
+  'aboutFeature3': {
+    AppLanguage.english: 'Labor and upad management',
+    AppLanguage.gujarati: 'મજૂર અને ઉપાડ વ્યવસ્થાપન',
+  },
+  'aboutFeature4': {
+    AppLanguage.english: 'Animal income and milk records',
+    AppLanguage.gujarati: 'પશુ આવક અને દૂધ રેકોર્ડ',
+  },
+  'rulesPageTitle': {
+    AppLanguage.english: 'Rules & Regulations',
+    AppLanguage.gujarati: 'નિયમો અને નિયમન',
+  },
+  'rule1': {
+    AppLanguage.english: 'Use correct and truthful farm data only.',
+    AppLanguage.gujarati: 'માત્ર સાચો અને યથાર્થ ખેતી ડેટા જ દાખલ કરો.',
+  },
+  'rule2': {
+    AppLanguage.english: 'Do not share your account token or password.',
+    AppLanguage.gujarati: 'તમારો એકાઉન્ટ ટોકન અથવા પાસવર્ડ શેર ન કરો.',
+  },
+  'rule3': {
+    AppLanguage.english: 'Review entries before saving or exporting reports.',
+    AppLanguage.gujarati: 'સેવ અથવા રિપોર્ટ એક્સપોર્ટ કરતા પહેલા નોંધો ચકાસો.',
+  },
+  'rule4': {
+    AppLanguage.english: 'Keep backup copies of important records.',
+    AppLanguage.gujarati: 'મહત્વપૂર્ણ નોંધોની બેકઅપ નકલ રાખો.',
+  },
+  'rule5': {
+    AppLanguage.english:
+        'Respect local legal requirements for financial and labor records.',
+    AppLanguage.gujarati:
+        'નાણાકીય અને મજૂરી રેકોર્ડ માટે સ્થાનિક કાયદાકીય નિયમોનું પાલન કરો.',
+  },
+  'rule6': {
+    AppLanguage.english:
+        'Contact support for any wrong data, access issue, or app problem.',
+    AppLanguage.gujarati:
+        'ખોટા ડેટા, ઍક્સેસ સમસ્યા કે એપ સમસ્યા માટે સપોર્ટનો સંપર્ક કરો.',
+  },
+  'contactPageTitle': {
+    AppLanguage.english: 'Contact Us',
+    AppLanguage.gujarati: 'અમારો સંપર્ક કરો',
+  },
+  'contactPageIntro': {
+    AppLanguage.english: 'For support, feedback, or issue reporting:',
+    AppLanguage.gujarati: 'સપોર્ટ, પ્રતિસાદ અથવા સમસ્યા માટે સંપર્ક કરો:',
+  },
+  'contactMobileLabel': {
+    AppLanguage.english: 'Mobile',
+    AppLanguage.gujarati: 'મોબાઇલ',
+  },
+  'contactEmailLabel': {
+    AppLanguage.english: 'Email',
+    AppLanguage.gujarati: 'ઇમેઇલ',
+  },
+  'contactSuggestionTitle': {
+    AppLanguage.english: 'Suggestion Box',
+    AppLanguage.gujarati: 'સૂચન બોક્સ',
+  },
+  'contactSuggestionHint': {
+    AppLanguage.english:
+        'Write your suggestion to improve app functionality...',
+    AppLanguage.gujarati: 'એપની સુવિધાઓ સુધારવા માટે તમારું સૂચન અહીં લખો...',
+  },
+  'contactSuggestionSubmit': {
+    AppLanguage.english: 'Submit Suggestion',
+    AppLanguage.gujarati: 'સૂચન મોકલો',
+  },
+  'contactSuggestionSuccess': {
+    AppLanguage.english: 'Thank you! Your suggestion has been submitted.',
+    AppLanguage.gujarati: 'આભાર! તમારું સૂચન સફળતાપૂર્વક મોકલાયું છે.',
   },
   'okButton': {AppLanguage.english: 'OK', AppLanguage.gujarati: 'બરાબર'},
   'navHome': {AppLanguage.english: 'Home', AppLanguage.gujarati: 'હોમ'},
@@ -556,6 +676,14 @@ const Map<String, Map<AppLanguage, String>> translations = {
   'laborName': {
     AppLanguage.english: 'Labor Name',
     AppLanguage.gujarati: 'મજૂરનું નામ',
+  },
+  'laborSearchHint': {
+    AppLanguage.english: 'Search labor by name or mobile',
+    AppLanguage.gujarati: 'નામ અથવા મોબાઇલથી મજૂર શોધો',
+  },
+  'laborSearchNoResults': {
+    AppLanguage.english: 'No labor found for this search',
+    AppLanguage.gujarati: 'આ શોધ માટે કોઈ મજૂર મળ્યો નથી',
   },
   'laborMobile': {
     AppLanguage.english: 'Mobile',

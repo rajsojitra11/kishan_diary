@@ -15,6 +15,7 @@ class LandController extends ApiController
     {
         $lands = $request->user()
             ->lands()
+            ->where('is_active', true)
             ->latest('id')
             ->get()
             ->map(fn(Land $land) => $this->landPayload($land))
@@ -34,6 +35,7 @@ class LandController extends ApiController
         ]);
 
         $land = $request->user()->lands()->create([
+            'is_active' => true,
             'land_name' => $validated['land_name'],
             'land_size' => $validated['land_size'],
             'location' => $validated['location'],
@@ -77,11 +79,13 @@ class LandController extends ApiController
     public function destroy(Request $request, Land $land): JsonResponse
     {
         $land = $this->ownedLand($request, $land);
-        $land->delete();
+        $land->update([
+            'is_active' => false,
+        ]);
 
         return $this->success([
-            'deleted' => true,
-        ], 'Land deleted');
+            'disabled' => true,
+        ], 'Land disabled');
     }
 
     public function summary(Request $request, Land $land): JsonResponse
@@ -101,7 +105,7 @@ class LandController extends ApiController
 
     private function ownedLand(Request $request, Land $land): Land
     {
-        if ($land->user_id !== $request->user()->id) {
+        if ($land->user_id !== $request->user()->id || !$land->is_active) {
             abort(404);
         }
 

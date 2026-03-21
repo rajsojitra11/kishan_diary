@@ -36,11 +36,13 @@ class _LabourScreenState extends State<LabourScreen> {
   // ── Form controllers ─────────────────────────────────────────────────────
   final TextEditingController _nameCtrl = TextEditingController();
   final TextEditingController _mobileCtrl = TextEditingController();
+  final TextEditingController _laborSearchCtrl = TextEditingController();
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _mobileCtrl.dispose();
+    _laborSearchCtrl.dispose();
     super.dispose();
   }
 
@@ -61,6 +63,23 @@ class _LabourScreenState extends State<LabourScreen> {
 
   List<UpadEntry> get _upadEntries =>
       widget.selectedLand?.upadEntries ?? const [];
+
+  String _normalizeSearchText(String value) {
+    return value.toLowerCase().trim();
+  }
+
+  List<LaborEntry> get _filteredLaborEntries {
+    final query = _normalizeSearchText(_laborSearchCtrl.text);
+    if (query.isEmpty) {
+      return _laborEntries;
+    }
+
+    return _laborEntries.where((labor) {
+      final name = _normalizeSearchText(labor.name);
+      final mobile = _normalizeSearchText(labor.mobile);
+      return name.contains(query) || mobile.contains(query);
+    }).toList();
+  }
 
   int? _toInt(dynamic value) {
     if (value is int) {
@@ -478,6 +497,35 @@ class _LabourScreenState extends State<LabourScreen> {
     }
   }
 
+  int _indexOfLaborEntry(LaborEntry labor) {
+    if (labor.id != null) {
+      final idMatchIndex = _laborEntries.indexWhere(
+        (item) => item.id == labor.id,
+      );
+      if (idMatchIndex != -1) {
+        return idMatchIndex;
+      }
+    }
+
+    return _laborEntries.indexWhere((item) => identical(item, labor));
+  }
+
+  void _startEditByEntry(LaborEntry labor) {
+    final index = _indexOfLaborEntry(labor);
+    if (index == -1) {
+      return;
+    }
+    _startEdit(index);
+  }
+
+  void _confirmRemoveByEntry(LaborEntry labor) {
+    final index = _indexOfLaborEntry(labor);
+    if (index == -1) {
+      return;
+    }
+    _confirmRemove(index);
+  }
+
   // ── Build ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -585,53 +633,76 @@ class _LabourScreenState extends State<LabourScreen> {
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          ..._laborEntries.asMap().entries.map((e) {
-            final idx = e.key;
-            final labor = e.value;
-            final totalUpad = _totalUpadForLabor(labor);
-            final totalPending = _totalPendingForLabor(labor);
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                isThreeLine: true,
-                leading: CircleAvatar(
-                  backgroundColor: Colors.blue.shade100,
-                  child: const Icon(Icons.person, color: Colors.blue),
+          TextField(
+            controller: _laborSearchCtrl,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: t(widget.language, 'laborSearchHint'),
+              prefixIcon: const Icon(Icons.search),
+              border: const OutlineInputBorder(),
+              suffixIcon: _laborSearchCtrl.text.isEmpty
+                  ? null
+                  : IconButton(
+                      onPressed: () {
+                        _laborSearchCtrl.clear();
+                        setState(() {});
+                      },
+                      icon: const Icon(Icons.clear),
+                    ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (_filteredLaborEntries.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(t(widget.language, 'laborSearchNoResults')),
+            )
+          else
+            ..._filteredLaborEntries.map((labor) {
+              final totalUpad = _totalUpadForLabor(labor);
+              final totalPending = _totalPendingForLabor(labor);
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: ListTile(
+                  isThreeLine: true,
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue.shade100,
+                    child: const Icon(Icons.person, color: Colors.blue),
+                  ),
+                  title: Text(
+                    '${labor.name}  •  ${_formatDays(labor.days)} ${t(widget.language, 'laborDay')}',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${t(widget.language, 'laborTotalPaid')} ${totalUpad.toStringAsFixed(2)}',
+                      ),
+                      Text(
+                        '${t(widget.language, 'laborTotalPending')} ${totalPending.toStringAsFixed(2)}',
+                      ),
+                      Text(
+                        '${t(widget.language, 'laborTotalWage')} ${labor.total.toStringAsFixed(2)}',
+                      ),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.blue),
+                        onPressed: () => _startEditByEntry(labor),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _confirmRemoveByEntry(labor),
+                      ),
+                    ],
+                  ),
                 ),
-                title: Text(
-                  '${labor.name}  •  ${_formatDays(labor.days)} ${t(widget.language, 'laborDay')}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${t(widget.language, 'laborTotalPaid')} ${totalUpad.toStringAsFixed(2)}',
-                    ),
-                    Text(
-                      '${t(widget.language, 'laborTotalPending')} ${totalPending.toStringAsFixed(2)}',
-                    ),
-                    Text(
-                      '${t(widget.language, 'laborTotalWage')} ${labor.total.toStringAsFixed(2)}',
-                    ),
-                  ],
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () => _startEdit(idx),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _confirmRemove(idx),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
+              );
+            }),
 
           // ── Summary bar when form is hidden ──────────────────────────
           if (!_showLaborForm)

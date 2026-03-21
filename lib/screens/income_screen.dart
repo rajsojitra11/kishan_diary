@@ -33,8 +33,53 @@ class _IncomeScreenState extends State<IncomeScreen> {
     'incomeTypeSubsidy',
     'incomeTypeOther',
   ];
+  String _selectedIncomeTypeFilter = 'incomeTypeAll';
 
   String _typeLabel(String key) => t(widget.language, key);
+
+  List<IncomeEntry> _filteredEntries(List<IncomeEntry> entries) {
+    if (_selectedIncomeTypeFilter == 'incomeTypeAll') {
+      return entries;
+    }
+
+    return entries
+        .where((entry) => entry.type == _selectedIncomeTypeFilter)
+        .toList();
+  }
+
+  int _indexOfIncomeEntry(IncomeEntry entry) {
+    final land = widget.selectedLand;
+    if (land == null) {
+      return -1;
+    }
+
+    if (entry.id != null) {
+      final idMatchIndex = land.incomeEntries.indexWhere(
+        (item) => item.id == entry.id,
+      );
+      if (idMatchIndex != -1) {
+        return idMatchIndex;
+      }
+    }
+
+    return land.incomeEntries.indexWhere((item) => identical(item, entry));
+  }
+
+  void _editIncomeByEntry(IncomeEntry entry) {
+    final index = _indexOfIncomeEntry(entry);
+    if (index == -1) {
+      return;
+    }
+    _editIncome(index);
+  }
+
+  void _deleteIncomeByEntry(IncomeEntry entry) {
+    final index = _indexOfIncomeEntry(entry);
+    if (index == -1) {
+      return;
+    }
+    _deleteIncome(index);
+  }
 
   bool _loading = false;
 
@@ -709,10 +754,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
   Widget _buildMobileIncomeRecords(List<IncomeEntry> entries) {
     return Column(
-      children: entries.asMap().entries.map((item) {
-        final index = item.key;
-        final record = item.value;
-
+      children: entries.map((record) {
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: Padding(
@@ -751,14 +793,14 @@ class _IncomeScreenState extends State<IncomeScreen> {
                     ),
                     IconButton(
                       tooltip: t(widget.language, 'incomeUpdateButton'),
-                      onPressed: () => _editIncome(index),
+                      onPressed: () => _editIncomeByEntry(record),
                       icon: const Icon(Icons.edit, color: Colors.blue),
                       iconSize: 20,
                       visualDensity: VisualDensity.compact,
                     ),
                     IconButton(
                       tooltip: t(widget.language, 'deleteButton'),
-                      onPressed: () => _deleteIncome(index),
+                      onPressed: () => _deleteIncomeByEntry(record),
                       icon: const Icon(Icons.delete, color: Colors.red),
                       iconSize: 20,
                       visualDensity: VisualDensity.compact,
@@ -775,10 +817,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
   Widget _buildDesktopIncomeRecords(List<IncomeEntry> entries) {
     return Column(
-      children: entries.asMap().entries.map((item) {
-        final index = item.key;
-        final record = item.value;
-
+      children: entries.map((record) {
         return Card(
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
@@ -819,14 +858,14 @@ class _IncomeScreenState extends State<IncomeScreen> {
                 ),
                 IconButton(
                   tooltip: t(widget.language, 'incomeUpdateButton'),
-                  onPressed: () => _editIncome(index),
+                  onPressed: () => _editIncomeByEntry(record),
                   icon: const Icon(Icons.edit, color: Colors.blue),
                   iconSize: 20,
                   visualDensity: VisualDensity.compact,
                 ),
                 IconButton(
                   tooltip: t(widget.language, 'deleteButton'),
-                  onPressed: () => _deleteIncome(index),
+                  onPressed: () => _deleteIncomeByEntry(record),
                   icon: const Icon(Icons.delete, color: Colors.red),
                   iconSize: 20,
                   visualDensity: VisualDensity.compact,
@@ -849,6 +888,8 @@ class _IncomeScreenState extends State<IncomeScreen> {
     }
 
     final entries = widget.selectedLand!.incomeEntries;
+    final filteredEntries = _filteredEntries(entries);
+    final incomeTabs = ['incomeTypeAll', ..._incomeTypeKeys];
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -873,17 +914,38 @@ class _IncomeScreenState extends State<IncomeScreen> {
           ),
         ),
         const SizedBox(height: 12),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: incomeTabs.map((typeKey) {
+              final isSelected = _selectedIncomeTypeFilter == typeKey;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(_typeLabel(typeKey)),
+                  selected: isSelected,
+                  onSelected: (_) {
+                    setState(() {
+                      _selectedIncomeTypeFilter = typeKey;
+                    });
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 12),
         if (_loading)
           const Center(child: CircularProgressIndicator())
-        else if (entries.isEmpty)
+        else if (filteredEntries.isEmpty)
           Text(t(widget.language, 'incomeNoRecords'))
         else
           LayoutBuilder(
             builder: (context, constraints) {
               if (constraints.maxWidth < 700) {
-                return _buildMobileIncomeRecords(entries);
+                return _buildMobileIncomeRecords(filteredEntries);
               }
-              return _buildDesktopIncomeRecords(entries);
+              return _buildDesktopIncomeRecords(filteredEntries);
             },
           ),
       ],

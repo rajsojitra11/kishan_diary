@@ -11,11 +11,13 @@ class AppDataController extends ApiController
     {
         $user = $request->user();
 
-        $user->lands()->delete();
-        $user->animals()->delete();
+        $disabledCount = $user->lands()->where('is_active', true)->update([
+            'is_active' => false,
+        ]);
 
         return $this->success([
-            'cleared' => true,
-        ], 'All app data cleared');
+            'disabled' => true,
+            'disabled_lands' => (int) $disabledCount,
+        ], 'Land data disabled successfully');
     }
 }

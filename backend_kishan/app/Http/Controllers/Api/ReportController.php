@@ -18,17 +18,18 @@ class ReportController extends ApiController
 
         $user = $request->user();
         $page = $validated['page'];
+        $activeLands = $user->lands()->where('is_active', true);
 
         if ($page === 'home') {
             return $this->success([
                 'page' => 'home',
                 'summary' => [
-                    'total_lands' => (int) $user->lands()->count(),
-                    'income_total' => (float) $user->lands()->sum('income_total'),
-                    'expense_total' => (float) $user->lands()->sum('expense_total'),
-                    'crop_production_kg' => (float) $user->lands()->sum('crop_production_kg'),
-                    'fertilizer_kg' => (float) $user->lands()->sum('fertilizer_kg'),
-                    'labor_rupees' => (float) $user->lands()->sum('labor_rupees'),
+                    'total_lands' => (int) $activeLands->count(),
+                    'income_total' => (float) $activeLands->sum('income_total'),
+                    'expense_total' => (float) $activeLands->sum('expense_total'),
+                    'crop_production_kg' => (float) $activeLands->sum('crop_production_kg'),
+                    'fertilizer_kg' => (float) $activeLands->sum('fertilizer_kg'),
+                    'labor_rupees' => (float) $activeLands->sum('labor_rupees'),
                     'animal_income_global' => (float) $user->animalRecords()->sum('amount'),
                 ],
             ], 'Report payload generated');
@@ -62,6 +63,7 @@ class ReportController extends ApiController
 
         $land = Land::query()
             ->where('user_id', $user->id)
+            ->where('is_active', true)
             ->findOrFail($validated['land_id']);
 
         $payload = [

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/land.dart';
+import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/text_input_config.dart';
@@ -13,7 +14,8 @@ class HomeTab extends StatefulWidget {
   final Land? selectedLand;
   final AppLanguage language;
   final double animalIncomeGlobal;
-  final void Function(String name, double size, String location) onAddLand;
+  final Future<bool> Function(String name, double size, String location)
+  onAddLand;
 
   const HomeTab({
     super.key,
@@ -33,16 +35,61 @@ class _HomeTabState extends State<HomeTab> {
   final TextEditingController _nameCtrl = TextEditingController();
   final TextEditingController _sizeCtrl = TextEditingController();
   final TextEditingController _locationCtrl = TextEditingController();
+  final _suggestionFormKey = GlobalKey<FormState>();
+  final TextEditingController _suggestionCtrl = TextEditingController();
+  bool _isSubmittingSuggestion = false;
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _sizeCtrl.dispose();
     _locationCtrl.dispose();
+    _suggestionCtrl.dispose();
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submitSuggestion() async {
+    if (!(_suggestionFormKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final message = _suggestionCtrl.text.trim();
+    if (message.isEmpty) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _suggestionCtrl.clear();
+      _suggestionFormKey.currentState?.reset();
+      _isSubmittingSuggestion = true;
+    });
+
+    try {
+      await ApiService.instance.submitSuggestion(message);
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t(widget.language, 'contactSuggestionSuccess'))),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmittingSuggestion = false);
+      }
+    }
+  }
+
+  Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -51,7 +98,12 @@ class _HomeTabState extends State<HomeTab> {
     final size = double.parse(_sizeCtrl.text.trim());
     final location = _locationCtrl.text.trim();
 
-    widget.onAddLand(name, size, location);
+    final saved = await widget.onAddLand(name, size, location);
+    if (!saved || !mounted) {
+      return;
+    }
+
+    _formKey.currentState?.reset();
     _nameCtrl.clear();
     _sizeCtrl.clear();
     _locationCtrl.clear();
@@ -243,6 +295,55 @@ class _HomeTabState extends State<HomeTab> {
                 itemBuilder: (_, index) => cards[index],
               );
             },
+          ),
+          const SizedBox(height: 16),
+          Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Form(
+                key: _suggestionFormKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t(widget.language, 'contactSuggestionTitle'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _suggestionCtrl,
+                      minLines: 3,
+                      maxLines: 5,
+                      decoration: InputDecoration(
+                        hintText: t(widget.language, 'contactSuggestionHint'),
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: _requiredValidator,
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _isSubmittingSuggestion
+                            ? null
+                            : _submitSuggestion,
+                        icon: const Icon(Icons.send),
+                        label: Text(
+                          t(widget.language, 'contactSuggestionSubmit'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ],

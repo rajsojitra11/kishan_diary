@@ -1,16 +1,21 @@
 # kishan_diary
 
-A new Flutter project.
+## Default local run setup (Android + Laravel)
 
-## Getting Started
+- Backend default: `http://0.0.0.0:8000`
+- Android app default API: `http://192.168.1.8:8000/api/v1`
 
-This project is a starting point for a Flutter application.
+### Run backend
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+cd backend_kishan
+php artisan serve --host=0.0.0.0 --port=8000
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Run app on Android
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter run -d RMX3998 --no-pub
+```
+
+If your laptop IP changes from `192.168.1.8`, update `_androidDefaultApiBase` in `lib/utils/api_service.dart`.

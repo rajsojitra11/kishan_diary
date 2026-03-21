@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property int $user_id
+ * @property bool $is_active
  * @property string $land_name
  * @property string $land_size
  * @property string|null $location
@@ -28,6 +29,7 @@ class Land extends Model
 
     protected $fillable = [
         'user_id',
+        'is_active',
         'land_name',
         'land_size',
         'location',
@@ -42,6 +44,7 @@ class Land extends Model
     protected function casts(): array
     {
         return [
+            'is_active' => 'boolean',
             'land_size' => 'decimal:2',
             'labor_rupees' => 'decimal:2',
             'fertilizer_kg' => 'decimal:2',
