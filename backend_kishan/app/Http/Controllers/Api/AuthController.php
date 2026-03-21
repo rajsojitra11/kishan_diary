@@ -58,6 +58,7 @@ class AuthController extends ApiController
             'preferred_language' => $validated['preferred_language'] ?? 'gu',
             'is_active' => true,
             'last_login_at' => now(),
+            'last_login_ip' => $request->ip(),
         ]);
 
         $token = $this->issueToken($user);
@@ -87,6 +88,7 @@ class AuthController extends ApiController
 
         $user->update([
             'last_login_at' => now(),
+            'last_login_ip' => $request->ip(),
         ]);
 
         $token = $this->issueToken($user);

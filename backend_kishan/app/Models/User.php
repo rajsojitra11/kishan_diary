@@ -21,6 +21,7 @@ use Illuminate\Notifications\Notifiable;
  * @property string $preferred_language
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $last_login_at
+ * @property string|null $last_login_ip
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
@@ -45,6 +46,7 @@ class User extends Authenticatable
         'preferred_language',
         'is_active',
         'last_login_at',
+        'last_login_ip',
     ];
 
     /**
