@@ -57,3 +57,62 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## PostgreSQL Setup (Kishan Diary)
+
+1. Install PostgreSQL and create database:
+    - Database: `kishan_diary`
+    - User: `postgres` (or your preferred user)
+
+2. Verify backend env values in `.env`:
+    - `DB_CONNECTION=pgsql`
+    - `DB_HOST=127.0.0.1`
+    - `DB_PORT=5432`
+    - `DB_DATABASE=kishan_diary`
+    - `DB_USERNAME=postgres`
+    - `DB_PASSWORD=your_password`
+    - `DB_SSLMODE=prefer`
+
+3. Ensure PHP PostgreSQL extensions are enabled:
+    - `pdo_pgsql`
+    - `pgsql`
+
+4. Run migrations:
+
+```bash
+php artisan migrate
+```
+
+5. (Optional) seed initial data:
+
+```bash
+php artisan db:seed
+```
+
+## Deploy to Render (Docker)
+
+If Render does not show a native PHP runtime in your account, deploy this backend with Docker:
+
+1. Create **Web Service** on Render from this repo.
+2. Set:
+    - **Language**: `Docker`
+    - **Branch**: `main`
+    - **Root Directory**: `backend_kishan`
+    - **Dockerfile Path**: `backend_kishan/Dockerfile`
+3. Add environment variables:
+    - `APP_ENV=production`
+    - `APP_DEBUG=false`
+    - `APP_URL=https://<your-render-service>.onrender.com`
+    - `APP_KEY=<your-app-key>`
+    - `DB_CONNECTION=pgsql`
+    - `DB_HOST=<render-postgres-host>`
+    - `DB_PORT=5432`
+    - `DB_DATABASE=kishan_diary`
+    - `DB_USERNAME=<render-postgres-user>`
+    - `DB_PASSWORD=<render-postgres-password>`
+    - `DB_SSLMODE=require`
+4. Deploy service, then run migrations in Render Shell:
+
+```bash
+php artisan migrate --force
+```
