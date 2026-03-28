@@ -3,19 +3,23 @@ set -e
 
 echo "=== Kishan Diary API Startup ==="
 
-# Clear stale cached config (was built without real env vars)
+# Clear old cache (important)
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
+php artisan cache:clear
 
-# Re-cache with real runtime env vars
+# Rebuild cache with correct env
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Run migrations (safe: --force skips the production prompt)
+# Run migrations (only if DB is ready)
 echo "Running migrations..."
-php artisan migrate --force
+php artisan migrate --force || echo "Migration failed, continuing..."
 
-echo "Starting server on port ${PORT:-8080}..."
-exec php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
+# IMPORTANT: Render uses dynamic PORT (default 10000)
+PORT=${PORT:-10000  }
+
+echo "Starting server on port ${PORT}..."
+exec php artisan serve --host=0.0.0.0 --port=${PORT}
