@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Support\ApiDate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 
 class ProfileController extends ApiController
@@ -53,18 +53,38 @@ class ProfileController extends ApiController
             'profile_image' => ['required', 'image', 'max:5120'],
         ]);
 
+        $file = $validated['profile_image'];
+        $fileName = uniqid() . '_' . $file->getClientOriginalName();
+
+        $supabaseUrl = env('SUPABASE_URL');
+        $supabaseKey = env('SUPABASE_KEY');
+        $bucket = env('SUPABASE_BUCKET_PROFILE');
+
         if ($user->profile_image_path) {
-            Storage::disk('public')->delete($user->profile_image_path);
+            Http::withHeaders([
+                'Authorization' => 'Bearer ' . $supabaseKey,
+            ])->delete(
+                $supabaseUrl . '/storage/v1/object/' . $bucket . '/' . $user->profile_image_path
+            );
         }
 
-        $path = $validated['profile_image']->store('profile-images', 'public');
+        Http::withHeaders([
+            'Authorization' => 'Bearer ' . $supabaseKey,
+        ])->attach(
+            'file',
+            file_get_contents($file),
+            $fileName
+        )->post(
+            $supabaseUrl . '/storage/v1/object/' . $bucket . '/' . $fileName
+        );
 
+        // Save filename
         $user->update([
-            'profile_image_path' => $path,
+            'profile_image_path' => $fileName,
         ]);
 
         return $this->success([
-            'profile_image_url' => url('/api/v1/media/' . $path),
+            'profile_image_url' => $supabaseUrl . '/storage/v1/object/public/' . $bucket . '/' . $fileName,
         ], 'Profile image updated');
     }
 
@@ -94,7 +114,7 @@ class ProfileController extends ApiController
             'birth_date' => optional($user->birth_date)->format('Y-m-d'),
             'preferred_language' => $user->preferred_language,
             'profile_image_url' => $user->profile_image_path
-                ? url('/api/v1/media/' . $user->profile_image_path)
+                ? env('SUPABASE_URL') . '/storage/v1/object/public/' . env('SUPABASE_BUCKET_PROFILE') . '/' . $user->profile_image_path
                 : null,
             'last_login_at' => optional($user->last_login_at)?->toDateTimeString(),
         ];

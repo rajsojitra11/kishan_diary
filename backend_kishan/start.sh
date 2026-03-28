@@ -12,7 +12,7 @@ php artisan cache:clear
 # Rebuild cache with correct env
 php artisan config:cache
 php artisan route:cache
-php artisan view:cache
+#php artisan view:cache
 
 # Run migrations (only if DB is ready)
 echo "Running migrations..."

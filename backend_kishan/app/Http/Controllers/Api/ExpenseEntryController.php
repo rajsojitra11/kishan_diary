@@ -8,7 +8,7 @@ use App\Services\LandMetricsService;
 use App\Support\ApiDate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
 
 class ExpenseEntryController extends ApiController
@@ -67,7 +67,19 @@ class ExpenseEntryController extends ApiController
 
         if ($request->hasFile('bill_photo')) {
             $file = $request->file('bill_photo');
-            $billPhotoPath = $file->store('expense-bills', 'public');
+            $fileName = uniqid() . '_' . $file->getClientOriginalName();
+
+            Http::withHeaders([
+                'Authorization' => 'Bearer ' . env('SUPABASE_KEY'),
+            ])->attach(
+                'file',
+                file_get_contents($file),
+                $fileName
+            )->post(
+                env('SUPABASE_URL') . '/storage/v1/object/' . env('SUPABASE_BUCKET_EXPENSE') . '/' . $fileName
+            );
+
+            $billPhotoPath = $fileName;
             $billPhotoMime = $file->getMimeType();
         }
 
@@ -118,12 +130,30 @@ class ExpenseEntryController extends ApiController
         ];
 
         if ($request->hasFile('bill_photo')) {
+
+            // 🔥 delete old image
             if ($expenseEntry->bill_photo_path) {
-                Storage::disk('public')->delete($expenseEntry->bill_photo_path);
+                Http::withHeaders([
+                    'Authorization' => 'Bearer ' . env('SUPABASE_KEY'),
+                ])->delete(
+                    env('SUPABASE_URL') . '/storage/v1/object/' . env('SUPABASE_BUCKET_EXPENSE') . '/' . $expenseEntry->bill_photo_path
+                );
             }
 
             $file = $request->file('bill_photo');
-            $updatePayload['bill_photo_path'] = $file->store('expense-bills', 'public');
+            $fileName = uniqid() . '_' . $file->getClientOriginalName();
+
+            Http::withHeaders([
+                'Authorization' => 'Bearer ' . env('SUPABASE_KEY'),
+            ])->attach(
+                'file',
+                file_get_contents($file),
+                $fileName
+            )->post(
+                env('SUPABASE_URL') . '/storage/v1/object/' . env('SUPABASE_BUCKET_EXPENSE') . '/' . $fileName
+            );
+
+            $updatePayload['bill_photo_path'] = $fileName;
             $updatePayload['bill_photo_mime'] = $file->getMimeType();
         }
 
@@ -146,7 +176,11 @@ class ExpenseEntryController extends ApiController
         $land = $expenseEntry->land;
 
         if ($expenseEntry->bill_photo_path) {
-            Storage::disk('public')->delete($expenseEntry->bill_photo_path);
+            Http::withHeaders([
+                'Authorization' => 'Bearer ' . env('SUPABASE_KEY'),
+            ])->delete(
+                env('SUPABASE_URL') . '/storage/v1/object/' . env('SUPABASE_BUCKET_EXPENSE') . '/' . $expenseEntry->bill_photo_path
+            );
         }
 
         $expenseEntry->delete();
@@ -194,7 +228,9 @@ class ExpenseEntryController extends ApiController
             'entry_date' => optional($entry->entry_date)->format('Y-m-d'),
             'note' => $entry->note,
             'bill_photo_path' => $entry->bill_photo_path,
-            'bill_photo_url' => $entry->bill_photo_path ? url('/api/v1/media/' . $entry->bill_photo_path) : null,
+            'bill_photo_url' => $entry->bill_photo_path
+                ? env('SUPABASE_URL') . '/storage/v1/object/public/' . env('SUPABASE_BUCKET_EXPENSE') . '/' . $entry->bill_photo_path
+                : null,
             'bill_photo_mime' => $entry->bill_photo_mime,
             'created_at' => optional($entry->created_at)?->toDateTimeString(),
             'updated_at' => optional($entry->updated_at)?->toDateTimeString(),
