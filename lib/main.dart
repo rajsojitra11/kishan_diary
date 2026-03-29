@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 
+import 'screens/agro_owner_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'utils/app_session.dart';
@@ -18,6 +19,11 @@ class MyApp extends StatelessWidget {
       title: 'Kishan Diary',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF14532D),
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
       ),
       home: const _SessionBootstrapScreen(),
     );
@@ -50,6 +56,7 @@ class _SessionBootstrapScreenState extends State<_SessionBootstrapScreen> {
       name: profile['name'],
       email: profile['email'],
       birthDate: profile['birth_date'],
+      userRole: profile['user_role'],
     );
   }
 
@@ -69,6 +76,14 @@ class _SessionBootstrapScreenState extends State<_SessionBootstrapScreen> {
           return const LoginScreen();
         }
 
+        if (data.userRole == 'agro_center') {
+          return AgroOwnerScreen(
+            initialUserName: data.name,
+            initialUserEmail: data.email,
+            initialUserBirthdate: data.birthDate,
+          );
+        }
+
         return HomeScreen(
           initialUserName: data.name,
           initialUserEmail: data.email,
@@ -84,11 +99,13 @@ class _SessionBootstrapData {
   final String? name;
   final String? email;
   final String? birthDate;
+  final String? userRole;
 
   const _SessionBootstrapData({
     required this.isLoggedIn,
     this.name,
     this.email,
     this.birthDate,
+    this.userRole,
   });
 }

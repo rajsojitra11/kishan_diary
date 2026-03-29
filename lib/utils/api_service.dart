@@ -277,6 +277,7 @@ class ApiService {
     required String password,
     required String passwordConfirmation,
     String preferredLanguage = 'gu',
+    String userRole = 'farmer',
   }) async {
     final body = <String, dynamic>{
       'name': name,
@@ -285,6 +286,7 @@ class ApiService {
       'password': password,
       'password_confirmation': passwordConfirmation,
       'preferred_language': preferredLanguage,
+      'user_role': userRole,
     };
     if (email != null && email.trim().isNotEmpty) {
       body['email'] = email.trim();
@@ -303,12 +305,13 @@ class ApiService {
   Future<Map<String, dynamic>> login({
     required String mobile,
     required String password,
+    required String userRole,
   }) async {
     final data = await _request(
       'POST',
       '/auth/login',
       auth: false,
-      body: {'mobile': mobile, 'password': password},
+      body: {'mobile': mobile, 'password': password, 'user_role': userRole},
     );
 
     return (data as Map).cast<String, dynamic>();
@@ -342,6 +345,12 @@ class ApiService {
   Future<Map<String, dynamic>> me() async {
     final data = await _request('GET', '/me');
     return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<List<Map<String, dynamic>>> getMyBills() async {
+    final data = await _request('GET', '/me/bills');
+    final rows = ((data as Map)['bills'] as List?) ?? [];
+    return rows.map((item) => (item as Map).cast<String, dynamic>()).toList();
   }
 
   Future<Map<String, dynamic>> updateProfile({
@@ -739,6 +748,156 @@ class ApiService {
 
   Future<Map<String, dynamic>> deleteUpadEntry(int upadEntryId) async {
     final data = await _request('DELETE', '/upad-entries/$upadEntryId');
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> getAgroDashboardSummary() async {
+    final data = await _request('GET', '/agro-center/dashboard');
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<List<Map<String, dynamic>>> getAgroFarmers() async {
+    final data = await _request('GET', '/agro-center/farmers');
+    final rows = ((data as Map)['farmers'] as List?) ?? [];
+    return rows.map((item) => (item as Map).cast<String, dynamic>()).toList();
+  }
+
+  Future<Map<String, dynamic>> createAgroFarmer({
+    required String name,
+    required String mobile,
+  }) async {
+    final data = await _request(
+      'POST',
+      '/agro-center/farmers',
+      body: {
+        'name': name,
+        'mobile': mobile,
+      },
+    );
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> updateAgroFarmer({
+    required int farmerId,
+    required String name,
+    required String mobile,
+  }) async {
+    final data = await _request(
+      'PUT',
+      '/agro-center/farmers/$farmerId',
+      body: {
+        'name': name,
+        'mobile': mobile,
+      },
+    );
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> deleteAgroFarmer(int farmerId) async {
+    final data = await _request('DELETE', '/agro-center/farmers/$farmerId');
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> getAgroBills({
+    int? farmerId,
+    String? paymentStatus,
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final query = <String, String>{};
+    if (farmerId != null) {
+      query['farmer_id'] = farmerId.toString();
+    }
+    if (paymentStatus != null && paymentStatus.trim().isNotEmpty) {
+      query['payment_status'] = paymentStatus;
+    }
+    if (fromDate != null && fromDate.trim().isNotEmpty) {
+      query['from_date'] = fromDate;
+    }
+    if (toDate != null && toDate.trim().isNotEmpty) {
+      query['to_date'] = toDate;
+    }
+
+    final data = await _request('GET', '/agro-center/bills', query: query);
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> createAgroBill({
+    required int farmerId,
+    required String billDate,
+    required String paymentStatus,
+    required double amount,
+    String? note,
+    String? billPhotoPath,
+    Uint8List? billPhotoBytes,
+    String? billPhotoFileName,
+  }) async {
+    final data = await _multipart(
+      'POST',
+      '/agro-center/bills',
+      fields: {
+        'farmer_id': farmerId.toString(),
+        'bill_date': billDate,
+        'payment_status': paymentStatus,
+        'amount': amount.toString(),
+        'note': note ?? '',
+      },
+      fileField: 'bill_photo',
+      filePath: billPhotoPath,
+      fileBytes: billPhotoBytes,
+      fileName: billPhotoFileName,
+    );
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> updateAgroBill({
+    required int billId,
+    required int farmerId,
+    required String billDate,
+    required String paymentStatus,
+    required double amount,
+    String? note,
+    String? billPhotoPath,
+    Uint8List? billPhotoBytes,
+    String? billPhotoFileName,
+  }) async {
+    final data = await _multipart(
+      'POST',
+      '/agro-center/bills/$billId?_method=PUT',
+      fields: {
+        '_method': 'PUT',
+        'farmer_id': farmerId.toString(),
+        'bill_date': billDate,
+        'payment_status': paymentStatus,
+        'amount': amount.toString(),
+        'note': note ?? '',
+      },
+      fileField: 'bill_photo',
+      filePath: billPhotoPath,
+      fileBytes: billPhotoBytes,
+      fileName: billPhotoFileName,
+    );
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> deleteAgroBill(int billId) async {
+    final data = await _request('DELETE', '/agro-center/bills/$billId');
+    return (data as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> getAgroReport({
+    String? fromDate,
+    String? toDate,
+  }) async {
+    final query = <String, String>{};
+    if (fromDate != null && fromDate.trim().isNotEmpty) {
+      query['from_date'] = fromDate;
+    }
+    if (toDate != null && toDate.trim().isNotEmpty) {
+      query['to_date'] = toDate;
+    }
+
+    final data = await _request('GET', '/agro-center/reports', query: query);
     return (data as Map).cast<String, dynamic>();
   }
 }

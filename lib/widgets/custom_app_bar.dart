@@ -9,12 +9,13 @@ PreferredSizeWidget buildKishanAppBar({
   String? title,
   bool showMenu = false,
   VoidCallback? onDownload,
+  List<Widget>? extraActions,
 }) {
   final appBarTitle = title ?? t(language, 'appTitle');
 
   return AppBar(
     toolbarHeight: 86,
-    backgroundColor: const Color(0xFF2E7D32),
+    backgroundColor: const Color(0xFF14532D),
     foregroundColor: Colors.white,
     centerTitle: true,
     elevation: 0,
@@ -62,6 +63,7 @@ PreferredSizeWidget buildKishanAppBar({
           icon: const Icon(Icons.download, size: 28),
           onPressed: onDownload,
         ),
+      ...?extraActions,
       IconButton(
         tooltip: t(language, 'shareAppTooltip'),
         icon: const Icon(Icons.share, size: 28),

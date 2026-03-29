@@ -9,6 +9,7 @@ class AppSession {
   static const String _userEmailKey = 'user_email';
   static const String _userBirthDateKey = 'user_birth_date';
   static const String _preferredLanguageKey = 'preferred_language';
+  static const String _userRoleKey = 'user_role';
   static const String _pendingRegistrationMobileKey =
       'pending_registration_mobile';
   static const String _selectedLandIdKey = 'selected_land_id';
@@ -34,6 +35,7 @@ class AppSession {
     String? email,
     String? birthDate,
     String? preferredLanguage,
+    String? userRole,
   }) async {
     final prefs = await _prefsFuture;
 
@@ -49,6 +51,9 @@ class AppSession {
     if (preferredLanguage != null) {
       await prefs.setString(_preferredLanguageKey, preferredLanguage);
     }
+    if (userRole != null) {
+      await prefs.setString(_userRoleKey, userRole);
+    }
   }
 
   static Future<Map<String, String?>> getUserProfile() async {
@@ -58,6 +63,7 @@ class AppSession {
       'email': prefs.getString(_userEmailKey),
       'birth_date': prefs.getString(_userBirthDateKey),
       'preferred_language': prefs.getString(_preferredLanguageKey),
+      'user_role': prefs.getString(_userRoleKey),
     };
   }
 
@@ -113,6 +119,7 @@ class AppSession {
     await prefs.remove(_userEmailKey);
     await prefs.remove(_userBirthDateKey);
     await prefs.remove(_preferredLanguageKey);
+    await prefs.remove(_userRoleKey);
     await prefs.remove(_pendingRegistrationMobileKey);
     await prefs.remove(_selectedLandIdKey);
     await prefs.remove(_selectedLandNameKey);

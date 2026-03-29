@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\AgroBill;
 use App\Support\ApiDate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -104,6 +105,61 @@ class ProfileController extends ApiController
         ], 'Language updated');
     }
 
+    public function myBills(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user || $user->user_role !== 'farmer') {
+            return $this->error('Only farmer users can access this endpoint.', [], 403);
+        }
+
+        $mobile = trim((string) $user->mobile);
+        if ($mobile === '') {
+            return $this->success([
+                'bills' => [],
+            ], 'Bills fetched');
+        }
+
+        $bills = AgroBill::query()
+            ->with(['agroOwner:id,name,mobile', 'farmer:id,name,mobile'])
+            ->whereHas('farmer', function ($query) use ($mobile): void {
+                $query->where('mobile', $mobile);
+            })
+            ->latest('bill_date')
+            ->latest('id')
+            ->get();
+
+        return $this->success([
+            'bills' => $bills->map(fn (AgroBill $bill) => [
+                'id' => $bill->id,
+                'bill_date' => optional($bill->bill_date)->format('Y-m-d'),
+                'payment_status' => $bill->payment_status,
+                'amount' => (float) $bill->amount,
+                'note' => $bill->note,
+                'agro_owner_name' => $bill->agroOwner?->name,
+                'agro_owner_mobile' => $bill->agroOwner?->mobile,
+                'bill_photo_path' => $bill->bill_photo_path,
+                'bill_photo_url' => $this->billPhotoUrl($bill->bill_photo_path),
+            ])->values(),
+        ], 'Bills fetched');
+    }
+
+    private function billPhotoUrl(?string $billPhotoPath): ?string
+    {
+        if (empty($billPhotoPath)) {
+            return null;
+        }
+
+        $supabaseUrl = env('SUPABASE_URL');
+        $bucket = env('SUPABASE_BUCKET_AGRO_BILLS', env('SUPABASE_BUCKET_EXPENSE'));
+
+        if (!empty($supabaseUrl) && !empty($bucket)) {
+            return $supabaseUrl . '/storage/v1/object/public/' . $bucket . '/' . $billPhotoPath;
+        }
+
+        return asset('storage/' . ltrim($billPhotoPath, '/'));
+    }
+
     private function profilePayload($user): array
     {
         return [
@@ -113,6 +169,7 @@ class ProfileController extends ApiController
             'mobile' => $user->mobile,
             'birth_date' => optional($user->birth_date)->format('Y-m-d'),
             'preferred_language' => $user->preferred_language,
+            'user_role' => $user->user_role,
             'profile_image_url' => $user->profile_image_path
                 ? env('SUPABASE_URL') . '/storage/v1/object/public/' . env('SUPABASE_BUCKET_PROFILE') . '/' . $user->profile_image_path
                 : null,

@@ -7,6 +7,63 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Kishan Diary Backend (Current)
+
+This backend serves both Farmer and Agro Center flows.
+
+### Core API areas
+
+- Auth and role login: `farmer`, `agro_center`
+- Farmer module: lands, income, expense, crop, labor, upad
+- Agro module:
+    - dashboard
+    - farmer contacts (add/edit/delete)
+    - bills (with bill image)
+    - reports
+
+### Key files
+
+- `routes/api.php`
+- `app/Http/Controllers/Api/AuthController.php`
+- `app/Http/Controllers/Api/ProfileController.php`
+- `app/Http/Controllers/Api/AgroCenterController.php`
+- `app/Models/AgroBill.php`
+- `app/Models/AgroFarmerContact.php`
+
+### Database notes
+
+- Agro bills table: `agro_bills`
+- Agro farmer contacts table: `agro_farmer_contacts`
+- Obsolete table `agro_farmers` has been dropped
+
+### Local MySQL setup
+
+1. Configure `.env` for MySQL.
+2. Run migrations:
+
+```bash
+php artisan migrate
+```
+
+3. Start backend:
+
+```bash
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+### Agro routes summary
+
+- `GET /api/v1/agro-center/dashboard`
+- `GET /api/v1/agro-center/farmers`
+- `POST /api/v1/agro-center/farmers`
+- `PUT /api/v1/agro-center/farmers/{farmer}`
+- `DELETE /api/v1/agro-center/farmers/{farmer}`
+- `GET /api/v1/agro-center/bills`
+- `POST /api/v1/agro-center/bills`
+- `PUT /api/v1/agro-center/bills/{agroBill}`
+- `DELETE /api/v1/agro-center/bills/{agroBill}`
+- `GET /api/v1/agro-center/reports`
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

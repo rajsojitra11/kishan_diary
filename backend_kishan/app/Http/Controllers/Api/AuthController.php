@@ -45,6 +45,7 @@ class AuthController extends ApiController
             'birth_date' => ['required', 'string'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
             'preferred_language' => ['nullable', Rule::in(['en', 'gu', 'hi'])],
+            'user_role' => ['nullable', Rule::in(['farmer', 'agro_center'])],
         ]);
 
         $birthDate = ApiDate::parse($validated['birth_date'], 'birth_date');
@@ -56,6 +57,7 @@ class AuthController extends ApiController
             'birth_date' => $birthDate,
             'password' => $validated['password'],
             'preferred_language' => $validated['preferred_language'] ?? 'gu',
+            'user_role' => $validated['user_role'] ?? 'farmer',
             'is_active' => true,
             'last_login_at' => now(),
             'last_login_ip' => $request->ip(),
@@ -74,12 +76,17 @@ class AuthController extends ApiController
         $validated = $request->validate([
             'mobile' => ['required', 'regex:/^\d{10}$/'],
             'password' => ['required', 'string'],
+            'user_role' => ['required', Rule::in(['farmer', 'agro_center'])],
         ]);
 
         $user = User::query()->where('mobile', $validated['mobile'])->first();
 
         if (!$user || !Hash::check($validated['password'], $user->password)) {
             return $this->error('Invalid mobile or password', [], 401);
+        }
+
+        if ($user->user_role !== $validated['user_role']) {
+            return $this->error('Login type does not match this account', [], 403);
         }
 
         if (!$user->is_active) {
@@ -165,6 +172,7 @@ class AuthController extends ApiController
             'mobile' => $user->mobile,
             'birth_date' => optional($user->birth_date)->format('Y-m-d'),
             'preferred_language' => $user->preferred_language,
+            'user_role' => $user->user_role,
             'profile_image_url' => $user->profile_image_path
                 ? asset('storage/' . $user->profile_image_path)
                 : null,

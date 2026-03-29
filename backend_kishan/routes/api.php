@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AgroCenterController;
 use App\Http\Controllers\Api\AppDataController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CropEntryController;
@@ -29,6 +30,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
 
         Route::get('/me', [ProfileController::class, 'me']);
+        Route::get('/me/bills', [ProfileController::class, 'myBills']);
         Route::put('/me', [ProfileController::class, 'update']);
         Route::post('/me/profile-image', [ProfileController::class, 'updateProfileImage']);
         Route::patch('/me/language', [ProfileController::class, 'updateLanguage']);
@@ -69,5 +71,18 @@ Route::prefix('v1')->group(function () {
         Route::post('/labor-entries/{laborEntry}/upad-entries', [UpadEntryController::class, 'store']);
         Route::put('/upad-entries/{upadEntry}', [UpadEntryController::class, 'update']);
         Route::delete('/upad-entries/{upadEntry}', [UpadEntryController::class, 'destroy']);
+
+        Route::prefix('agro-center')->group(function () {
+            Route::get('/dashboard', [AgroCenterController::class, 'dashboardSummary']);
+            Route::get('/farmers', [AgroCenterController::class, 'farmers']);
+            Route::post('/farmers', [AgroCenterController::class, 'storeFarmer']);
+            Route::put('/farmers/{farmer}', [AgroCenterController::class, 'updateFarmer']);
+            Route::delete('/farmers/{farmer}', [AgroCenterController::class, 'deleteFarmer']);
+            Route::get('/bills', [AgroCenterController::class, 'bills']);
+            Route::post('/bills', [AgroCenterController::class, 'storeBill']);
+            Route::put('/bills/{agroBill}', [AgroCenterController::class, 'updateBill']);
+            Route::delete('/bills/{agroBill}', [AgroCenterController::class, 'deleteBill']);
+            Route::get('/reports', [AgroCenterController::class, 'report']);
+        });
     });
 });

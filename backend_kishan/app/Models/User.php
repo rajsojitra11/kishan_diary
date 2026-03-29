@@ -19,6 +19,7 @@ use Illuminate\Notifications\Notifiable;
  * @property string|null $api_token
  * @property string|null $profile_image_path
  * @property string $preferred_language
+ * @property string $user_role
  * @property bool $is_active
  * @property \Illuminate\Support\Carbon|null $last_login_at
  * @property string|null $last_login_ip
@@ -44,6 +45,7 @@ class User extends Authenticatable
         'api_token',
         'profile_image_path',
         'preferred_language',
+        'user_role',
         'is_active',
         'last_login_at',
         'last_login_ip',
@@ -71,6 +73,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'birth_date' => 'date',
             'last_login_at' => 'datetime',
+            'user_role' => 'string',
             'is_active' => 'boolean',
             'password' => 'hashed',
         ];
@@ -109,5 +112,10 @@ class User extends Authenticatable
     public function suggestions(): HasMany
     {
         return $this->hasMany(\App\Models\Suggestion::class);
+    }
+
+    public function agroBills(): HasMany
+    {
+        return $this->hasMany(\App\Models\AgroBill::class, 'agro_owner_id');
     }
 }

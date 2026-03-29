@@ -1,551 +1,160 @@
-KISHAN DIARY - FULL MYSQL DATABASE STRUCTURE
+KISHAN DIARY - DATABASE TABLES (CURRENT)
 
-Version: 1.0
-Database: MySQL 8+
-Engine: InnoDB
-Charset: utf8mb4
+Version: 2.0
+Database: MySQL
 
 ============================================================
-1) APPLICATION WORKFLOW TO DATABASE MAPPING
+1) ACTIVE BUSINESS TABLES
 ============================================================
 
-1. User Login/Register/Forgot Password
-   - login with mobile
-   - register with name, email, birthdate, password
-   - update profile with photo
-   -> tables: users, password_reset_tokens, sessions
+1. users
+- id
+- name
+- email (nullable)
+- mobile (unique)
+- birth_date (nullable)
+- password
+- api_token (nullable)
+- profile_image_path (nullable)
+- preferred_language (default gu)
+- user_role (farmer|agro_center)
+- is_active (default true)
+- last_login_at (nullable)
+- last_login_ip (nullable)
+- timestamps
 
-2. Land Management
-   - add/edit/select land
-   -> table: lands
+2. lands
+- id
+- user_id (FK -> users.id)
+- land_name
+- land_size
+- location
+- labor_rupees
+- fertilizer_kg
+- income_total
+- expense_total
+- crop_production_kg
+- is_active
+- timestamps
 
-3. Income Management (per selected land)
-   - add/edit/delete income records
-   - type, amount, date, note, bill photo
-   -> table: income_entries
+3. income_entries
+- id
+- user_id (FK)
+- land_id (FK)
+- income_type
+- amount
+- entry_date
+- note (nullable)
+- bill_photo_path (nullable)
+- bill_photo_mime (nullable)
+- timestamps
 
-4. Expense Management (per selected land)
-   - add/edit/delete expense records
-   - type, amount, date, note, bill photo
-   -> table: expense_entries
+4. expense_entries
+- id
+- user_id (FK)
+- land_id (FK)
+- expense_type
+- amount
+- entry_date
+- note (nullable)
+- bill_photo_path (nullable)
+- bill_photo_mime (nullable)
+- timestamps
 
-5. Crop Management (per selected land)
-   - add/edit/delete crop entries
-   - crop type, land size, crop weight, unit (kg/man)
-   -> table: crop_entries
+5. crop_entries
+- id
+- user_id (FK)
+- land_id (FK)
+- crop_type
+- land_size
+- crop_weight
+- weight_unit (kg|man)
+- crop_weight_kg
+- timestamps
 
-6. Labour Management (per selected land)
-   - add labour basic record (name/mobile)
-   - edit labour days/daily rate
-   -> table: labor_entries
+6. labor_entries
+- id
+- user_id (FK)
+- land_id (FK)
+- labor_name
+- mobile
+- total_days
+- daily_rate
+- total_wage
+- timestamps
 
-7. Upad (advance payment) Management (per labour)
-   - add/edit/delete advance payments for labour
-   -> table: upad_entries
+7. upad_entries
+- id
+- user_id (FK)
+- land_id (FK)
+- labor_entry_id (FK)
+- labor_name_snapshot
+- amount
+- note (nullable)
+- payment_date
+- timestamps
 
-8. Animal Management (user-level/global)
-   - add animals
-   - add/delete amount+milk records per animal
-   -> tables: animals, animal_records
+8. suggestions
+- id
+- user_id (FK)
+- message
+- timestamps
 
-9. System/Framework Tables (Laravel default)
-   -> tables: cache, cache_locks, jobs, job_batches, failed_jobs
+9. agro_farmer_contacts
+- id
+- agro_owner_id (FK -> users.id)
+- name
+- mobile
+- timestamps
+- unique (agro_owner_id, mobile)
 
-============================================================
-2) MASTER ENUM VALUES USED IN APP
-============================================================
-
-income_entries.income_type values:
-- incomeTypeCropSale
-- incomeTypeTractorHarvester
-- incomeTypeVegetables
-- incomeTypeSubsidy
-- incomeTypeOther
-
-expense_entries.expense_type values:
-- expenseTypeMedicine
-- expenseTypeSeeds
-- expenseTypeTractor
-- expenseTypeLightBill
-- expenseTypeOther
-
-crop_entries.crop_type values:
-- cropTypeWheat
-- cropTypeCotton
-- cropTypeGroundnut
-- cropTypeBajra
-- cropTypeMaize
-- cropTypeRice
-- cropTypeJiru
-- cropTypeLasan
-- cropTypeChana
-- cropTypeTal
-- cropTypeAnyOther
-
-crop_entries.weight_unit values:
-- kg
-- man
-
-users.preferred_language values:
-- en
-- gu
-- hi
-
-============================================================
-3) COMPLETE TABLE STRUCTURE (COLUMN BY COLUMN)
-============================================================
-
-A) users
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- name (VARCHAR(120), NOT NULL)
-- email (VARCHAR(191), NULL, UNIQUE)
-- mobile (VARCHAR(15), NOT NULL, UNIQUE)
-- birth_date (DATE, NULL)
-- password (VARCHAR(255), NOT NULL)
-- profile_image_path (VARCHAR(500), NULL)
-- preferred_language (VARCHAR(5), NOT NULL, default 'gu')
-- email_verified_at (TIMESTAMP, NULL)
-- remember_token (VARCHAR(100), NULL)
-- is_active (TINYINT(1), NOT NULL, default 1)
-- last_login_at (DATETIME, NULL)
-- created_at (TIMESTAMP, NULL)
-- updated_at (TIMESTAMP, NULL)
-
-B) lands
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- user_id (BIGINT UNSIGNED, NOT NULL, FK -> users.id)
-- land_name (VARCHAR(150), NOT NULL)
-- land_size (DECIMAL(10,2), NOT NULL)
-- location (VARCHAR(255), NOT NULL)
-- labor_rupees (DECIMAL(14,2), NOT NULL, default 0.00)
-- fertilizer_kg (DECIMAL(14,2), NOT NULL, default 0.00)
-- income_total (DECIMAL(14,2), NOT NULL, default 0.00)
-- expense_total (DECIMAL(14,2), NOT NULL, default 0.00)
-- crop_production_kg (DECIMAL(14,2), NOT NULL, default 0.00)
-- animal_income_total (DECIMAL(14,2), NOT NULL, default 0.00)
-- created_at (TIMESTAMP, NULL)
-- updated_at (TIMESTAMP, NULL)
-
-C) income_entries
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- user_id (BIGINT UNSIGNED, NOT NULL, FK -> users.id)
-- land_id (BIGINT UNSIGNED, NOT NULL, FK -> lands.id)
-- income_type (VARCHAR(50), NOT NULL)
-- amount (DECIMAL(14,2), NOT NULL)
-- entry_date (DATE, NOT NULL)
-- note (TEXT, NULL)
-- bill_photo_path (VARCHAR(500), NULL)
-- bill_photo_mime (VARCHAR(100), NULL)
-- created_at (TIMESTAMP, NULL)
-- updated_at (TIMESTAMP, NULL)
-
-D) expense_entries
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- user_id (BIGINT UNSIGNED, NOT NULL, FK -> users.id)
-- land_id (BIGINT UNSIGNED, NOT NULL, FK -> lands.id)
-- expense_type (VARCHAR(50), NOT NULL)
-- amount (DECIMAL(14,2), NOT NULL)
-- entry_date (DATE, NOT NULL)
-- note (TEXT, NULL)
-- bill_photo_path (VARCHAR(500), NULL)
-- bill_photo_mime (VARCHAR(100), NULL)
-- created_at (TIMESTAMP, NULL)
-- updated_at (TIMESTAMP, NULL)
-
-E) crop_entries
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- user_id (BIGINT UNSIGNED, NOT NULL, FK -> users.id)
-- land_id (BIGINT UNSIGNED, NOT NULL, FK -> lands.id)
-- crop_type (VARCHAR(50), NOT NULL)
-- land_size (DECIMAL(10,2), NOT NULL)
-- crop_weight (DECIMAL(14,2), NOT NULL)
-- weight_unit (VARCHAR(10), NOT NULL)
-- crop_weight_kg (DECIMAL(14,2), NOT NULL)
-- created_at (TIMESTAMP, NULL)
-- updated_at (TIMESTAMP, NULL)
-
-F) labor_entries
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- user_id (BIGINT UNSIGNED, NOT NULL, FK -> users.id)
-- land_id (BIGINT UNSIGNED, NOT NULL, FK -> lands.id)
-- labor_name (VARCHAR(150), NOT NULL)
-- mobile (VARCHAR(15), NOT NULL)
-- total_days (DECIMAL(8,2), NOT NULL, default 0.00)
-- daily_rate (DECIMAL(12,2), NOT NULL, default 0.00)
-- total_wage (DECIMAL(14,2), NOT NULL, default 0.00)
-- created_at (TIMESTAMP, NULL)
-- updated_at (TIMESTAMP, NULL)
-
-G) upad_entries
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- user_id (BIGINT UNSIGNED, NOT NULL, FK -> users.id)
-- land_id (BIGINT UNSIGNED, NOT NULL, FK -> lands.id)
-- labor_entry_id (BIGINT UNSIGNED, NOT NULL, FK -> labor_entries.id)
-- labor_name_snapshot (VARCHAR(150), NOT NULL)
-- amount (DECIMAL(14,2), NOT NULL)
-- note (TEXT, NULL)
-- payment_date (DATE, NOT NULL)
-- created_at (TIMESTAMP, NULL)
-- updated_at (TIMESTAMP, NULL)
-
-H) animals
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- user_id (BIGINT UNSIGNED, NOT NULL, FK -> users.id)
-- animal_name (VARCHAR(100), NOT NULL)
-- created_at (TIMESTAMP, NULL)
-- updated_at (TIMESTAMP, NULL)
-
-I) animal_records
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- user_id (BIGINT UNSIGNED, NOT NULL, FK -> users.id)
-- animal_id (BIGINT UNSIGNED, NOT NULL, FK -> animals.id)
-- amount (DECIMAL(14,2), NOT NULL)
-- milk_liter (DECIMAL(10,2), NOT NULL)
-- record_date (DATE, NOT NULL)
-- created_at (TIMESTAMP, NULL)
-- updated_at (TIMESTAMP, NULL)
-
-J) password_reset_tokens (Laravel)
-- email (VARCHAR(191), PK)
-- token (VARCHAR(255), NOT NULL)
-- created_at (TIMESTAMP, NULL)
-
-K) sessions (Laravel)
-- id (VARCHAR(255), PK)
-- user_id (BIGINT UNSIGNED, NULL, index)
-- ip_address (VARCHAR(45), NULL)
-- user_agent (TEXT, NULL)
-- payload (LONGTEXT, NOT NULL)
-- last_activity (INT, NOT NULL, index)
-
-L) cache (Laravel)
-- key (VARCHAR(255), PK)
-- value (MEDIUMTEXT, NOT NULL)
-- expiration (INT, NOT NULL, index)
-
-M) cache_locks (Laravel)
-- key (VARCHAR(255), PK)
-- owner (VARCHAR(255), NOT NULL)
-- expiration (INT, NOT NULL, index)
-
-N) jobs (Laravel)
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- queue (VARCHAR(255), NOT NULL, index)
-- payload (LONGTEXT, NOT NULL)
-- attempts (TINYINT UNSIGNED, NOT NULL)
-- reserved_at (INT UNSIGNED, NULL)
-- available_at (INT UNSIGNED, NOT NULL)
-- created_at (INT UNSIGNED, NOT NULL)
-
-O) job_batches (Laravel)
-- id (VARCHAR(255), PK)
-- name (VARCHAR(255), NOT NULL)
-- total_jobs (INT, NOT NULL)
-- pending_jobs (INT, NOT NULL)
-- failed_jobs (INT, NOT NULL)
-- failed_job_ids (LONGTEXT, NOT NULL)
-- options (MEDIUMTEXT, NULL)
-- cancelled_at (INT, NULL)
-- created_at (INT, NOT NULL)
-- finished_at (INT, NULL)
-
-P) failed_jobs (Laravel)
-- id (BIGINT UNSIGNED, PK, AUTO_INCREMENT)
-- uuid (VARCHAR(255), NOT NULL, UNIQUE)
-- connection (TEXT, NOT NULL)
-- queue (TEXT, NOT NULL)
-- payload (LONGTEXT, NOT NULL)
-- exception (LONGTEXT, NOT NULL)
-- failed_at (TIMESTAMP, NOT NULL, default CURRENT_TIMESTAMP)
+10. agro_bills
+- id
+- agro_owner_id (FK -> users.id)
+- farmer_id (FK -> agro_farmer_contacts.id)
+- bill_date
+- payment_status (pending|completed)
+- amount
+- note (nullable)
+- bill_photo_path (nullable)
+- bill_photo_mime (nullable)
+- timestamps
 
 ============================================================
-4) READY MYSQL DDL (CREATE TABLE)
+2) LARAVEL FRAMEWORK TABLES
 ============================================================
 
-CREATE TABLE users (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name VARCHAR(120) NOT NULL,
-  email VARCHAR(191) NULL,
-  mobile VARCHAR(15) NOT NULL,
-  birth_date DATE NULL,
-  password VARCHAR(255) NOT NULL,
-  profile_image_path VARCHAR(500) NULL,
-  preferred_language VARCHAR(5) NOT NULL DEFAULT 'gu',
-  email_verified_at TIMESTAMP NULL,
-  remember_token VARCHAR(100) NULL,
-  is_active TINYINT(1) NOT NULL DEFAULT 1,
-  last_login_at DATETIME NULL,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_users_email (email),
-  UNIQUE KEY uq_users_mobile (mobile),
-  KEY idx_users_name (name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE lands (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  land_name VARCHAR(150) NOT NULL,
-  land_size DECIMAL(10,2) NOT NULL,
-  location VARCHAR(255) NOT NULL,
-  labor_rupees DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-  fertilizer_kg DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-  income_total DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-  expense_total DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-  crop_production_kg DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-  animal_income_total DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  KEY idx_lands_user_id (user_id),
-  KEY idx_lands_name_location (land_name, location),
-  CONSTRAINT fk_lands_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE income_entries (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  land_id BIGINT UNSIGNED NOT NULL,
-  income_type VARCHAR(50) NOT NULL,
-  amount DECIMAL(14,2) NOT NULL,
-  entry_date DATE NOT NULL,
-  note TEXT NULL,
-  bill_photo_path VARCHAR(500) NULL,
-  bill_photo_mime VARCHAR(100) NULL,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  KEY idx_income_user_id (user_id),
-  KEY idx_income_land_id (land_id),
-  KEY idx_income_land_date (land_id, entry_date),
-  KEY idx_income_type (income_type),
-  CONSTRAINT fk_income_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_income_land FOREIGN KEY (land_id) REFERENCES lands(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE expense_entries (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  land_id BIGINT UNSIGNED NOT NULL,
-  expense_type VARCHAR(50) NOT NULL,
-  amount DECIMAL(14,2) NOT NULL,
-  entry_date DATE NOT NULL,
-  note TEXT NULL,
-  bill_photo_path VARCHAR(500) NULL,
-  bill_photo_mime VARCHAR(100) NULL,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  KEY idx_expense_user_id (user_id),
-  KEY idx_expense_land_id (land_id),
-  KEY idx_expense_land_date (land_id, entry_date),
-  KEY idx_expense_type (expense_type),
-  CONSTRAINT fk_expense_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_expense_land FOREIGN KEY (land_id) REFERENCES lands(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE crop_entries (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  land_id BIGINT UNSIGNED NOT NULL,
-  crop_type VARCHAR(50) NOT NULL,
-  land_size DECIMAL(10,2) NOT NULL,
-  crop_weight DECIMAL(14,2) NOT NULL,
-  weight_unit VARCHAR(10) NOT NULL,
-  crop_weight_kg DECIMAL(14,2) NOT NULL,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  KEY idx_crop_user_id (user_id),
-  KEY idx_crop_land_id (land_id),
-  KEY idx_crop_type (crop_type),
-  CONSTRAINT fk_crop_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_crop_land FOREIGN KEY (land_id) REFERENCES lands(id) ON DELETE CASCADE,
-  CONSTRAINT chk_crop_weight_positive CHECK (crop_weight > 0),
-  CONSTRAINT chk_land_size_positive CHECK (land_size > 0),
-  CONSTRAINT chk_weight_unit CHECK (weight_unit IN ('kg','man'))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE labor_entries (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  land_id BIGINT UNSIGNED NOT NULL,
-  labor_name VARCHAR(150) NOT NULL,
-  mobile VARCHAR(15) NOT NULL,
-  total_days DECIMAL(8,2) NOT NULL DEFAULT 0.00,
-  daily_rate DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-  total_wage DECIMAL(14,2) NOT NULL DEFAULT 0.00,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  KEY idx_labor_user_id (user_id),
-  KEY idx_labor_land_id (land_id),
-  KEY idx_labor_name (labor_name),
-  KEY idx_labor_mobile (mobile),
-  CONSTRAINT fk_labor_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_labor_land FOREIGN KEY (land_id) REFERENCES lands(id) ON DELETE CASCADE,
-  CONSTRAINT chk_total_days_non_negative CHECK (total_days >= 0),
-  CONSTRAINT chk_daily_rate_non_negative CHECK (daily_rate >= 0),
-  CONSTRAINT chk_total_wage_non_negative CHECK (total_wage >= 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE upad_entries (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  land_id BIGINT UNSIGNED NOT NULL,
-  labor_entry_id BIGINT UNSIGNED NOT NULL,
-  labor_name_snapshot VARCHAR(150) NOT NULL,
-  amount DECIMAL(14,2) NOT NULL,
-  note TEXT NULL,
-  payment_date DATE NOT NULL,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  KEY idx_upad_user_id (user_id),
-  KEY idx_upad_land_id (land_id),
-  KEY idx_upad_labor_id (labor_entry_id),
-  KEY idx_upad_payment_date (payment_date),
-  CONSTRAINT fk_upad_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_upad_land FOREIGN KEY (land_id) REFERENCES lands(id) ON DELETE CASCADE,
-  CONSTRAINT fk_upad_labor FOREIGN KEY (labor_entry_id) REFERENCES labor_entries(id) ON DELETE CASCADE,
-  CONSTRAINT chk_upad_amount_positive CHECK (amount > 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE animals (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  animal_name VARCHAR(100) NOT NULL,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_animals_user_animal_name (user_id, animal_name),
-  KEY idx_animals_user_id (user_id),
-  CONSTRAINT fk_animals_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE animal_records (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id BIGINT UNSIGNED NOT NULL,
-  animal_id BIGINT UNSIGNED NOT NULL,
-  amount DECIMAL(14,2) NOT NULL,
-  milk_liter DECIMAL(10,2) NOT NULL,
-  record_date DATE NOT NULL,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  updated_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (id),
-  KEY idx_animal_records_user_id (user_id),
-  KEY idx_animal_records_animal_id (animal_id),
-  KEY idx_animal_records_date (record_date),
-  CONSTRAINT fk_animal_records_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  CONSTRAINT fk_animal_records_animal FOREIGN KEY (animal_id) REFERENCES animals(id) ON DELETE CASCADE,
-  CONSTRAINT chk_animal_amount_positive CHECK (amount > 0),
-  CONSTRAINT chk_milk_liter_positive CHECK (milk_liter > 0)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE password_reset_tokens (
-  email VARCHAR(191) NOT NULL,
-  token VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP NULL DEFAULT NULL,
-  PRIMARY KEY (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE sessions (
-  id VARCHAR(255) NOT NULL,
-  user_id BIGINT UNSIGNED NULL,
-  ip_address VARCHAR(45) NULL,
-  user_agent TEXT NULL,
-  payload LONGTEXT NOT NULL,
-  last_activity INT NOT NULL,
-  PRIMARY KEY (id),
-  KEY idx_sessions_user_id (user_id),
-  KEY idx_sessions_last_activity (last_activity)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE cache (
-  `key` VARCHAR(255) NOT NULL,
-  `value` MEDIUMTEXT NOT NULL,
-  expiration INT NOT NULL,
-  PRIMARY KEY (`key`),
-  KEY idx_cache_expiration (expiration)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE cache_locks (
-  `key` VARCHAR(255) NOT NULL,
-  `owner` VARCHAR(255) NOT NULL,
-  expiration INT NOT NULL,
-  PRIMARY KEY (`key`),
-  KEY idx_cache_locks_expiration (expiration)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE jobs (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  queue VARCHAR(255) NOT NULL,
-  payload LONGTEXT NOT NULL,
-  attempts TINYINT UNSIGNED NOT NULL,
-  reserved_at INT UNSIGNED NULL,
-  available_at INT UNSIGNED NOT NULL,
-  created_at INT UNSIGNED NOT NULL,
-  PRIMARY KEY (id),
-  KEY idx_jobs_queue (queue)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE job_batches (
-  id VARCHAR(255) NOT NULL,
-  name VARCHAR(255) NOT NULL,
-  total_jobs INT NOT NULL,
-  pending_jobs INT NOT NULL,
-  failed_jobs INT NOT NULL,
-  failed_job_ids LONGTEXT NOT NULL,
-  options MEDIUMTEXT NULL,
-  cancelled_at INT NULL,
-  created_at INT NOT NULL,
-  finished_at INT NULL,
-  PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE failed_jobs (
-  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  uuid VARCHAR(255) NOT NULL,
-  connection TEXT NOT NULL,
-  queue TEXT NOT NULL,
-  payload LONGTEXT NOT NULL,
-  exception LONGTEXT NOT NULL,
-  failed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_failed_jobs_uuid (uuid)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+- password_reset_tokens
+- sessions
+- cache
+- cache_locks
+- jobs
+- job_batches
+- failed_jobs
 
 ============================================================
-5) RELATIONSHIP SUMMARY
+3) REMOVED / OBSOLETE TABLES
 ============================================================
 
-- users 1 --- N lands
-- users 1 --- N income_entries
-- users 1 --- N expense_entries
-- users 1 --- N crop_entries
-- users 1 --- N labor_entries
-- users 1 --- N upad_entries
-- users 1 --- N animals
-- users 1 --- N animal_records
-
-- lands 1 --- N income_entries
-- lands 1 --- N expense_entries
-- lands 1 --- N crop_entries
-- lands 1 --- N labor_entries
-- lands 1 --- N upad_entries
-
-- labor_entries 1 --- N upad_entries
-- animals 1 --- N animal_records
+- agro_farmers (dropped)
+- animals (removed)
+- animal_records (removed)
 
 ============================================================
-6) IMPORTANT IMPLEMENTATION NOTES
+4) RELATION SUMMARY
 ============================================================
 
-1. Flutter app currently keeps data in memory; this structure is for full backend persistence.
-2. Dates from app are entered as dd/MM/yyyy. Convert to SQL DATE (yyyy-MM-dd) in API layer.
-3. For bill photos/profile photo, store file path in DB and actual file in storage (recommended).
-4. Recalculate totals (land totals, labor total_wage, crop_weight_kg) at API/service layer before save.
-5. Keep enum values exactly as listed to match app dropdown logic.
+- users 1:N lands
+- users 1:N income_entries / expense_entries / crop_entries / labor_entries / upad_entries
+- labor_entries 1:N upad_entries
+- users (agro owner) 1:N agro_farmer_contacts
+- users (agro owner) 1:N agro_bills
+- agro_farmer_contacts 1:N agro_bills
 
-END OF FILE
+============================================================
+5) IMPLEMENTATION NOTES
+============================================================
+
+- Agro farmer contact is not a login user account.
+- Agro bill farmer_id now points to agro_farmer_contacts.id.
+- Animal business flow is fully removed from schema and API.

@@ -13,6 +13,7 @@ import '../screens/about_app_screen.dart';
 import '../screens/contact_us_screen.dart';
 import '../screens/crop_screen.dart';
 import '../screens/expense_screen.dart';
+import '../screens/farmer_bills_screen.dart';
 import '../screens/home_tab.dart';
 import '../screens/income_screen.dart';
 import '../screens/labour_screen.dart';
@@ -1279,6 +1280,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           activeIcon: _navIcon(const Icon(Icons.group), selected: true),
           label: t(_language, 'navLabor'),
         ),
+        BottomNavigationBarItem(
+          icon: _navIcon(const Icon(Icons.receipt), selected: false),
+          activeIcon: _navIcon(const Icon(Icons.receipt), selected: true),
+          label: t(_language, 'navBills'),
+        ),
       ],
     );
   }
@@ -1319,6 +1325,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           language: _language,
           onSaved: () => setState(() {}),
         );
+      case 5:
+        return FarmerBillsScreen(language: _language);
       default:
         return HomeTab(
           lands: _lands,
@@ -1366,8 +1374,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              Colors.green.shade700,
-                              Colors.green.shade300,
+                              const Color(0xFF14532D),
+                              const Color(0xFF166534),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,

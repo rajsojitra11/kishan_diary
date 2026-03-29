@@ -2,14 +2,20 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import 'agro_owner_screen.dart';
 import 'home_screen.dart';
 import '../utils/api_service.dart';
 import '../utils/app_session.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key, required this.mobileNumber});
+  const RegisterScreen({
+    super.key,
+    required this.mobileNumber,
+    this.userRole = 'farmer',
+  });
 
   final String mobileNumber;
+  final String userRole;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -168,6 +174,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         birthDate: _birthdateController.text.trim(),
         password: _passwordController.text,
         passwordConfirmation: _confirmPasswordController.text,
+        userRole: widget.userRole,
       );
 
       final token = registerData['token']?.toString();
@@ -183,10 +190,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: user['email']?.toString(),
         birthDate: _birthdateController.text.trim(),
         preferredLanguage: user['preferred_language']?.toString(),
+        userRole: user['user_role']?.toString(),
       );
       await AppSession.clearPendingRegistrationMobile();
 
       if (!mounted) {
+        return;
+      }
+
+      final userRole = user['user_role']?.toString() ?? 'farmer';
+
+      if (userRole == 'agro_center') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => AgroOwnerScreen(
+              initialUserName:
+                  user['name']?.toString() ?? _nameController.text.trim(),
+              initialUserEmail:
+                  user['email']?.toString() ?? _emailController.text.trim(),
+              initialUserBirthdate: _birthdateController.text.trim(),
+            ),
+          ),
+          (route) => false,
+        );
         return;
       }
 

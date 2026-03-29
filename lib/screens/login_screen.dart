@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'agro_owner_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
@@ -26,6 +27,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _showPasswordField = false;
   bool _obscurePassword = true;
   bool _isSubmitting = false;
+  String _selectedLoginRole = 'farmer';
 
   @override
   void dispose() {
@@ -104,7 +106,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => RegisterScreen(mobileNumber: mobile),
+            builder: (_) => RegisterScreen(
+              mobileNumber: mobile,
+              userRole: _selectedLoginRole,
+            ),
           ),
         );
         return;
@@ -131,6 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final loginData = await ApiService.instance.login(
         mobile: mobile,
         password: password,
+        userRole: _selectedLoginRole,
       );
 
       final token = loginData['token']?.toString();
@@ -145,10 +151,29 @@ class _LoginScreenState extends State<LoginScreen> {
         email: user['email']?.toString(),
         birthDate: _toDisplayDate(user['birth_date']?.toString()),
         preferredLanguage: user['preferred_language']?.toString(),
+        userRole: user['user_role']?.toString(),
       );
       await AppSession.clearPendingRegistrationMobile();
 
       if (!mounted) {
+        return;
+      }
+
+      final loggedInRole = user['user_role']?.toString() ?? _selectedLoginRole;
+
+      if (loggedInRole == 'agro_center') {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (_) => AgroOwnerScreen(
+              initialUserName: user['name']?.toString(),
+              initialUserEmail: user['email']?.toString(),
+              initialUserBirthdate: _toDisplayDate(
+                user['birth_date']?.toString(),
+              ),
+            ),
+          ),
+          (route) => false,
+        );
         return;
       }
 
@@ -258,6 +283,56 @@ class _LoginScreenState extends State<LoginScreen> {
                             ?.copyWith(fontWeight: FontWeight.w500),
                       ),
                       const SizedBox(height: 36),
+                      Text(
+                        'Login Type',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(color: Colors.green.shade900),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: _selectedLoginRole,
+                        decoration: InputDecoration(
+                          hintText: 'Select Role',
+                          filled: true,
+                          fillColor: Colors.white.withValues(alpha: 0.72),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: Colors.green.shade700,
+                              width: 2,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: Colors.green.shade900,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'farmer',
+                            child: Text('Farmer'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'agro_center',
+                            child: Text('Agro Center'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) {
+                            return;
+                          }
+                          setState(() {
+                            _selectedLoginRole = value;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 14),
                       Text(
                         'Mobile Number',
                         style: Theme.of(context).textTheme.titleMedium

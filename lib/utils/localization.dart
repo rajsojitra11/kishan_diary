@@ -654,6 +654,19 @@ const Map<String, Map<AppLanguage, String>> translations = {
   'navExpense': {AppLanguage.english: 'Expense', AppLanguage.gujarati: 'ખર્ચ'},
   'navCrop': {AppLanguage.english: 'Crop', AppLanguage.gujarati: 'ફસલ'},
   'navLabor': {AppLanguage.english: 'Labor', AppLanguage.gujarati: 'મજૂર'},
+  'navBills': {AppLanguage.english: 'Bills', AppLanguage.gujarati: 'બિલ'},
+  'farmerNoBills': {
+    AppLanguage.english: 'No bills found for your mobile number.',
+    AppLanguage.gujarati: 'તમારા મોબાઇલ નંબર માટે કોઈ બિલ મળ્યું નથી.',
+  },
+  'farmerBillsLoadError': {
+    AppLanguage.english: 'Failed to load bills. Please try again.',
+    AppLanguage.gujarati: 'બિલ લોડ થઈ શક્યા નથી. કૃપા કરીને ફરી પ્રયાસ કરો.',
+  },
+  'farmerBillFromAgro': {
+    AppLanguage.english: 'From Agro Center',
+    AppLanguage.gujarati: 'એગ્રો સેન્ટર તરફથી',
+  },
   'navAnimal': {AppLanguage.english: 'Animal', AppLanguage.gujarati: 'પશુ'},
   'animalIncomeLabel': {
     AppLanguage.english: 'Animal Income',
@@ -863,6 +876,194 @@ const Map<String, Map<AppLanguage, String>> translations = {
   'editLand': {
     AppLanguage.english: 'Edit Land Details',
     AppLanguage.gujarati: 'જમીનની વિગત સુધારો',
+  },
+  'agroCenterTitle': {
+    AppLanguage.english: 'Agro Center',
+    AppLanguage.gujarati: 'એગ્રો સેન્ટર',
+  },
+  'agroDashboardTab': {
+    AppLanguage.english: 'Dashboard',
+    AppLanguage.gujarati: 'ડેશબોર્ડ',
+  },
+  'agroManageBillsTab': {
+    AppLanguage.english: 'Manage Bills',
+    AppLanguage.gujarati: 'બિલ મેનેજ',
+  },
+  'agroFarmersTab': {
+    AppLanguage.english: 'Farmers',
+    AppLanguage.gujarati: 'ખેડૂતો',
+  },
+  'agroReportsTab': {
+    AppLanguage.english: 'Reports',
+    AppLanguage.gujarati: 'રિપોર્ટ',
+  },
+  'agroFarmersCount': {
+    AppLanguage.english: 'Farmer Count',
+    AppLanguage.gujarati: 'ખેડૂત સંખ્યા',
+  },
+  'agroBillsTotal': {
+    AppLanguage.english: 'Total Bills',
+    AppLanguage.gujarati: 'કુલ બિલ',
+  },
+  'agroBillsPending': {
+    AppLanguage.english: 'Pending Bills',
+    AppLanguage.gujarati: 'બાકી બિલ',
+  },
+  'agroBillsCompleted': {
+    AppLanguage.english: 'Completed Bills',
+    AppLanguage.gujarati: 'પૂર્ણ થયેલ બિલ',
+  },
+  'agroAmountTotal': {
+    AppLanguage.english: 'Total Amount',
+    AppLanguage.gujarati: 'કુલ રકમ',
+  },
+  'agroAddBill': {
+    AppLanguage.english: 'Add Bill',
+    AppLanguage.gujarati: 'બિલ ઉમેરો',
+  },
+  'agroEditBill': {
+    AppLanguage.english: 'Edit Bill',
+    AppLanguage.gujarati: 'બિલ સુધારો',
+  },
+  'agroFarmer': {
+    AppLanguage.english: 'Farmer',
+    AppLanguage.gujarati: 'ખેડૂત',
+  },
+  'agroSearchFarmerHint': {
+    AppLanguage.english: 'Search farmer by name',
+    AppLanguage.gujarati: 'નામ દ્વારા ખેડૂત શોધો',
+  },
+  'agroFarmerNameLabel': {
+    AppLanguage.english: 'Farmer Name',
+    AppLanguage.gujarati: 'ખેડૂતનું નામ',
+  },
+  'agroFarmerMobileLabel': {
+    AppLanguage.english: 'Mobile Number',
+    AppLanguage.gujarati: 'મોબાઇલ નંબર',
+  },
+  'agroAddFarmerButton': {
+    AppLanguage.english: 'Add Farmer',
+    AppLanguage.gujarati: 'ખેડૂત ઉમેરો',
+  },
+  'agroBillDate': {
+    AppLanguage.english: 'Bill Date',
+    AppLanguage.gujarati: 'બિલ તારીખ',
+  },
+  'agroBillAmount': {
+    AppLanguage.english: 'Bill Amount',
+    AppLanguage.gujarati: 'બિલ રકમ',
+  },
+  'agroPaymentStatus': {
+    AppLanguage.english: 'Payment Status',
+    AppLanguage.gujarati: 'ચુકવણી સ્થિતિ',
+  },
+  'agroPending': {
+    AppLanguage.english: 'Pending',
+    AppLanguage.gujarati: 'બાકી',
+  },
+  'agroCompleted': {
+    AppLanguage.english: 'Completed',
+    AppLanguage.gujarati: 'પૂર્ણ',
+  },
+  'agroBillNote': {
+    AppLanguage.english: 'Bill Note',
+    AppLanguage.gujarati: 'બિલ નોંધ',
+  },
+  'agroPickBillPhoto': {
+    AppLanguage.english: 'Pick Bill Image',
+    AppLanguage.gujarati: 'બિલ ફોટો પસંદ કરો',
+  },
+  'agroRemoveBillPhoto': {
+    AppLanguage.english: 'Remove Bill Image',
+    AppLanguage.gujarati: 'બિલ ફોટો દૂર કરો',
+  },
+  'agroSaveBill': {
+    AppLanguage.english: 'Save Bill',
+    AppLanguage.gujarati: 'બિલ સાચવો',
+  },
+  'agroUpdateBill': {
+    AppLanguage.english: 'Update Bill',
+    AppLanguage.gujarati: 'બિલ અપડેટ કરો',
+  },
+  'agroBillsList': {
+    AppLanguage.english: 'Bill List',
+    AppLanguage.gujarati: 'બિલ યાદી',
+  },
+  'agroNoBills': {
+    AppLanguage.english: 'No bills found',
+    AppLanguage.gujarati: 'કોઈ બિલ મળ્યું નથી',
+  },
+  'agroFarmersList': {
+    AppLanguage.english: 'Farmer List',
+    AppLanguage.gujarati: 'ખેડૂત યાદી',
+  },
+  'agroNoFarmers': {
+    AppLanguage.english: 'No farmers found',
+    AppLanguage.gujarati: 'કોઈ ખેડૂત મળ્યો નથી',
+  },
+  'agroNoSearchFarmers': {
+    AppLanguage.english: 'No matching farmers found',
+    AppLanguage.gujarati: 'મેળ ખાતા ખેડૂત મળ્યા નથી',
+  },
+  'agroReportRows': {
+    AppLanguage.english: 'Report Rows',
+    AppLanguage.gujarati: 'રિપોર્ટ પંક્તિઓ',
+  },
+  'agroNoReportData': {
+    AppLanguage.english: 'No report data',
+    AppLanguage.gujarati: 'રિપોર્ટ ડેટા નથી',
+  },
+  'agroRefresh': {
+    AppLanguage.english: 'Refresh',
+    AppLanguage.gujarati: 'રીફ્રેશ',
+  },
+  'agroLoadError': {
+    AppLanguage.english: 'Failed to load agro center data.',
+    AppLanguage.gujarati: 'એગ્રો સેન્ટર ડેટા લોડ થઈ શક્યો નથી.',
+  },
+  'agroSelectFarmer': {
+    AppLanguage.english: 'Please select a farmer.',
+    AppLanguage.gujarati: 'કૃપા કરીને ખેડૂત પસંદ કરો.',
+  },
+  'agroEnterFarmerName': {
+    AppLanguage.english: 'Please enter farmer name.',
+    AppLanguage.gujarati: 'કૃપા કરીને ખેડૂતનું નામ દાખલ કરો.',
+  },
+  'agroFarmerAdded': {
+    AppLanguage.english: 'Farmer added successfully.',
+    AppLanguage.gujarati: 'ખેડૂત સફળતાપૂર્વક ઉમેરાયો.',
+  },
+  'agroEditFarmerTitle': {
+    AppLanguage.english: 'Edit Farmer',
+    AppLanguage.gujarati: 'ખેડૂત સુધારો',
+  },
+  'agroFarmerUpdated': {
+    AppLanguage.english: 'Farmer updated successfully.',
+    AppLanguage.gujarati: 'ખેડૂત સફળતાપૂર્વક અપડેટ થયો.',
+  },
+  'agroFarmerDeleteConfirm': {
+    AppLanguage.english: 'Delete this farmer? Related bills will also be removed.',
+    AppLanguage.gujarati: 'આ ખેડૂત કાઢી નાખવો? સંબંધિત બિલ પણ દૂર થશે.',
+  },
+  'agroFarmerDeleted': {
+    AppLanguage.english: 'Farmer deleted successfully.',
+    AppLanguage.gujarati: 'ખેડૂત સફળતાપૂર્વક કાઢી નાખ્યો.',
+  },
+  'agroBillDeleteConfirm': {
+    AppLanguage.english: 'Delete this bill?',
+    AppLanguage.gujarati: 'આ બિલ કાઢી નાખવું?',
+  },
+  'agroBillPhotoRequired': {
+    AppLanguage.english: 'Bill image is required for new bill.',
+    AppLanguage.gujarati: 'નવા બિલ માટે બિલ ફોટો જરૂરી છે.',
+  },
+  'agroBillSaved': {
+    AppLanguage.english: 'Bill saved successfully.',
+    AppLanguage.gujarati: 'બિલ સફળતાપૂર્વક સાચવાયું.',
+  },
+  'agroBillDeleted': {
+    AppLanguage.english: 'Bill deleted successfully.',
+    AppLanguage.gujarati: 'બિલ સફળતાપૂર્વક કાઢી નાખ્યું.',
   },
 };
 
