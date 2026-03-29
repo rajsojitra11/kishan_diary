@@ -99,7 +99,6 @@ class LandController extends ApiController
             'crop_production_kg' => (float) $land->crop_production_kg,
             'fertilizer_kg' => (float) $land->fertilizer_kg,
             'labor_rupees' => (float) $land->labor_rupees,
-            'animal_income_total' => (float) $land->animal_income_total,
         ], 'Land summary fetched');
     }
 
@@ -124,7 +123,6 @@ class LandController extends ApiController
             'income_total' => (float) $land->income_total,
             'expense_total' => (float) $land->expense_total,
             'crop_production_kg' => (float) $land->crop_production_kg,
-            'animal_income_total' => (float) $land->animal_income_total,
             'created_at' => optional($land->created_at)?->toDateTimeString(),
             'updated_at' => optional($land->updated_at)?->toDateTimeString(),
         ];

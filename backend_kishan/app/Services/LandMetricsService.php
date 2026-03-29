@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Land;
-use App\Models\User;
 
 class LandMetricsService
 {
@@ -30,16 +29,5 @@ class LandMetricsService
         ]);
 
         return $land->fresh();
-    }
-
-    public function syncAnimalIncomeForUser(User $user): float
-    {
-        $animalIncomeGlobal = (float) $user->animalRecords()->sum('amount');
-
-        $user->lands()->where('is_active', true)->update([
-            'animal_income_total' => $animalIncomeGlobal,
-        ]);
-
-        return $animalIncomeGlobal;
     }
 }

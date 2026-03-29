@@ -22,7 +22,6 @@ return new class extends Migration
             $table->decimal('income_total', 14, 2)->default(0);
             $table->decimal('expense_total', 14, 2)->default(0);
             $table->decimal('crop_production_kg', 14, 2)->default(0);
-            $table->decimal('animal_income_total', 14, 2)->default(0);
             $table->timestamps();
 
             $table->index(['land_name', 'location']);

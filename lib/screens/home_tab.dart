@@ -13,7 +13,6 @@ class HomeTab extends StatefulWidget {
   final List<Land> lands;
   final Land? selectedLand;
   final AppLanguage language;
-  final double animalIncomeGlobal;
   final Future<bool> Function(String name, double size, String location)
   onAddLand;
   final Future<void> Function(Land) onChangeLand;
@@ -23,7 +22,6 @@ class HomeTab extends StatefulWidget {
     required this.lands,
     required this.selectedLand,
     required this.language,
-    required this.animalIncomeGlobal,
     required this.onAddLand,
     required this.onChangeLand,
   });
@@ -672,11 +670,6 @@ class _HomeTabState extends State<HomeTab> {
                   title: t(widget.language, 'cropProductionLabel'),
                   totalValue: '${totalCropProductionKg.toStringAsFixed(2)} kg',
                   cropTypeTotals: cropTypeTotals,
-                ),
-                statCard(
-                  t(widget.language, 'animalIncomeLabel'),
-                  '₹ ${widget.animalIncomeGlobal.toStringAsFixed(2)}',
-                  Colors.purple,
                 ),
               ];
 

@@ -12,7 +12,7 @@ class ReportController extends ApiController
     public function currentPage(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'page' => ['required', Rule::in(['home', 'income', 'expense', 'crop', 'labor', 'animal'])],
+            'page' => ['required', Rule::in(['home', 'income', 'expense', 'crop', 'labor'])],
             'land_id' => ['nullable', 'integer'],
         ]);
 
@@ -30,28 +30,7 @@ class ReportController extends ApiController
                     'crop_production_kg' => (float) $activeLands->sum('crop_production_kg'),
                     'fertilizer_kg' => (float) $activeLands->sum('fertilizer_kg'),
                     'labor_rupees' => (float) $activeLands->sum('labor_rupees'),
-                    'animal_income_global' => (float) $user->animalRecords()->sum('amount'),
                 ],
-            ], 'Report payload generated');
-        }
-
-        if ($page === 'animal') {
-            $animals = $user->animals()
-                ->withSum('records as total_amount', 'amount')
-                ->withSum('records as total_milk', 'milk_liter')
-                ->get();
-
-            return $this->success([
-                'page' => 'animal',
-                'animal_income_global' => (float) $animals->sum('total_amount'),
-                'animals' => $animals->map(function ($animal) {
-                    return [
-                        'id' => $animal->id,
-                        'animal_name' => $animal->animal_name,
-                        'total_amount' => (float) ($animal->total_amount ?? 0),
-                        'total_milk' => (float) ($animal->total_milk ?? 0),
-                    ];
-                })->values(),
             ], 'Report payload generated');
         }
 

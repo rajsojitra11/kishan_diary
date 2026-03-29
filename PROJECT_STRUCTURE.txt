@@ -1,0 +1,238 @@
+KISHAN DIARY - PROJECT STRUCTURE
+Generated: 2026-03-29
+
+==================================================
+1) ROOT (Flutter + Laravel Monorepo)
+==================================================
+.
+|-- analysis_options.yaml
+|-- api.txt
+|-- databse-table.txt
+|-- pubspec.yaml
+|-- README.md
+|-- PROJECT_STRUCTURE.txt
+|-- android/
+|-- ios/
+|-- linux/
+|-- macos/
+|-- web/
+|-- windows/
+|-- test/
+|-- lib/
+`-- backend_kishan/
+
+
+==================================================
+2) FRONTEND (Flutter)
+==================================================
+lib/
+|-- main.dart
+|-- assets/
+|   `-- images/
+|       |-- download.jpg
+|       `-- register.png
+|-- models/
+|   |-- animal.dart
+|   |-- animal_record.dart
+|   |-- crop_entry.dart
+|   |-- expense_entry.dart
+|   |-- income_entry.dart
+|   |-- labor_entry.dart
+|   |-- land.dart
+|   `-- upad_entry.dart
+|-- screens/
+|   |-- about_app_screen.dart
+|   |-- animal_detail_screen.dart
+|   |-- animal_screen.dart
+|   |-- contact_us_screen.dart
+|   |-- crop_screen.dart
+|   |-- edit_labour_screen.dart
+|   |-- expense_screen.dart
+|   |-- forgot_password_screen.dart
+|   |-- home_screen.dart
+|   |-- home_tab.dart
+|   |-- income_screen.dart
+|   |-- labour_screen.dart
+|   |-- login_screen.dart
+|   |-- register_screen.dart
+|   |-- rules_regulation_screen.dart
+|   `-- upad_screen.dart
+|-- utils/
+|   |-- api_service.dart
+|   |-- app_session.dart
+|   |-- localization.dart
+|   `-- pdf_export.dart
+`-- widgets/
+    |-- app_widgets.dart
+    |-- custom_app_bar.dart
+    `-- text_input_config.dart
+
+Other Flutter platform folders:
+- android/
+- ios/
+- linux/
+- macos/
+- web/
+- windows/
+- test/
+
+
+==================================================
+3) BACKEND (Laravel API)
+==================================================
+backend_kishan/
+|-- artisan
+|-- composer.json
+|-- package.json
+|-- Dockerfile
+|-- phpunit.xml
+|-- README.md
+|-- start.sh
+|-- vite.config.js
+|-- app/
+|   |-- Http/
+|   |   |-- Controllers/
+|   |   |   |-- Controller.php
+|   |   |   `-- Api/
+|   |   |       |-- AnimalController.php
+|   |   |       |-- AnimalRecordController.php
+|   |   |       |-- ApiController.php
+|   |   |       |-- AppDataController.php
+|   |   |       |-- AuthController.php
+|   |   |       |-- CropEntryController.php
+|   |   |       |-- DashboardController.php
+|   |   |       |-- ExpenseEntryController.php
+|   |   |       |-- IncomeEntryController.php
+|   |   |       |-- LaborEntryController.php
+|   |   |       |-- LandController.php
+|   |   |       |-- MediaController.php
+|   |   |       |-- ProfileController.php
+|   |   |       |-- ReportController.php
+|   |   |       |-- SuggestionController.php
+|   |   |       `-- UpadEntryController.php
+|   |   `-- Middleware/
+|   |       `-- ApiTokenAuth.php
+|   |-- Models/
+|   |   |-- Animal.php
+|   |   |-- AnimalRecord.php
+|   |   |-- CropEntry.php
+|   |   |-- ExpenseEntry.php
+|   |   |-- IncomeEntry.php
+|   |   |-- LaborEntry.php
+|   |   |-- Land.php
+|   |   |-- Suggestion.php
+|   |   |-- UpadEntry.php
+|   |   `-- User.php
+|   |-- Providers/
+|   |   `-- AppServiceProvider.php
+|   |-- Services/
+|   |   `-- LandMetricsService.php
+|   `-- Support/
+|       `-- ApiDate.php
+|-- bootstrap/
+|   |-- app.php
+|   |-- providers.php
+|   `-- cache/
+|-- config/
+|   |-- app.php
+|   |-- auth.php
+|   |-- cache.php
+|   |-- cors.php
+|   |-- database.php
+|   |-- filesystems.php
+|   |-- logging.php
+|   |-- mail.php
+|   |-- queue.php
+|   |-- services.php
+|   `-- session.php
+|-- database/
+|   |-- factories/
+|   |   `-- UserFactory.php
+|   |-- migrations/
+|   |   |-- 0001_01_01_000000_create_users_table.php
+|   |   |-- 0001_01_01_000001_create_cache_table.php
+|   |   |-- 0001_01_01_000002_create_jobs_table.php
+|   |   |-- 2026_03_15_000100_add_profile_fields_to_users_table.php
+|   |   |-- 2026_03_15_000110_create_lands_table.php
+|   |   |-- 2026_03_15_000120_create_income_entries_table.php
+|   |   |-- 2026_03_15_000130_create_expense_entries_table.php
+|   |   |-- 2026_03_15_000140_create_crop_entries_table.php
+|   |   |-- 2026_03_15_000150_create_labor_entries_table.php
+|   |   |-- 2026_03_15_000160_create_upad_entries_table.php
+|   |   |-- 2026_03_15_000170_create_animals_table.php
+|   |   |-- 2026_03_15_000180_create_animal_records_table.php
+|   |   |-- 2026_03_15_000190_add_api_token_to_users_table.php
+|   |   |-- 2026_03_21_000200_add_is_active_to_lands_table.php
+|   |   |-- 2026_03_21_000210_create_suggestions_table.php
+|   |   |-- 2026_03_21_000300_make_users_email_nullable.php
+|   |   |-- 2026_03_21_000400_add_last_login_ip_to_users_table.php
+|   |   `-- 2026_03_21_000400_add_performance_indexes.php
+|   `-- seeders/
+|       `-- DatabaseSeeder.php
+|-- public/
+|   |-- index.php
+|   `-- robots.txt
+|-- resources/
+|   |-- css/
+|   |   `-- app.css
+|   |-- js/
+|   |   |-- app.js
+|   |   `-- bootstrap.js
+|   `-- views/
+|       `-- welcome.blade.php
+|-- routes/
+|   |-- api.php
+|   |-- console.php
+|   `-- web.php
+|-- storage/
+|   |-- app/
+|   |-- framework/
+|   `-- logs/
+`-- tests/
+    |-- TestCase.php
+    |-- Feature/
+    `-- Unit/
+
+
+==================================================
+4) DATABASE LAYER (MySQL via Laravel)
+==================================================
+Primary source of DB schema in repo:
+- backend_kishan/database/migrations/
+- databse-table.txt
+
+Main application tables:
+- users
+- lands
+- income_entries
+- expense_entries
+- crop_entries
+- labor_entries
+- upad_entries
+- animals
+- animal_records
+- suggestions
+
+Laravel/system tables:
+- password_reset_tokens
+- sessions
+- cache
+- cache_locks
+- jobs
+- job_batches
+- failed_jobs
+
+
+==================================================
+5) QUICK ARCHITECTURE SUMMARY
+==================================================
+Frontend:
+- Flutter app in lib/ with screens, models, widgets, and API integration utility.
+
+Backend:
+- Laravel REST API in backend_kishan/ with controllers in app/Http/Controllers/Api,
+  business/service logic in app/Services, and Eloquent models in app/Models.
+
+Database:
+- MySQL schema managed by Laravel migrations in backend_kishan/database/migrations,
+  with additional schema documentation in databse-table.txt.

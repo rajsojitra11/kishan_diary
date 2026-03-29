@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\AnimalController;
-use App\Http\Controllers\Api\AnimalRecordController;
 use App\Http\Controllers\Api\AppDataController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CropEntryController;
@@ -71,14 +69,5 @@ Route::prefix('v1')->group(function () {
         Route::post('/labor-entries/{laborEntry}/upad-entries', [UpadEntryController::class, 'store']);
         Route::put('/upad-entries/{upadEntry}', [UpadEntryController::class, 'update']);
         Route::delete('/upad-entries/{upadEntry}', [UpadEntryController::class, 'destroy']);
-
-        Route::get('/animals', [AnimalController::class, 'index']);
-        Route::post('/animals', [AnimalController::class, 'store']);
-        Route::put('/animals/{animal}', [AnimalController::class, 'update']);
-        Route::delete('/animals/{animal}', [AnimalController::class, 'destroy']);
-
-        Route::get('/animals/{animal}/records', [AnimalRecordController::class, 'index']);
-        Route::post('/animals/{animal}/records', [AnimalRecordController::class, 'store']);
-        Route::delete('/animal-records/{animalRecord}', [AnimalRecordController::class, 'destroy']);
     });
 });

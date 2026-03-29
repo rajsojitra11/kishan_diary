@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $income_total
  * @property string $expense_total
  * @property string $crop_production_kg
- * @property string $animal_income_total
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
@@ -38,7 +37,6 @@ class Land extends Model
         'income_total',
         'expense_total',
         'crop_production_kg',
-        'animal_income_total',
     ];
 
     protected function casts(): array
@@ -51,7 +49,6 @@ class Land extends Model
             'income_total' => 'decimal:2',
             'expense_total' => 'decimal:2',
             'crop_production_kg' => 'decimal:2',
-            'animal_income_total' => 'decimal:2',
         ];
     }
 

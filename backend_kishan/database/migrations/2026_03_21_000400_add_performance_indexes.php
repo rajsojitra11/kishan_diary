@@ -32,18 +32,10 @@ return new class extends Migration
             $table->index(['labor_entry_id', 'payment_date'], 'upad_labor_payment_idx');
             $table->index(['land_id', 'payment_date'], 'upad_land_payment_idx');
         });
-
-        Schema::table('animal_records', function (Blueprint $table) {
-            $table->index(['animal_id', 'record_date'], 'animal_record_animal_date_idx');
-        });
     }
 
     public function down(): void
     {
-        Schema::table('animal_records', function (Blueprint $table) {
-            $table->dropIndex('animal_record_animal_date_idx');
-        });
-
         Schema::table('upad_entries', function (Blueprint $table) {
             $table->dropIndex('upad_land_payment_idx');
             $table->dropIndex('upad_labor_payment_idx');

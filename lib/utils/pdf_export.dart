@@ -5,7 +5,6 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../models/animal.dart';
 import '../models/crop_entry.dart';
 import '../models/expense_entry.dart';
 import '../models/income_entry.dart';
@@ -19,7 +18,6 @@ Future<bool> exportCurrentPagePdf({
   required int navIndex,
   required List<Land> lands,
   required Land? selectedLand,
-  required List<Animal> animals,
 }) async {
   final pageTitle = _pageTitle(language, navIndex);
   final fileName = 'kishan_diary_${_pageKey(navIndex)}.pdf';
@@ -32,7 +30,6 @@ Future<bool> exportCurrentPagePdf({
     navIndex: navIndex,
     lands: lands,
     selectedLand: selectedLand,
-    animals: animals,
   );
 
   if (widgets.isEmpty) {
@@ -86,7 +83,6 @@ Future<bool> exportCurrentPagePdf({
 Future<bool> exportAllDataPdf({
   required AppLanguage language,
   required List<Land> lands,
-  required List<Animal> animals,
 }) async {
   final baseFont = await _resolvePdfBaseFont();
   final boldFont = await _resolvePdfBoldFont(baseFont);
@@ -95,7 +91,6 @@ Future<bool> exportAllDataPdf({
   final widgets = _buildAllDataWidgets(
     language: language,
     lands: lands,
-    animals: animals,
   );
 
   if (widgets.isEmpty) {
@@ -155,11 +150,10 @@ List<pw.Widget> _buildPageWidgets({
   required int navIndex,
   required List<Land> lands,
   required Land? selectedLand,
-  required List<Animal> animals,
 }) {
   switch (navIndex) {
     case 0:
-      return _buildHomeWidgets(language, lands, selectedLand, animals);
+      return _buildHomeWidgets(language, lands, selectedLand);
     case 1:
       return selectedLand == null
           ? const []
@@ -176,8 +170,6 @@ List<pw.Widget> _buildPageWidgets({
       return selectedLand == null
           ? const []
           : _buildLaborWidgets(language, selectedLand);
-    case 5:
-      return _buildAnimalWidgets(language, animals);
     default:
       return const [];
   }
@@ -186,9 +178,8 @@ List<pw.Widget> _buildPageWidgets({
 List<pw.Widget> _buildAllDataWidgets({
   required AppLanguage language,
   required List<Land> lands,
-  required List<Animal> animals,
 }) {
-  if (lands.isEmpty && animals.isEmpty) {
+  if (lands.isEmpty) {
     return const [];
   }
 
@@ -384,57 +375,6 @@ List<pw.Widget> _buildAllDataWidgets({
     widgets.add(pw.SizedBox(height: 12));
   }
 
-  if (animals.isNotEmpty) {
-    widgets.add(_sectionTitle(t(language, 'navAnimal')));
-    widgets.add(
-      _table(
-        headers: [
-          t(language, 'animalNameLabel'),
-          t(language, 'animalTotalAmountLabel'),
-          t(language, 'animalTotalMilkLabel'),
-        ],
-        rows: animals
-            .map(
-              (animal) => [
-                animal.name,
-                animal.totalAmount.toStringAsFixed(2),
-                animal.totalMilk.toStringAsFixed(2),
-              ],
-            )
-            .toList(),
-      ),
-    );
-
-    for (final animal in animals) {
-      if (animal.records.isEmpty) {
-        continue;
-      }
-
-      widgets.add(pw.SizedBox(height: 8));
-      widgets.add(
-        _sectionTitle('${animal.name} • ${t(language, 'animalRecordsLabel')}'),
-      );
-      widgets.add(
-        _table(
-          headers: [
-            t(language, 'animalDateLabel'),
-            t(language, 'animalAmountLabel'),
-            t(language, 'animalMilkLabel'),
-          ],
-          rows: animal.records
-              .map(
-                (record) => [
-                  record.date,
-                  record.amount.toStringAsFixed(2),
-                  record.milk.toStringAsFixed(2),
-                ],
-              )
-              .toList(),
-        ),
-      );
-    }
-  }
-
   return widgets;
 }
 
@@ -442,7 +382,6 @@ List<pw.Widget> _buildHomeWidgets(
   AppLanguage language,
   List<Land> lands,
   Land? selectedLand,
-  List<Animal> animals,
 ) {
   if (lands.isEmpty && selectedLand == null) {
     return const [];
@@ -451,11 +390,6 @@ List<pw.Widget> _buildHomeWidgets(
   final widgets = <pw.Widget>[];
 
   if (selectedLand != null) {
-    final animalIncome = animals.fold(
-      0.0,
-      (sum, animal) => sum + animal.totalAmount,
-    );
-
     widgets.add(_sectionTitle(t(language, 'landDashboard')));
     widgets.add(
       _table(
@@ -464,7 +398,6 @@ List<pw.Widget> _buildHomeWidgets(
           t(language, 'expensesLabel'),
           t(language, 'cropProductionLabel'),
           t(language, 'laborHoursLabel'),
-          t(language, 'animalIncomeLabel'),
         ],
         rows: [
           [
@@ -472,7 +405,6 @@ List<pw.Widget> _buildHomeWidgets(
             selectedLand.expenses.toStringAsFixed(2),
             selectedLand.cropProductionKg.toStringAsFixed(2),
             selectedLand.laborRupees.toStringAsFixed(2),
-            animalIncome.toStringAsFixed(2),
           ],
         ],
       ),
@@ -656,66 +588,6 @@ List<pw.Widget> _buildLaborWidgets(AppLanguage language, Land land) {
   return widgets;
 }
 
-List<pw.Widget> _buildAnimalWidgets(
-  AppLanguage language,
-  List<Animal> animals,
-) {
-  if (animals.isEmpty) {
-    return const [];
-  }
-
-  final widgets = <pw.Widget>[
-    _sectionTitle(t(language, 'navAnimal')),
-    _table(
-      headers: [
-        t(language, 'animalNameLabel'),
-        t(language, 'animalTotalAmountLabel'),
-        t(language, 'animalTotalMilkLabel'),
-      ],
-      rows: animals
-          .map(
-            (animal) => [
-              animal.name,
-              animal.totalAmount.toStringAsFixed(2),
-              animal.totalMilk.toStringAsFixed(2),
-            ],
-          )
-          .toList(),
-    ),
-  ];
-
-  for (final animal in animals) {
-    if (animal.records.isEmpty) {
-      continue;
-    }
-
-    widgets.add(pw.SizedBox(height: 10));
-    widgets.add(
-      _sectionTitle('${animal.name} ${t(language, 'animalRecordsLabel')}'),
-    );
-    widgets.add(
-      _table(
-        headers: [
-          t(language, 'animalDateLabel'),
-          t(language, 'animalAmountLabel'),
-          t(language, 'animalMilkLabel'),
-        ],
-        rows: animal.records
-            .map(
-              (record) => [
-                record.date,
-                record.amount.toStringAsFixed(2),
-                record.milk.toStringAsFixed(2),
-              ],
-            )
-            .toList(),
-      ),
-    );
-  }
-
-  return widgets;
-}
-
 pw.Widget _sectionTitle(String text) {
   return pw.Padding(
     padding: const pw.EdgeInsets.only(bottom: 6),
@@ -778,8 +650,6 @@ String _pageKey(int navIndex) {
       return 'crop';
     case 4:
       return 'labor';
-    case 5:
-      return 'animal';
     default:
       return 'home';
   }
@@ -795,8 +665,6 @@ String _pageTitle(AppLanguage language, int navIndex) {
       return t(language, 'navCrop');
     case 4:
       return t(language, 'navLabor');
-    case 5:
-      return t(language, 'navAnimal');
     default:
       return t(language, 'navHome');
   }

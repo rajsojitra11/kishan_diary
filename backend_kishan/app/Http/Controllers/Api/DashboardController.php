@@ -19,7 +19,6 @@ class DashboardController extends ApiController
             'crop_production_kg' => (float) $activeLands->sum('crop_production_kg'),
             'fertilizer_kg' => (float) $activeLands->sum('fertilizer_kg'),
             'labor_rupees' => (float) $activeLands->sum('labor_rupees'),
-            'animal_income_global' => (float) $user->animalRecords()->sum('amount'),
         ];
 
         return $this->success($data, 'Dashboard summary fetched');

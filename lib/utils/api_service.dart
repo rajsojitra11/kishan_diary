@@ -27,9 +27,20 @@ class ApiService {
   static String get _baseUrl {
     var configured = const String.fromEnvironment('API_BASE_URL');
     if (configured.trim().isNotEmpty) {
-      // Force HTTPS — Render.com (and most production hosts) redirect http→https
-      // which causes POST/DELETE requests to fail silently (body is dropped on redirect).
-      if (configured.startsWith('http://')) {
+      // Keep HTTP for localhost/private network during local development.
+      final isLocalHttp = configured.startsWith('http://localhost') ||
+          configured.startsWith('http://127.0.0.1') ||
+          configured.startsWith('http://10.') ||
+          configured.startsWith('http://192.168.') ||
+          configured.startsWith('http://172.16.') ||
+          configured.startsWith('http://172.17.') ||
+          configured.startsWith('http://172.18.') ||
+          configured.startsWith('http://172.19.') ||
+          configured.startsWith('http://172.2');
+
+      // Force HTTPS for non-local hosts because many production hosts redirect
+      // http->https and some POST/DELETE payloads can be lost on redirect.
+      if (configured.startsWith('http://') && !isLocalHttp) {
         configured = configured.replaceFirst('http://', 'https://');
       }
       return configured.endsWith('/api/v1')
@@ -728,65 +739,6 @@ class ApiService {
 
   Future<Map<String, dynamic>> deleteUpadEntry(int upadEntryId) async {
     final data = await _request('DELETE', '/upad-entries/$upadEntryId');
-    return (data as Map).cast<String, dynamic>();
-  }
-
-  Future<Map<String, dynamic>> getAnimals() async {
-    final data = await _request('GET', '/animals');
-    return (data as Map).cast<String, dynamic>();
-  }
-
-  Future<Map<String, dynamic>> createAnimal(String animalName) async {
-    final data = await _request(
-      'POST',
-      '/animals',
-      body: {'animal_name': animalName},
-    );
-    return (data as Map).cast<String, dynamic>();
-  }
-
-  Future<Map<String, dynamic>> updateAnimal(
-    int animalId,
-    String animalName,
-  ) async {
-    final data = await _request(
-      'PUT',
-      '/animals/$animalId',
-      body: {'animal_name': animalName},
-    );
-    return (data as Map).cast<String, dynamic>();
-  }
-
-  Future<Map<String, dynamic>> deleteAnimal(int animalId) async {
-    final data = await _request('DELETE', '/animals/$animalId');
-    return (data as Map).cast<String, dynamic>();
-  }
-
-  Future<Map<String, dynamic>> getAnimalRecords(int animalId) async {
-    final data = await _request('GET', '/animals/$animalId/records');
-    return (data as Map).cast<String, dynamic>();
-  }
-
-  Future<Map<String, dynamic>> createAnimalRecord({
-    required int animalId,
-    required double amount,
-    required double milkLiter,
-    required String recordDate,
-  }) async {
-    final data = await _request(
-      'POST',
-      '/animals/$animalId/records',
-      body: {
-        'amount': amount,
-        'milk_liter': milkLiter,
-        'record_date': recordDate,
-      },
-    );
-    return (data as Map).cast<String, dynamic>();
-  }
-
-  Future<Map<String, dynamic>> deleteAnimalRecord(int animalRecordId) async {
-    final data = await _request('DELETE', '/animal-records/$animalRecordId');
     return (data as Map).cast<String, dynamic>();
   }
 }

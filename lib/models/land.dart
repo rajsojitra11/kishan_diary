@@ -14,7 +14,6 @@ class Land {
   double income;
   double expenses;
   double cropProductionKg;
-  double animalIncome;
   List<CropEntry> cropEntries;
   List<ExpenseEntry> expenseEntries;
   List<IncomeEntry> incomeEntries;
@@ -32,7 +31,6 @@ class Land {
     this.income = 0,
     this.expenses = 0,
     this.cropProductionKg = 0,
-    this.animalIncome = 0,
     List<CropEntry>? cropEntries,
     List<ExpenseEntry>? expenseEntries,
     List<IncomeEntry>? incomeEntries,

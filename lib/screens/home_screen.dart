@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../models/animal.dart';
-import '../models/animal_record.dart';
 import '../models/crop_entry.dart';
 import '../models/expense_entry.dart';
 import '../models/income_entry.dart';
 import '../models/land.dart';
 import '../models/labor_entry.dart';
 import '../models/upad_entry.dart';
-import '../screens/animal_screen.dart';
 import '../screens/about_app_screen.dart';
 import '../screens/contact_us_screen.dart';
 import '../screens/crop_screen.dart';
@@ -36,7 +32,6 @@ import '../widgets/text_input_config.dart';
 /// - [_language]          — current app language
 /// - [_lands]             — list of all lands
 /// - [_selectedLand]      — currently active land
-/// - [_animals]           — animal-wise milk and amount records
 ///
 /// Each tab is a separate widget defined in its own screen file.
 class HomeScreen extends StatefulWidget {
@@ -66,7 +61,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final ImagePicker _imagePicker = ImagePicker();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final List<Land> _lands = [];
-  final List<Animal> _animals = [];
   Land? _selectedLand;
   int _navIndex = 0;
   final List<int> _tabHistory = [0];
@@ -126,12 +120,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final savedSelectedLandId = await AppSession.getSelectedLandId();
       final savedSelectedLandName = await AppSession.getSelectedLandName();
 
-      final responses = await Future.wait([
-        ApiService.instance.getLands(),
-        ApiService.instance.getAnimals(),
-      ]);
-      final landsPayload = responses[0] as List<Map<String, dynamic>>;
-      final animalsPayload = responses[1] as Map<String, dynamic>;
+      final landsPayload = await ApiService.instance.getLands();
 
       final mappedLands = landsPayload.map(_landFromApi).toList();
       Land? selectedLand;
@@ -156,10 +145,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
       selectedLand ??= mappedLands.isNotEmpty ? mappedLands.first : null;
 
-      final mappedAnimals = ((animalsPayload['animals'] as List?) ?? [])
-          .map((item) => _animalFromApi((item as Map).cast<String, dynamic>()))
-          .toList();
-
       if (!mounted) {
         return;
       }
@@ -168,9 +153,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _lands
           ..clear()
           ..addAll(mappedLands);
-        _animals
-          ..clear()
-          ..addAll(mappedAnimals);
         _selectedLand = selectedLand;
         _initialLoading = false;
       });
@@ -261,16 +243,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       income: _toDouble(item['income_total']),
       expenses: _toDouble(item['expense_total']),
       cropProductionKg: _toDouble(item['crop_production_kg']),
-      animalIncome: _toDouble(item['animal_income_total']),
-    );
-  }
-
-  Animal _animalFromApi(Map<String, dynamic> item) {
-    return Animal(
-      id: _toInt(item['id']),
-      name: item['animal_name']?.toString() ?? '',
-      totalAmountCached: _toDouble(item['total_amount']),
-      totalMilkCached: _toDouble(item['total_milk']),
     );
   }
 
@@ -333,15 +305,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  AnimalRecord _animalRecordFromApi(Map<String, dynamic> item) {
-    return AnimalRecord(
-      id: _toInt(item['id']),
-      amount: _toDouble(item['amount']),
-      milk: _toDouble(item['milk_liter']),
-      date: _toDisplayDate(item['record_date']?.toString()),
-    );
-  }
-
   ImageProvider get _profileImageProvider {
     if (_profileImageBytes != null) {
       return MemoryImage(_profileImageBytes!);
@@ -350,10 +313,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return NetworkImage(_profileImageUrl!);
     }
     return const AssetImage(_defaultProfileImagePath);
-  }
-
-  double get _animalIncomeGlobal {
-    return _animals.fold(0.0, (sum, animal) => sum + animal.totalAmount);
   }
 
   // ── Land Operations ────────────────────────────────────────────────────────
@@ -1103,7 +1062,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       navIndex: _navIndex,
       lands: _lands,
       selectedLand: _selectedLand,
-      animals: _animals,
     );
 
     if (!mounted) {
@@ -1201,27 +1159,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
     }
 
-    for (final animal in _animals) {
-      if (animal.id == null) {
-        continue;
-      }
-      final payload = await ApiService.instance.getAnimalRecords(animal.id!);
-      final records = ((payload['records'] as List?) ?? [])
-          .map(
-            (item) =>
-                _animalRecordFromApi((item as Map).cast<String, dynamic>()),
-          )
-          .toList();
-      animal.records
-        ..clear()
-        ..addAll(records);
-      animal.totalAmountCached = _toDouble(
-        ((payload['totals'] as Map?)?['total_amount']),
-      );
-      animal.totalMilkCached = _toDouble(
-        ((payload['totals'] as Map?)?['total_milk']),
-      );
-    }
   }
 
   Future<void> _downloadAllDataRecords() async {
@@ -1234,7 +1171,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final exported = await exportAllDataPdf(
         language: _language,
         lands: _lands,
-        animals: _animals,
       );
 
       if (!mounted) {
@@ -1343,14 +1279,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           activeIcon: _navIcon(const Icon(Icons.group), selected: true),
           label: t(_language, 'navLabor'),
         ),
-        BottomNavigationBarItem(
-          icon: _navIcon(const FaIcon(FontAwesomeIcons.cow), selected: false),
-          activeIcon: _navIcon(
-            const FaIcon(FontAwesomeIcons.cow),
-            selected: true,
-          ),
-          label: t(_language, 'navAnimal'),
-        ),
       ],
     );
   }
@@ -1391,25 +1319,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           language: _language,
           onSaved: () => setState(() {}),
         );
-      case 5:
-        return AnimalScreen(
-          key: const ValueKey('animal'),
-          language: _language,
-          animals: _animals,
-          onAnimalsChanged: (updatedAnimals) {
-            setState(() {
-              _animals
-                ..clear()
-                ..addAll(updatedAnimals);
-            });
-          },
-        );
       default:
         return HomeTab(
           lands: _lands,
           selectedLand: _selectedLand,
           language: _language,
-          animalIncomeGlobal: _animalIncomeGlobal,
           onAddLand: _addLandFromValues,
           onChangeLand: _selectLand,
         );
@@ -1668,10 +1582,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         },
                       ),
                       ListTile(
-                        leading: const FaIcon(
-                          FontAwesomeIcons.whatsapp,
-                          color: Colors.green,
-                        ),
+                        leading: const Icon(Icons.chat, color: Colors.green),
                         title: Text(t(_language, 'drawerWhatsAppGroup')),
                         onTap: () {
                           Navigator.pop(context);

@@ -106,16 +106,6 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\UpadEntry::class);
     }
 
-    public function animals(): HasMany
-    {
-        return $this->hasMany(\App\Models\Animal::class);
-    }
-
-    public function animalRecords(): HasMany
-    {
-        return $this->hasMany(\App\Models\AnimalRecord::class);
-    }
-
     public function suggestions(): HasMany
     {
         return $this->hasMany(\App\Models\Suggestion::class);
