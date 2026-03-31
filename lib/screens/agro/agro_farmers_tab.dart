@@ -12,6 +12,7 @@ class AgroFarmersTab extends StatelessWidget {
     required this.onAddFarmer,
     required this.onEditFarmer,
     required this.onDeleteFarmer,
+    required this.onOpenFarmerBills,
   });
 
   final AppLanguage language;
@@ -21,6 +22,7 @@ class AgroFarmersTab extends StatelessWidget {
   final VoidCallback onAddFarmer;
   final void Function(Map<String, dynamic> farmer) onEditFarmer;
   final void Function(Map<String, dynamic> farmer) onDeleteFarmer;
+  final void Function(Map<String, dynamic> farmer) onOpenFarmerBills;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +68,7 @@ class AgroFarmersTab extends StatelessWidget {
                 subtitle: Text(
                   '${t(language, 'contactMobileLabel')}: ${farmer['mobile'] ?? '-'}',
                 ),
+                onTap: () => onOpenFarmerBills(farmer),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -77,6 +80,7 @@ class AgroFarmersTab extends StatelessWidget {
                       onPressed: () => onDeleteFarmer(farmer),
                       icon: const Icon(Icons.delete, color: Colors.red),
                     ),
+                    const Icon(Icons.chevron_right, color: Colors.grey),
                   ],
                 ),
               ),

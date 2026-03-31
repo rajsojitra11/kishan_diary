@@ -191,50 +191,6 @@ class AgroManageBillsTab extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        Text(
-          t(language, 'agroBillsList'),
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        const SizedBox(height: 8),
-        if (bills.isEmpty)
-          Text(t(language, 'agroNoBills'))
-        else
-          ...bills.map((bill) {
-            final status = bill['payment_status']?.toString() ?? 'pending';
-            final amount = (bill['amount'] as num?)?.toDouble() ?? 0;
-
-            return Card(
-              child: ListTile(
-                title: Text(
-                  '${bill['farmer_name'] ?? '-'} • ₹ ${amount.toStringAsFixed(2)}',
-                ),
-                subtitle: Text(
-                  '${t(language, 'agroBillDate')}: ${toDisplayDate(bill['bill_date']?.toString())}\n'
-                  '${t(language, 'agroPaymentStatus')}: ${status == 'completed' ? t(language, 'agroCompleted') : t(language, 'agroPending')}',
-                ),
-                isThreeLine: true,
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: () => onStartEditBill(bill),
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        final id = bill['id'];
-                        if (id is int) {
-                          onDeleteBill(id);
-                        }
-                      },
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
       ],
     );
   }

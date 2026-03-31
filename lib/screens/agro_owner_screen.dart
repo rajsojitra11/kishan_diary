@@ -1,15 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/api_service.dart';
 import '../utils/app_session.dart';
+import '../utils/image_cache.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/text_input_config.dart';
 import 'agro/agro_dashboard_tab.dart';
+import 'agro/agro_farmer_bills_screen.dart';
 import 'agro/agro_farmers_tab.dart';
 import 'agro/agro_manage_bills_tab.dart';
 import 'agro/agro_report_tab.dart';
@@ -352,7 +355,10 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
                     backgroundImage: tempProfileImageBytes != null
                         ? MemoryImage(tempProfileImageBytes!)
                       : ((tempProfileImageUrl?.trim().isNotEmpty ?? false)
-                          ? NetworkImage(tempProfileImageUrl!)
+                          ? CachedNetworkImageProvider(
+                              tempProfileImageUrl!,
+                              cacheManager: AppImageCache.manager,
+                            )
                               : const AssetImage(_defaultProfileImagePath)
                                     as ImageProvider),
                   ),
@@ -1117,6 +1123,22 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
       onAddFarmer: _openAddFarmerDialog,
       onEditFarmer: _openEditFarmerDialog,
       onDeleteFarmer: _deleteFarmer,
+      onOpenFarmerBills: (farmer) {
+        final farmerId = farmer['id'];
+        if (farmerId is! int) {
+          return;
+        }
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => AgroFarmerBillsScreen(
+              language: _language,
+              farmerId: farmerId,
+              farmerName: farmer['name']?.toString() ?? '-',
+              farmerMobile: farmer['mobile']?.toString() ?? '-',
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1153,6 +1175,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
         context: context,
         language: _language,
         title: t(_language, 'agroCenterTitle'),
+        titleIcon: Icons.storefront_rounded,
         showMenu: true,
         extraActions: [
           IconButton(
@@ -1189,7 +1212,10 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
                                 ? MemoryImage(_profileImageBytes!)
                                 : (_profileImageUrl != null &&
                                           _profileImageUrl!.trim().isNotEmpty
-                                      ? NetworkImage(_profileImageUrl!)
+                                      ? CachedNetworkImageProvider(
+                                          _profileImageUrl!,
+                                          cacheManager: AppImageCache.manager,
+                                        )
                                       : const AssetImage(_defaultProfileImagePath)
                                             as ImageProvider),
                             onBackgroundImageError: (_, __) {},

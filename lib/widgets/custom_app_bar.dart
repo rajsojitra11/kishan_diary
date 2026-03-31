@@ -7,6 +7,7 @@ PreferredSizeWidget buildKishanAppBar({
   required BuildContext context,
   required AppLanguage language,
   String? title,
+  IconData titleIcon = Icons.menu_book_rounded,
   bool showMenu = false,
   VoidCallback? onDownload,
   List<Widget>? extraActions,
@@ -39,8 +40,8 @@ PreferredSizeWidget buildKishanAppBar({
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.menu_book_rounded,
+          Icon(
+            titleIcon,
             color: Color(0xFFF1F8E9),
             size: 28,
           ),

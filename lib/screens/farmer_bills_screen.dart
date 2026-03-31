@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
+import '../widgets/cached_network_image_view.dart';
 
 class FarmerBillsScreen extends StatefulWidget {
   const FarmerBillsScreen({super.key, required this.language});
@@ -15,6 +16,7 @@ class FarmerBillsScreen extends StatefulWidget {
 class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
   bool _loading = true;
   List<Map<String, dynamic>> _bills = [];
+  String _statusFilter = 'all';
 
   @override
   void initState() {
@@ -62,6 +64,51 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
     }
   }
 
+  void _showBillImageDialog(String photoUrl) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  t(widget.language, 'viewBillTitle'),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 450),
+                  child: InteractiveViewer(
+                    child: CachedNetworkImageView(
+                      imageUrl: photoUrl,
+                      fit: BoxFit.contain,
+                      maxWidthDiskCache: 1800,
+                      maxHeightDiskCache: 1800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    child: Text(t(widget.language, 'cancelButton')),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -74,6 +121,13 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
       );
     }
 
+    final filteredBills = _statusFilter == 'all'
+        ? _bills
+        : _bills.where((bill) {
+            final status = bill['payment_status']?.toString().toLowerCase();
+            return status == _statusFilter;
+          }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -85,7 +139,48 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
             label: Text(t(widget.language, 'agroRefresh')),
           ),
         ),
-        ..._bills.map((bill) {
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text(
+              '${t(widget.language, 'agroBillsTotal')}: ${_bills.length}',
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              ChoiceChip(
+                label: Text(t(widget.language, 'incomeTypeAll')),
+                selected: _statusFilter == 'all',
+                onSelected: (_) => setState(() => _statusFilter = 'all'),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: Text(t(widget.language, 'agroPending')),
+                selected: _statusFilter == 'pending',
+                onSelected: (_) => setState(() => _statusFilter = 'pending'),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: Text(t(widget.language, 'agroCompleted')),
+                selected: _statusFilter == 'completed',
+                onSelected: (_) => setState(() => _statusFilter = 'completed'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (filteredBills.isEmpty)
+          Center(child: Text(t(widget.language, 'agroNoBills')))
+        else
+          ...filteredBills.map((bill) {
           final amount = (bill['amount'] as num?)?.toDouble() ?? 0;
           final status = bill['payment_status']?.toString() ?? 'pending';
           final statusLabel = status == 'completed'
@@ -93,6 +188,7 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
               : t(widget.language, 'agroPending');
           final isCompleted = status == 'completed';
           final photoUrl = bill['bill_photo_url']?.toString();
+          final hasPhoto = photoUrl != null && photoUrl.trim().isNotEmpty;
 
           return Card(
             margin: const EdgeInsets.only(bottom: 10),
@@ -143,30 +239,19 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
                   Text(
                     '${t(widget.language, 'farmerBillFromAgro')}: ${bill['agro_owner_name'] ?? '-'} (${bill['agro_owner_mobile'] ?? '-'})',
                   ),
-                  if ((bill['note']?.toString().trim().isNotEmpty ?? false)) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      '${t(widget.language, 'agroBillNote')}: ${bill['note']}',
-                    ),
-                  ],
-                  if (photoUrl != null && photoUrl.trim().isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: Image.network(
-                        photoUrl,
-                        height: 150,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 80,
-                          color: Colors.grey.shade200,
-                          alignment: Alignment.center,
-                          child: const Icon(Icons.broken_image),
-                        ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      IconButton(
+                        tooltip: t(widget.language, 'viewBillTitle'),
+                        onPressed: hasPhoto
+                            ? () => _showBillImageDialog(photoUrl)
+                            : null,
+                        icon: const Icon(Icons.remove_red_eye_outlined),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ],
               ),
             ),

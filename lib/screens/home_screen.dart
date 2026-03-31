@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -21,6 +22,7 @@ import '../screens/login_screen.dart';
 import '../screens/rules_regulation_screen.dart';
 import '../utils/api_service.dart';
 import '../utils/app_session.dart';
+import '../utils/image_cache.dart';
 import '../utils/localization.dart';
 import '../utils/pdf_export.dart';
 import '../widgets/app_widgets.dart';
@@ -311,7 +313,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return MemoryImage(_profileImageBytes!);
     }
     if (_profileImageUrl != null && _profileImageUrl!.trim().isNotEmpty) {
-      return NetworkImage(_profileImageUrl!);
+      return CachedNetworkImageProvider(
+        _profileImageUrl!,
+        cacheManager: AppImageCache.manager,
+      );
     }
     return const AssetImage(_defaultProfileImagePath);
   }
@@ -827,7 +832,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ? MemoryImage(tempProfileImageBytes!)
                         : (tempProfileImageUrl != null &&
                                   tempProfileImageUrl!.trim().isNotEmpty
-                              ? NetworkImage(tempProfileImageUrl!)
+                          ? CachedNetworkImageProvider(
+                              tempProfileImageUrl!,
+                              cacheManager: AppImageCache.manager,
+                            )
                               : const AssetImage(_defaultProfileImagePath)
                                     as ImageProvider),
                   ),

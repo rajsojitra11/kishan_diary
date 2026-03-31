@@ -7,6 +7,7 @@ import '../models/land.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
+import '../widgets/cached_network_image_view.dart';
 
 /// Allows the user to add, edit and delete income records for the selected land.
 class IncomeScreen extends StatefulWidget {
@@ -451,18 +452,10 @@ class _IncomeScreenState extends State<IncomeScreen> {
                                     height: 80,
                                     fit: BoxFit.cover,
                                   )
-                                : Image.network(
-                                    selectedBillPhotoUrl!,
+                                : CachedNetworkImageView(
+                                    imageUrl: selectedBillPhotoUrl!,
                                     width: 120,
                                     height: 80,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      width: 120,
-                                      height: 80,
-                                      color: Colors.grey.shade200,
-                                      alignment: Alignment.center,
-                                      child: const Icon(Icons.broken_image),
-                                    ),
                                   ),
                           ),
                         ],
@@ -733,7 +726,12 @@ class _IncomeScreenState extends State<IncomeScreen> {
                   child: InteractiveViewer(
                     child: entry.billPhotoBytes != null
                         ? Image.memory(entry.billPhotoBytes!)
-                        : Image.network(entry.billPhotoUrl!),
+                        : CachedNetworkImageView(
+                            imageUrl: entry.billPhotoUrl!,
+                            fit: BoxFit.contain,
+                            maxWidthDiskCache: 1800,
+                            maxHeightDiskCache: 1800,
+                          ),
                   ),
                 ),
                 const SizedBox(height: 8),
