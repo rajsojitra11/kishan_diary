@@ -558,6 +558,123 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     });
   }
 
+  Widget _buildUpadRecordsTable() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final minTableWidth = constraints.maxWidth < 520
+            ? 520.0
+            : constraints.maxWidth;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: minTableWidth),
+              child: DataTable(
+                headingRowHeight: 42,
+                dataRowMinHeight: 52,
+                dataRowMaxHeight: 72,
+                horizontalMargin: 10,
+                columnSpacing: 16,
+                headingTextStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF334155),
+                ),
+                columns: [
+                  DataColumn(label: Text(t(widget.language, 'upadAmount'))),
+                  DataColumn(label: Text(t(widget.language, 'upadNote'))),
+                  DataColumn(label: Text(t(widget.language, 'upadDate'))),
+                  DataColumn(label: Text(t(widget.language, 'actions'))),
+                ],
+                rows: [
+                  ..._upadEntries.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final upad = entry.value;
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Text(
+                            '₹ ${upad.amount.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        DataCell(
+                          SizedBox(
+                            width: 150,
+                            child: Text(
+                              upad.note,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                        DataCell(Text(upad.date)),
+                        DataCell(
+                          Wrap(
+                            spacing: 4,
+                            children: [
+                              IconButton(
+                                tooltip: t(widget.language, 'editButton'),
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.blue,
+                                ),
+                                onPressed: () => _showUpadFormDialog(
+                                  existing: upad,
+                                  index: index,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: t(widget.language, 'deleteButton'),
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () => _confirmDeleteUpadAt(index),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                  DataRow(
+                    color: WidgetStateProperty.resolveWith(
+                      (_) => const Color(0xFFE2F7E8),
+                    ),
+                    cells: [
+                      DataCell(
+                        Text(
+                          '₹ ${_totalUpadAmount.toStringAsFixed(2)}',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          'Total Upad: $_totalUpadCount',
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      const DataCell(Text('-')),
+                      const DataCell(SizedBox.shrink()),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -695,78 +812,7 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
               if (_upadEntries.isEmpty)
                 Text(t(widget.language, 'upadNoRecords'))
               else
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    columns: [
-                      DataColumn(label: Text(t(widget.language, 'upadAmount'))),
-                      DataColumn(label: Text(t(widget.language, 'upadNote'))),
-                      DataColumn(label: Text(t(widget.language, 'upadDate'))),
-                      DataColumn(label: Text(t(widget.language, 'actions'))),
-                    ],
-                    rows: [
-                      ..._upadEntries.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final upad = entry.value;
-                        return DataRow(
-                          cells: [
-                            DataCell(
-                              Text('₹ ${upad.amount.toStringAsFixed(2)}'),
-                            ),
-                            DataCell(Text(upad.note)),
-                            DataCell(Text(upad.date)),
-                            DataCell(
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.edit,
-                                      color: Colors.blue,
-                                    ),
-                                    onPressed: () => _showUpadFormDialog(
-                                      existing: upad,
-                                      index: index,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.delete,
-                                      color: Colors.red,
-                                    ),
-                                    onPressed: () =>
-                                        _confirmDeleteUpadAt(index),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      }),
-                      DataRow(
-                        cells: [
-                          DataCell(
-                            Text(
-                              '₹ ${_totalUpadAmount.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          DataCell(
-                            Text(
-                              'Total Upad: $_totalUpadCount',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const DataCell(Text('-')),
-                          const DataCell(SizedBox.shrink()),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                _buildUpadRecordsTable(),
             ],
           ),
         ),

@@ -414,19 +414,326 @@ class _HomeTabState extends State<HomeTab> {
     required Color color,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.only(top: 10),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: color.withAlpha(28),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF1E293B),
+              ),
             ),
           ),
-          Text(value, style: const TextStyle(fontSize: 14)),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _dashboardHeroCard({
+    required Land selectedLand,
+    required double profit,
+    required double totalIncome,
+    required double totalExpense,
+  }) {
+    final profitColor = profit >= 0
+        ? const Color(0xFFBBF7D0)
+        : Colors.red[100]!;
+    final profitPrefix = profit >= 0 ? '+' : '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF14532D), Color(0xFF166534), Color(0xFF15803D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFF22C55E).withAlpha(120)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x3314532D),
+            blurRadius: 16,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(26),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.landscape_rounded, color: Colors.white),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      t(widget.language, 'landDashboard'),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFD1FAE5),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      selectedLand.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 21,
+                        height: 1.05,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(38),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  '${selectedLand.size.toStringAsFixed(2)} ${t(widget.language, 'landSize')}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Icon(
+                Icons.candlestick_chart_rounded,
+                color: profitColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                t(widget.language, 'profitLabel'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFA7F3D0),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$profitPrefix₹ ${profit.toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.4,
+              color: profitColor,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '${t(widget.language, 'incomeLabel')}: ₹ ${totalIncome.toStringAsFixed(2)}   |   ${t(widget.language, 'expensesLabel')}: ₹ ${totalExpense.toStringAsFixed(2)}',
+            style: const TextStyle(
+              color: Color(0xFFDCFCE7),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickMetricCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withAlpha(90)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: color.withAlpha(22),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF64748B),
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dashboardExpandableCard({
+    required bool expanded,
+    required VoidCallback onTap,
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color accent,
+    required List<Widget> details,
+  }) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120F172A),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 3,
+                  width: 52,
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                Row(
+                  children: [
+                    AnimatedRotation(
+                      turns: expanded ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 220),
+                      child: Icon(Icons.expand_more, color: accent),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: accent.withAlpha(18),
+                        borderRadius: BorderRadius.circular(9),
+                      ),
+                      child: Icon(icon, color: accent, size: 17),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+                if (expanded) ...[
+                  const SizedBox(height: 10),
+                  const Divider(height: 1, color: Color(0x3F334155)),
+                  ...details,
+                ],
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -437,62 +744,31 @@ class _HomeTabState extends State<HomeTab> {
     required Map<String, double> expenseTypeTotals,
     required String laborValue,
   }) {
-    const baseColor = Colors.red;
-
-    return Card(
-      color: baseColor.withAlpha(38),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          setState(() => _isExpenseExpanded = !_isExpenseExpanded);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    _isExpenseExpanded
-                        ? Icons.keyboard_arrow_down
-                        : Icons.chevron_right,
-                    color: baseColor,
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.receipt_long, color: baseColor),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Text(totalValue, style: const TextStyle(fontSize: 15)),
-                ],
-              ),
-              if (_isExpenseExpanded) ...[
-                const SizedBox(height: 8),
-                const Divider(height: 1),
-                for (final typeKey in _expenseTypeKeys)
-                  _expenseBreakdownRow(
-                    icon: Icons.receipt,
-                    label: t(widget.language, typeKey),
-                    value:
-                        '₹ ${(expenseTypeTotals[typeKey] ?? 0.0).toStringAsFixed(2)}',
-                    color: Colors.deepOrange,
-                  ),
-                _expenseBreakdownRow(
-                  icon: Icons.group,
-                  label: t(widget.language, 'laborHoursLabel'),
-                  value: laborValue,
-                  color: Colors.blue,
-                ),
-              ],
-            ],
+    return _dashboardExpandableCard(
+      expanded: _isExpenseExpanded,
+      onTap: () {
+        setState(() => _isExpenseExpanded = !_isExpenseExpanded);
+      },
+      title: title,
+      value: totalValue,
+      icon: Icons.receipt_long,
+      accent: const Color(0xFFB45309),
+      details: [
+        for (final typeKey in _expenseTypeKeys)
+          _expenseBreakdownRow(
+            icon: Icons.receipt,
+            label: t(widget.language, typeKey),
+            value:
+                '₹ ${(expenseTypeTotals[typeKey] ?? 0.0).toStringAsFixed(2)}',
+            color: const Color(0xFFB45309),
           ),
+        _expenseBreakdownRow(
+          icon: Icons.group,
+          label: t(widget.language, 'laborHoursLabel'),
+          value: laborValue,
+          color: const Color(0xFF1D4ED8),
         ),
-      ),
+      ],
     );
   }
 
@@ -501,56 +777,24 @@ class _HomeTabState extends State<HomeTab> {
     required String totalValue,
     required Map<String, double> incomeTypeTotals,
   }) {
-    const baseColor = Colors.teal;
-
-    return Card(
-      color: baseColor.withAlpha(38),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          setState(() => _isIncomeExpanded = !_isIncomeExpanded);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    _isIncomeExpanded
-                        ? Icons.keyboard_arrow_down
-                        : Icons.chevron_right,
-                    color: baseColor,
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.currency_rupee, color: baseColor),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Text(totalValue, style: const TextStyle(fontSize: 15)),
-                ],
-              ),
-              if (_isIncomeExpanded) ...[
-                const SizedBox(height: 8),
-                const Divider(height: 1),
-                for (final typeKey in _incomeTypeKeys)
-                  _expenseBreakdownRow(
-                    icon: Icons.trending_up,
-                    label: t(widget.language, typeKey),
-                    value:
-                        '₹ ${(incomeTypeTotals[typeKey] ?? 0.0).toStringAsFixed(2)}',
-                    color: Colors.teal,
-                  ),
-              ],
-            ],
+    return _dashboardExpandableCard(
+      expanded: _isIncomeExpanded,
+      onTap: () {
+        setState(() => _isIncomeExpanded = !_isIncomeExpanded);
+      },
+      title: title,
+      value: totalValue,
+      icon: Icons.currency_rupee,
+      accent: const Color(0xFF15803D),
+      details: [
+        for (final typeKey in _incomeTypeKeys)
+          _expenseBreakdownRow(
+            icon: Icons.trending_up,
+            label: t(widget.language, typeKey),
+            value: '₹ ${(incomeTypeTotals[typeKey] ?? 0.0).toStringAsFixed(2)}',
+            color: const Color(0xFF0F766E),
           ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -559,56 +803,24 @@ class _HomeTabState extends State<HomeTab> {
     required String totalValue,
     required Map<String, double> cropTypeTotals,
   }) {
-    const baseColor = Colors.orange;
-
-    return Card(
-      color: baseColor.withAlpha(38),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          setState(() => _isCropExpanded = !_isCropExpanded);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    _isCropExpanded
-                        ? Icons.keyboard_arrow_down
-                        : Icons.chevron_right,
-                    color: baseColor,
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.eco, color: baseColor),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Text(totalValue, style: const TextStyle(fontSize: 15)),
-                ],
-              ),
-              if (_isCropExpanded) ...[
-                const SizedBox(height: 8),
-                const Divider(height: 1),
-                for (final typeKey in _cropBreakdownTypeKeys)
-                  _expenseBreakdownRow(
-                    icon: Icons.agriculture,
-                    label: t(widget.language, typeKey),
-                    value:
-                        '${(cropTypeTotals[typeKey] ?? 0.0).toStringAsFixed(2)} kg',
-                    color: Colors.orange,
-                  ),
-              ],
-            ],
+    return _dashboardExpandableCard(
+      expanded: _isCropExpanded,
+      onTap: () {
+        setState(() => _isCropExpanded = !_isCropExpanded);
+      },
+      title: title,
+      value: totalValue,
+      icon: Icons.eco,
+      accent: const Color(0xFF16A34A),
+      details: [
+        for (final typeKey in _cropBreakdownTypeKeys)
+          _expenseBreakdownRow(
+            icon: Icons.agriculture,
+            label: t(widget.language, typeKey),
+            value: '${(cropTypeTotals[typeKey] ?? 0.0).toStringAsFixed(2)} kg',
+            color: const Color(0xFFC2410C),
           ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -618,60 +830,29 @@ class _HomeTabState extends State<HomeTab> {
     required int completedCount,
     required int pendingCount,
   }) {
-    const baseColor = Colors.indigo;
-
-    return Card(
-      color: baseColor.withAlpha(28),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          setState(() => _isBillsExpanded = !_isBillsExpanded);
-        },
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    _isBillsExpanded
-                        ? Icons.keyboard_arrow_down
-                        : Icons.chevron_right,
-                    color: baseColor,
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.receipt_long, color: baseColor),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Text('$totalCount', style: const TextStyle(fontSize: 15)),
-                ],
-              ),
-              if (_isBillsExpanded) ...[
-                const SizedBox(height: 8),
-                const Divider(height: 1),
-                _expenseBreakdownRow(
-                  icon: Icons.check_circle_outline,
-                  label: t(widget.language, 'agroCompleted'),
-                  value: '$completedCount',
-                  color: Colors.green,
-                ),
-                _expenseBreakdownRow(
-                  icon: Icons.schedule,
-                  label: t(widget.language, 'agroPending'),
-                  value: '$pendingCount',
-                  color: Colors.orange,
-                ),
-              ],
-            ],
-          ),
+    return _dashboardExpandableCard(
+      expanded: _isBillsExpanded,
+      onTap: () {
+        setState(() => _isBillsExpanded = !_isBillsExpanded);
+      },
+      title: title,
+      value: '$totalCount',
+      icon: Icons.receipt_long,
+      accent: const Color(0xFF14532D),
+      details: [
+        _expenseBreakdownRow(
+          icon: Icons.check_circle_outline,
+          label: t(widget.language, 'agroCompleted'),
+          value: '$completedCount',
+          color: const Color(0xFF15803D),
         ),
-      ),
+        _expenseBreakdownRow(
+          icon: Icons.schedule,
+          label: t(widget.language, 'agroPending'),
+          value: '$pendingCount',
+          color: const Color(0xFFB45309),
+        ),
+      ],
     );
   }
 
@@ -774,80 +955,175 @@ class _HomeTabState extends State<HomeTab> {
         if (selectedLand == null)
           Center(child: Text(t(widget.language, 'noLandSelected')))
         else ...[
-          Text(
-            t(widget.language, 'landDashboard'),
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
           if (widget.lands.length > 1) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             LayoutBuilder(
               builder: (context, constraints) {
                 final isCompact = constraints.maxWidth < 420;
                 final selectedSize = selectedLand.size.toStringAsFixed(2);
 
-                return DropdownButtonFormField<Land>(
-                  isExpanded: true,
-                  value: selectedLand,
-                  decoration: InputDecoration(
-                    isDense: isCompact,
-                    labelText: t(widget.language, 'selectLandHeading'),
-                    border: const OutlineInputBorder(),
-                    prefixIcon: const Icon(Icons.swap_horiz),
-                    suffixText: isCompact
-                        ? selectedSize
-                        : '${t(widget.language, 'landSize')}: $selectedSize',
-                    suffixStyle: TextStyle(fontSize: isCompact ? 12 : 13),
+                return Container(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFCFE8D6)),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x12000000),
+                        blurRadius: 10,
+                        offset: Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  selectedItemBuilder: (context) => widget.lands
-                      .map(
-                        (land) => Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '${land.name} - ${land.size.toStringAsFixed(2)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF14532D).withAlpha(20),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.swap_horiz,
+                              size: 16,
+                              color: Color(0xFF14532D),
+                            ),
                           ),
-                        ),
-                      )
-                      .toList(),
-                  items: widget.lands
-                      .map(
-                        (land) => DropdownMenuItem<Land>(
-                          value: land,
-                          child: Text(
-                            '${land.name} - ${t(widget.language, 'landSize')}: ${land.size.toStringAsFixed(2)}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          const SizedBox(width: 8),
+                          Text(
+                            t(widget.language, 'selectLandHeading'),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF14532D),
+                            ),
                           ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<Land>(
+                        isExpanded: true,
+                        value: selectedLand,
+                        decoration: InputDecoration(
+                          isDense: isCompact,
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFB7D7C2),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFB7D7C2),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF14532D),
+                              width: 1.5,
+                            ),
+                          ),
+                          suffixText: isCompact
+                              ? selectedSize
+                              : '${t(widget.language, 'landSize')}: $selectedSize',
+                          suffixStyle: TextStyle(fontSize: isCompact ? 12 : 13),
                         ),
-                      )
-                      .toList(),
-                  onChanged: (land) async {
-                    if (land == null) {
-                      return;
-                    }
-                    if (selectedLand.id != null && land.id == selectedLand.id) {
-                      return;
-                    }
-                    if (selectedLand.id == null &&
-                        identical(land, selectedLand)) {
-                      return;
-                    }
-                    await widget.onChangeLand(land);
-                  },
+                        selectedItemBuilder: (context) => widget.lands
+                            .map(
+                              (land) => Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  '${land.name} - ${land.size.toStringAsFixed(2)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        items: widget.lands
+                            .map(
+                              (land) => DropdownMenuItem<Land>(
+                                value: land,
+                                child: Text(
+                                  '${land.name} - ${t(widget.language, 'landSize')}: ${land.size.toStringAsFixed(2)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (land) async {
+                          if (land == null) {
+                            return;
+                          }
+                          if (selectedLand.id != null &&
+                              land.id == selectedLand.id) {
+                            return;
+                          }
+                          if (selectedLand.id == null &&
+                              identical(land, selectedLand)) {
+                            return;
+                          }
+                          await widget.onChangeLand(land);
+                        },
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
           ],
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _quickMetricCard(
+                title: t(widget.language, 'incomeLabel'),
+                value: '₹ ${totalIncome.toStringAsFixed(2)}',
+                icon: Icons.trending_up,
+                color: const Color(0xFF15803D),
+              ),
+              _quickMetricCard(
+                title: t(widget.language, 'expensesLabel'),
+                value: '₹ ${totalExpense.toStringAsFixed(2)}',
+                icon: Icons.trending_down,
+                color: const Color(0xFFB45309),
+              ),
+              _quickMetricCard(
+                title: t(widget.language, 'cropProductionLabel'),
+                value: '${totalCropProductionKg.toStringAsFixed(2)} kg',
+                icon: Icons.eco,
+                color: const Color(0xFF16A34A),
+              ),
+              _quickMetricCard(
+                title: t(widget.language, 'agroBillsTotal'),
+                value: '$_totalBillsCount',
+                icon: Icons.receipt_long,
+                color: const Color(0xFF14532D),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
               final cards = [
-                statCard(
-                  t(widget.language, 'profitLabel'),
-                  '₹ ${profit.toStringAsFixed(2)}',
-                  profit >= 0 ? Colors.green : Colors.red,
-                ),
                 _billsDropdownCard(
                   title: t(widget.language, 'agroBillsTotal'),
                   totalCount: _totalBillsCount,
@@ -887,19 +1163,13 @@ class _HomeTabState extends State<HomeTab> {
                 );
               }
 
-              final crossAxisCount = constraints.maxWidth >= 1100 ? 3 : 2;
-
-              return GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: cards.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: crossAxisCount == 2 ? 2.2 : 2.4,
-                ),
-                itemBuilder: (_, index) => cards[index],
+              return Column(
+                children: [
+                  for (int i = 0; i < cards.length; i++) ...[
+                    cards[i],
+                    if (i != cards.length - 1) const SizedBox(height: 10),
+                  ],
+                ],
               );
             },
           ),
