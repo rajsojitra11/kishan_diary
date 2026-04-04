@@ -691,6 +691,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Farmer bill saved successfully.',
     AppLanguage.gujarati: 'ખેડૂત બિલ સફળતાપૂર્વક સાચવાયું.',
   },
+  'farmerBillUpdated': {
+    AppLanguage.english: 'Farmer bill updated successfully.',
+    AppLanguage.gujarati: 'ખેડૂત બિલ સફળતાપૂર્વક અપડેટ થયું.',
+  },
   'farmerBillStatusUpdated': {
     AppLanguage.english: 'Bill status updated successfully.',
     AppLanguage.gujarati: 'બિલ સ્થિતિ સફળતાપૂર્વક અપડેટ થઈ.',

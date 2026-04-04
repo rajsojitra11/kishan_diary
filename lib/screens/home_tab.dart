@@ -59,6 +59,7 @@ class _HomeTabState extends State<HomeTab> {
   bool _isExpenseExpanded = false;
   bool _isCropExpanded = false;
   int _totalBillsCount = 0;
+  int _billsCountRequestId = 0;
 
   @override
   void initState() {
@@ -76,38 +77,44 @@ class _HomeTabState extends State<HomeTab> {
       return;
     }
 
-    List<Map<String, dynamic>> agroBills = const [];
-    List<Map<String, dynamic>> farmerBills = const [];
-    var gotAnyResponse = false;
+    final requestId = ++_billsCountRequestId;
 
     try {
-      agroBills = await ApiService.instance.getMyBills(source: 'agro');
-      gotAnyResponse = true;
+      final allBills = await ApiService.instance.getMyBills(source: 'all');
+
+      if (!mounted || requestId != _billsCountRequestId) {
+        return;
+      }
+
+      if (allBills.isNotEmpty || _totalBillsCount == 0) {
+        setState(() => _totalBillsCount = allBills.length);
+        return;
+      }
+
+      // Verify zero before updating UI to avoid transient drops.
+      final agroBills = await ApiService.instance.getMyBills(source: 'agro');
+      final farmerBills = await ApiService.instance.getMyBills(
+        source: 'farmer',
+      );
+
+      if (!mounted || requestId != _billsCountRequestId) {
+        return;
+      }
+
+      final uniqueBillKeys = <String>{
+        ...agroBills.map((bill) => 'agro:${bill['id']?.toString() ?? ''}'),
+        ...farmerBills.map((bill) => 'farmer:${bill['id']?.toString() ?? ''}'),
+      };
+
+      final verifiedCount = uniqueBillKeys.length;
+      if (verifiedCount > 0 || _totalBillsCount == 0) {
+        setState(() => _totalBillsCount = verifiedCount);
+      }
     } on ApiException {
-      // Keep previous count if this request fails temporarily.
+      // Keep previous value on transient API errors.
     } catch (_) {
-      // Keep previous count if this request fails temporarily.
+      // Keep previous value on transient failures.
     }
-
-    try {
-      farmerBills = await ApiService.instance.getMyBills(source: 'farmer');
-      gotAnyResponse = true;
-    } on ApiException {
-      // Keep previous count if this request fails temporarily.
-    } catch (_) {
-      // Keep previous count if this request fails temporarily.
-    }
-
-    if (!mounted || !gotAnyResponse) {
-      return;
-    }
-
-    final uniqueBillKeys = <String>{
-      ...agroBills.map((bill) => 'agro:${bill['id']?.toString() ?? ''}'),
-      ...farmerBills.map((bill) => 'farmer:${bill['id']?.toString() ?? ''}'),
-    };
-
-    setState(() => _totalBillsCount = uniqueBillKeys.length);
   }
 
   @override

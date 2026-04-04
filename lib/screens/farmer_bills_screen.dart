@@ -51,12 +51,14 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
     return double.tryParse(normalized);
   }
 
-  Future<void> _loadBills() async {
+  Future<void> _loadBills({bool showLoader = true}) async {
     if (!mounted) {
       return;
     }
 
-    setState(() => _loading = true);
+    if (showLoader) {
+      setState(() => _loading = true);
+    }
 
     try {
       final bills = await ApiService.instance.getMyBills(source: _sourceFilter);
@@ -87,7 +89,9 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
       if (!mounted) {
         return;
       }
-      setState(() => _loading = false);
+      if (showLoader) {
+        setState(() => _loading = false);
+      }
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
@@ -95,7 +99,9 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
       if (!mounted) {
         return;
       }
-      setState(() => _loading = false);
+      if (showLoader) {
+        setState(() => _loading = false);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t(widget.language, 'farmerBillsLoadError'))),
       );
@@ -103,10 +109,70 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
   }
 
   Future<void> _showAddFarmerBillDialog() async {
-    final dateCtrl = TextEditingController(text: _toServerDate(DateTime.now()));
-    final amountCtrl = TextEditingController();
-    final noteCtrl = TextEditingController();
-    var paymentStatus = 'pending';
+    final payload = await _showFarmerBillFormDialog();
+
+    if (payload == null) {
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    try {
+      await ApiService.instance.createFarmerBill(
+        billDate: payload['bill_date'].toString(),
+        paymentStatus: payload['payment_status'].toString(),
+        amount: (payload['amount'] as num).toDouble(),
+        note: payload['note']?.toString(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t(widget.language, 'farmerBillSaved'))),
+      );
+      await _loadBills(showLoader: false);
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t(widget.language, 'farmerBillsLoadError'))),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>?> _showFarmerBillFormDialog({
+    Map<String, dynamic>? existingBill,
+  }) async {
+    final initialDate = existingBill?['bill_date']?.toString();
+    final initialAmount = _parseAmount(existingBill?['amount']);
+    final dateCtrl = TextEditingController(
+      text: initialDate == null || initialDate.trim().isEmpty
+          ? _toServerDate(DateTime.now())
+          : _toDisplayDate(initialDate),
+    );
+    final amountCtrl = TextEditingController(
+      text: initialAmount == null ? '' : initialAmount.toStringAsFixed(2),
+    );
+    final noteCtrl = TextEditingController(
+      text: existingBill?['note']?.toString() ?? '',
+    );
+    var paymentStatus =
+        existingBill?['payment_status']?.toString() == 'completed'
+        ? 'completed'
+        : 'pending';
+    String? validationError;
 
     final payload = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -122,6 +188,10 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
                 lastDate: DateTime(now.year + 30),
               );
 
+              if (!dialogContext.mounted) {
+                return;
+              }
+
               if (pickedDate == null) {
                 return;
               }
@@ -131,7 +201,11 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
             }
 
             return AlertDialog(
-              title: Text(t(widget.language, 'farmerAddBillTitle')),
+              title: Text(
+                existingBill == null
+                    ? t(widget.language, 'farmerAddBillTitle')
+                    : t(widget.language, 'agroEditBill'),
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -194,6 +268,13 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
                         border: const OutlineInputBorder(),
                       ),
                     ),
+                    if (validationError != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        validationError!,
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -206,13 +287,12 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
                   onPressed: () {
                     final amount = _parseAmount(amountCtrl.text);
                     if (amount == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            t(widget.language, 'farmerBillInvalidAmount'),
-                          ),
-                        ),
-                      );
+                      setDialogState(() {
+                        validationError = t(
+                          widget.language,
+                          'farmerBillInvalidAmount',
+                        );
+                      });
                       return;
                     }
 
@@ -223,7 +303,11 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
                       'note': noteCtrl.text.trim(),
                     });
                   },
-                  child: Text(t(widget.language, 'agroSaveBill')),
+                  child: Text(
+                    existingBill == null
+                        ? t(widget.language, 'agroSaveBill')
+                        : t(widget.language, 'agroUpdateBill'),
+                  ),
                 ),
               ],
             );
@@ -232,10 +316,20 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
       },
     );
 
-    dateCtrl.dispose();
-    amountCtrl.dispose();
-    noteCtrl.dispose();
+    return payload;
+  }
 
+  Future<void> _showEditFarmerBillDialog(Map<String, dynamic> bill) async {
+    if (bill['source']?.toString() != 'farmer') {
+      return;
+    }
+
+    final billId = int.tryParse(bill['id']?.toString() ?? '');
+    if (billId == null) {
+      return;
+    }
+
+    final payload = await _showFarmerBillFormDialog(existingBill: bill);
     if (payload == null) {
       return;
     }
@@ -244,10 +338,9 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
       return;
     }
 
-    setState(() => _savingFarmerBill = true);
-
     try {
-      await ApiService.instance.createFarmerBill(
+      await ApiService.instance.updateFarmerBill(
+        billId: billId,
         billDate: payload['bill_date'].toString(),
         paymentStatus: payload['payment_status'].toString(),
         amount: (payload['amount'] as num).toDouble(),
@@ -259,64 +352,9 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t(widget.language, 'farmerBillSaved'))),
+        SnackBar(content: Text(t(widget.language, 'farmerBillUpdated'))),
       );
-      await _loadBills();
-    } on ApiException catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t(widget.language, 'farmerBillsLoadError'))),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _savingFarmerBill = false);
-      }
-    }
-  }
-
-  Future<void> _toggleFarmerBillStatus(Map<String, dynamic> bill) async {
-    if (bill['source']?.toString() != 'farmer') {
-      return;
-    }
-
-    final billId = int.tryParse(bill['id']?.toString() ?? '');
-    if (billId == null) {
-      return;
-    }
-
-    final currentStatus = bill['payment_status']?.toString() == 'completed'
-        ? 'completed'
-        : 'pending';
-    final nextStatus = currentStatus == 'completed' ? 'pending' : 'completed';
-    final amount = _parseAmount(bill['amount']) ?? 0;
-
-    try {
-      await ApiService.instance.updateFarmerBill(
-        billId: billId,
-        billDate:
-            bill['bill_date']?.toString() ?? _toServerDate(DateTime.now()),
-        paymentStatus: nextStatus,
-        amount: amount,
-        note: bill['note']?.toString(),
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t(widget.language, 'farmerBillStatusUpdated'))),
-      );
-      await _loadBills();
+      await _loadBills(showLoader: false);
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -370,7 +408,7 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t(widget.language, 'farmerBillDeleted'))),
       );
-      await _loadBills();
+      await _loadBills(showLoader: false);
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -550,9 +588,9 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
             final note = bill['note']?.toString() ?? '';
 
             return Card(
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 8),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -562,7 +600,7 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
                           child: Text(
                             '₹ ${amount.toStringAsFixed(2)}',
                             style: const TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -588,59 +626,31 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isFarmerBill
-                                ? Colors.blue.withAlpha(24)
-                                : Colors.brown.withAlpha(24),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            isFarmerBill
-                                ? t(widget.language, 'farmerBillSourceFarmer')
-                                : t(widget.language, 'farmerBillSourceAgro'),
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: isFarmerBill
-                                  ? Colors.blue.shade800
-                                  : Colors.brown.shade800,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Text(
                       '${t(widget.language, 'agroBillDate')}: ${_toDisplayDate(bill['bill_date']?.toString())}',
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isFarmerBill
-                          ? t(widget.language, 'farmerSelfBillLabel')
-                          : '${t(widget.language, 'farmerBillFromAgro')}: ${bill['agro_owner_name'] ?? '-'} (${bill['agro_owner_mobile'] ?? '-'})',
-                    ),
+                    if (!isFarmerBill) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '${t(widget.language, 'farmerBillFromAgro')}: ${bill['agro_owner_name'] ?? '-'} (${bill['agro_owner_mobile'] ?? '-'})',
+                      ),
+                    ],
                     if (note.trim().isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text('${t(widget.language, 'agroBillNote')}: $note'),
                     ],
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         if (isFarmerBill) ...[
                           IconButton(
-                            tooltip: t(widget.language, 'agroPaymentStatus'),
-                            onPressed: () => _toggleFarmerBillStatus(bill),
-                            icon: Icon(
-                              isCompleted
-                                  ? Icons.check_circle_outline
-                                  : Icons.pending_actions_outlined,
-                            ),
+                            tooltip: t(widget.language, 'agroEditBill'),
+                            onPressed: () => _showEditFarmerBillDialog(bill),
+                            icon: const Icon(Icons.edit_outlined),
                           ),
                           IconButton(
                             tooltip: t(widget.language, 'deleteButton'),
