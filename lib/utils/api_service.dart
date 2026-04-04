@@ -21,14 +21,20 @@ class ApiService {
   ApiService._();
 
   static final ApiService instance = ApiService._();
+  static final ValueNotifier<int> billsRefreshNotifier = ValueNotifier<int>(0);
   static const String _androidDefaultApiBase =
       'https://kishan-diary.onrender.com/api/v1';
+
+  void _notifyBillsChanged() {
+    billsRefreshNotifier.value = billsRefreshNotifier.value + 1;
+  }
 
   static String get _baseUrl {
     var configured = const String.fromEnvironment('API_BASE_URL');
     if (configured.trim().isNotEmpty) {
       // Keep HTTP for localhost/private network during local development.
-      final isLocalHttp = configured.startsWith('http://localhost') ||
+      final isLocalHttp =
+          configured.startsWith('http://localhost') ||
           configured.startsWith('http://127.0.0.1') ||
           configured.startsWith('http://10.') ||
           configured.startsWith('http://192.168.') ||
@@ -67,7 +73,6 @@ class ApiService {
     }
     return uri.replace(queryParameters: query);
   }
-
 
   Future<Map<String, String>> _headers({
     bool auth = true,
@@ -126,12 +131,15 @@ class ApiService {
     if (errors != null && errors.isNotEmpty) {
       // Combine all validation field errors into one readable string
       final errorLines = errors.entries.map((e) {
-        final msgs = (e.value as List?)?.map((m) => m.toString()).join(', ') ?? e.value.toString();
+        final msgs =
+            (e.value as List?)?.map((m) => m.toString()).join(', ') ??
+            e.value.toString();
         return msgs;
       }).toList();
       displayMessage = errorLines.join('\n');
     } else {
-      displayMessage = serverMessage ?? 'Request failed (HTTP ${response.statusCode})';
+      displayMessage =
+          serverMessage ?? 'Request failed (HTTP ${response.statusCode})';
     }
 
     debugPrint('[API] Error $displayMessage');
@@ -173,7 +181,11 @@ class ApiService {
           call = http.put(uri, headers: headers, body: jsonEncode(body ?? {}));
           break;
         case 'PATCH':
-          call = http.patch(uri, headers: headers, body: jsonEncode(body ?? {}));
+          call = http.patch(
+            uri,
+            headers: headers,
+            body: jsonEncode(body ?? {}),
+          );
           break;
         case 'DELETE':
           call = http.delete(uri, headers: headers);
@@ -347,10 +359,70 @@ class ApiService {
     return (data as Map).cast<String, dynamic>();
   }
 
-  Future<List<Map<String, dynamic>>> getMyBills() async {
-    final data = await _request('GET', '/me/bills');
+  Future<List<Map<String, dynamic>>> getMyBills({String? source}) async {
+    final query = <String, String>{};
+    if (source != null && source.trim().isNotEmpty) {
+      query['source'] = source.trim();
+    }
+
+    final data = await _request(
+      'GET',
+      '/me/bills',
+      query: query.isEmpty ? null : query,
+    );
     final rows = ((data as Map)['bills'] as List?) ?? [];
     return rows.map((item) => (item as Map).cast<String, dynamic>()).toList();
+  }
+
+  Future<Map<String, dynamic>> createFarmerBill({
+    required String billDate,
+    required String paymentStatus,
+    required double amount,
+    String? note,
+  }) async {
+    final data = await _request(
+      'POST',
+      '/me/farmer-bills',
+      body: {
+        'bill_date': billDate,
+        'payment_status': paymentStatus,
+        'amount': amount,
+        'note': note,
+      },
+    );
+
+    _notifyBillsChanged();
+
+    return ((data as Map)['bill'] as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> updateFarmerBill({
+    required int billId,
+    required String billDate,
+    required String paymentStatus,
+    required double amount,
+    String? note,
+  }) async {
+    final data = await _request(
+      'PUT',
+      '/me/farmer-bills/$billId',
+      body: {
+        'bill_date': billDate,
+        'payment_status': paymentStatus,
+        'amount': amount,
+        'note': note,
+      },
+    );
+
+    _notifyBillsChanged();
+
+    return ((data as Map)['bill'] as Map).cast<String, dynamic>();
+  }
+
+  Future<Map<String, dynamic>> deleteFarmerBill(int billId) async {
+    final data = await _request('DELETE', '/me/farmer-bills/$billId');
+    _notifyBillsChanged();
+    return (data as Map).cast<String, dynamic>();
   }
 
   Future<Map<String, dynamic>> updateProfile({
@@ -769,10 +841,7 @@ class ApiService {
     final data = await _request(
       'POST',
       '/agro-center/farmers',
-      body: {
-        'name': name,
-        'mobile': mobile,
-      },
+      body: {'name': name, 'mobile': mobile},
     );
     return (data as Map).cast<String, dynamic>();
   }
@@ -785,10 +854,7 @@ class ApiService {
     final data = await _request(
       'PUT',
       '/agro-center/farmers/$farmerId',
-      body: {
-        'name': name,
-        'mobile': mobile,
-      },
+      body: {'name': name, 'mobile': mobile},
     );
     return (data as Map).cast<String, dynamic>();
   }

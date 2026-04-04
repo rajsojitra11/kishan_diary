@@ -66,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final List<Land> _lands = [];
   Land? _selectedLand;
   int _navIndex = 0;
+  int _tabRefreshTick = 0;
   final List<int> _tabHistory = [0];
   late String _profileName;
   late String _profileEmail;
@@ -443,6 +444,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       await AppSession.clearSelectedLandId();
       await AppSession.clearSelectedLandName();
 
+      if (!mounted) {
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t(_language, 'disableAllDataDone'))),
       );
@@ -520,6 +525,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ..remove(index)
         ..add(index);
     });
+  }
+
+  Future<void> _refreshCurrentTab() async {
+    if (_navIndex == 0) {
+      await _bootstrapData();
+      return;
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _tabRefreshTick++;
+    });
+
+    await Future<void>.delayed(const Duration(milliseconds: 200));
   }
 
   void _handleSystemBack() {
@@ -832,10 +854,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ? MemoryImage(tempProfileImageBytes!)
                         : (tempProfileImageUrl != null &&
                                   tempProfileImageUrl!.trim().isNotEmpty
-                          ? CachedNetworkImageProvider(
-                              tempProfileImageUrl!,
-                              cacheManager: AppImageCache.manager,
-                            )
+                              ? CachedNetworkImageProvider(
+                                  tempProfileImageUrl!,
+                                  cacheManager: AppImageCache.manager,
+                                )
                               : const AssetImage(_defaultProfileImagePath)
                                     as ImageProvider),
                   ),
@@ -1167,7 +1189,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ((laborPayload['totals'] as Map?)?['total_wage']),
       );
     }
-
   }
 
   Future<void> _downloadAllDataRecords() async {
@@ -1307,36 +1328,46 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     switch (_navIndex) {
       case 1:
         return IncomeScreen(
-          key: ValueKey('income-${_selectedLand?.id ?? 'none'}'),
+          key: ValueKey(
+            'income-${_selectedLand?.id ?? 'none'}-$_tabRefreshTick',
+          ),
           selectedLand: _selectedLand,
           language: _language,
           onSaved: () => setState(() {}),
         );
       case 2:
         return ExpenseScreen(
-          key: ValueKey('expense-${_selectedLand?.id ?? 'none'}'),
+          key: ValueKey(
+            'expense-${_selectedLand?.id ?? 'none'}-$_tabRefreshTick',
+          ),
           selectedLand: _selectedLand,
           language: _language,
           onSaved: () => setState(() {}),
         );
       case 3:
         return CropScreen(
-          key: ValueKey('crop-${_selectedLand?.id ?? 'none'}'),
+          key: ValueKey('crop-${_selectedLand?.id ?? 'none'}-$_tabRefreshTick'),
           selectedLand: _selectedLand,
           language: _language,
           onSaved: () => setState(() {}),
         );
       case 4:
         return LabourScreen(
-          key: ValueKey('labor-${_selectedLand?.id ?? 'none'}'),
+          key: ValueKey(
+            'labor-${_selectedLand?.id ?? 'none'}-$_tabRefreshTick',
+          ),
           selectedLand: _selectedLand,
           language: _language,
           onSaved: () => setState(() {}),
         );
       case 5:
-        return FarmerBillsScreen(language: _language);
+        return FarmerBillsScreen(
+          key: ValueKey('bills-$_tabRefreshTick'),
+          language: _language,
+        );
       default:
         return HomeTab(
+          key: ValueKey('home-${_selectedLand?.id ?? 'none'}-$_tabRefreshTick'),
           lands: _lands,
           selectedLand: _selectedLand,
           language: _language,
@@ -1650,22 +1681,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               end: Alignment.bottomCenter,
             ),
           ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_navIndex != 0)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton(
-                      tooltip: t(_language, 'downloadPdfTooltip'),
-                      icon: const Icon(Icons.download),
-                      onPressed: _downloadCurrentPageRecords,
+          child: RefreshIndicator(
+            onRefresh: _refreshCurrentTab,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_navIndex != 0 && _navIndex != 5)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        tooltip: t(_language, 'downloadPdfTooltip'),
+                        icon: const Icon(Icons.download),
+                        onPressed: _downloadCurrentPageRecords,
+                      ),
                     ),
-                  ),
-                _currentTab(),
-              ],
+                  _currentTab(),
+                ],
+              ),
             ),
           ),
         ),

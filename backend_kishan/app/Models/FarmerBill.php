@@ -8,32 +8,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property int $agro_owner_id
  * @property int $farmer_id
  * @property \Illuminate\Support\Carbon|null $bill_date
  * @property string $payment_status
  * @property string|float|int $amount
  * @property string|null $note
- * @property string|null $bill_photo_path
- * @property string|null $bill_photo_mime
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read User|null $agroOwner
- * @property-read AgroFarmerContact|null $farmer
+ * @property-read User|null $farmer
  */
-class AgroBill extends Model
+class FarmerBill extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'agro_owner_id',
         'farmer_id',
         'bill_date',
         'payment_status',
         'amount',
         'note',
-        'bill_photo_path',
-        'bill_photo_mime',
     ];
 
     protected function casts(): array
@@ -44,13 +37,8 @@ class AgroBill extends Model
         ];
     }
 
-    public function agroOwner(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'agro_owner_id');
-    }
-
     public function farmer(): BelongsTo
     {
-        return $this->belongsTo(AgroFarmerContact::class, 'farmer_id');
+        return $this->belongsTo(User::class, 'farmer_id');
     }
 }

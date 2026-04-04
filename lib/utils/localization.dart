@@ -667,6 +667,46 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'From Agro Center',
     AppLanguage.gujarati: 'એગ્રો સેન્ટર તરફથી',
   },
+  'farmerBillSourceFarmer': {
+    AppLanguage.english: 'Farmer Bill',
+    AppLanguage.gujarati: 'ખેડૂત બિલ',
+  },
+  'farmerBillSourceAgro': {
+    AppLanguage.english: 'Agro Bill',
+    AppLanguage.gujarati: 'એગ્રો બિલ',
+  },
+  'farmerSelfBillLabel': {
+    AppLanguage.english: 'Self Bill',
+    AppLanguage.gujarati: 'મારું બિલ',
+  },
+  'farmerAddBillButton': {
+    AppLanguage.english: 'Add Bill',
+    AppLanguage.gujarati: 'બિલ ઉમેરો',
+  },
+  'farmerAddBillTitle': {
+    AppLanguage.english: 'Add Farmer Bill',
+    AppLanguage.gujarati: 'ખેડૂત બિલ ઉમેરો',
+  },
+  'farmerBillSaved': {
+    AppLanguage.english: 'Farmer bill saved successfully.',
+    AppLanguage.gujarati: 'ખેડૂત બિલ સફળતાપૂર્વક સાચવાયું.',
+  },
+  'farmerBillStatusUpdated': {
+    AppLanguage.english: 'Bill status updated successfully.',
+    AppLanguage.gujarati: 'બિલ સ્થિતિ સફળતાપૂર્વક અપડેટ થઈ.',
+  },
+  'farmerBillDeleteConfirm': {
+    AppLanguage.english: 'Delete this farmer bill?',
+    AppLanguage.gujarati: 'આ ખેડૂત બિલ કાઢી નાખવું છે?',
+  },
+  'farmerBillDeleted': {
+    AppLanguage.english: 'Farmer bill deleted successfully.',
+    AppLanguage.gujarati: 'ખેડૂત બિલ સફળતાપૂર્વક કાઢી નાખ્યું.',
+  },
+  'farmerBillInvalidAmount': {
+    AppLanguage.english: 'Please enter a valid amount.',
+    AppLanguage.gujarati: 'કૃપા કરીને માન્ય રકમ દાખલ કરો.',
+  },
   'navAnimal': {AppLanguage.english: 'Animal', AppLanguage.gujarati: 'પશુ'},
   'animalIncomeLabel': {
     AppLanguage.english: 'Animal Income',
@@ -925,10 +965,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Edit Bill',
     AppLanguage.gujarati: 'બિલ સુધારો',
   },
-  'agroFarmer': {
-    AppLanguage.english: 'Farmer',
-    AppLanguage.gujarati: 'ખેડૂત',
-  },
+  'agroFarmer': {AppLanguage.english: 'Farmer', AppLanguage.gujarati: 'ખેડૂત'},
   'agroSearchFarmerHint': {
     AppLanguage.english: 'Search farmer by name',
     AppLanguage.gujarati: 'નામ દ્વારા ખેડૂત શોધો',
@@ -957,10 +994,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Payment Status',
     AppLanguage.gujarati: 'ચુકવણી સ્થિતિ',
   },
-  'agroPending': {
-    AppLanguage.english: 'Pending',
-    AppLanguage.gujarati: 'બાકી',
-  },
+  'agroPending': {AppLanguage.english: 'Pending', AppLanguage.gujarati: 'બાકી'},
   'agroCompleted': {
     AppLanguage.english: 'Completed',
     AppLanguage.gujarati: 'પૂર્ણ',
@@ -1042,7 +1076,8 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'ખેડૂત સફળતાપૂર્વક અપડેટ થયો.',
   },
   'agroFarmerDeleteConfirm': {
-    AppLanguage.english: 'Delete this farmer? Related bills will also be removed.',
+    AppLanguage.english:
+        'Delete this farmer? Related bills will also be removed.',
     AppLanguage.gujarati: 'આ ખેડૂત કાઢી નાખવો? સંબંધિત બિલ પણ દૂર થશે.',
   },
   'agroFarmerDeleted': {

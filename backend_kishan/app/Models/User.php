@@ -118,4 +118,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(\App\Models\AgroBill::class, 'agro_owner_id');
     }
+
+    public function farmerBills(): HasMany
+    {
+        return $this->hasMany(\App\Models\FarmerBill::class, 'farmer_id');
+    }
 }

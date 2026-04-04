@@ -160,6 +160,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
+    if (!mounted) {
+      return;
+    }
+
     if (_selectedBirthdate == null) {
       ScaffoldMessenger.of(
         context,

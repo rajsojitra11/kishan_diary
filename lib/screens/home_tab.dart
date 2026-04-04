@@ -58,9 +58,61 @@ class _HomeTabState extends State<HomeTab> {
   bool _isIncomeExpanded = false;
   bool _isExpenseExpanded = false;
   bool _isCropExpanded = false;
+  int _totalBillsCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    ApiService.billsRefreshNotifier.addListener(_onBillsChanged);
+    _loadTotalBillsCount();
+  }
+
+  void _onBillsChanged() {
+    _loadTotalBillsCount();
+  }
+
+  Future<void> _loadTotalBillsCount() async {
+    if (!mounted) {
+      return;
+    }
+
+    List<Map<String, dynamic>> agroBills = const [];
+    List<Map<String, dynamic>> farmerBills = const [];
+    var gotAnyResponse = false;
+
+    try {
+      agroBills = await ApiService.instance.getMyBills(source: 'agro');
+      gotAnyResponse = true;
+    } on ApiException {
+      // Keep previous count if this request fails temporarily.
+    } catch (_) {
+      // Keep previous count if this request fails temporarily.
+    }
+
+    try {
+      farmerBills = await ApiService.instance.getMyBills(source: 'farmer');
+      gotAnyResponse = true;
+    } on ApiException {
+      // Keep previous count if this request fails temporarily.
+    } catch (_) {
+      // Keep previous count if this request fails temporarily.
+    }
+
+    if (!mounted || !gotAnyResponse) {
+      return;
+    }
+
+    final uniqueBillKeys = <String>{
+      ...agroBills.map((bill) => 'agro:${bill['id']?.toString() ?? ''}'),
+      ...farmerBills.map((bill) => 'farmer:${bill['id']?.toString() ?? ''}'),
+    };
+
+    setState(() => _totalBillsCount = uniqueBillKeys.length);
+  }
 
   @override
   void dispose() {
+    ApiService.billsRefreshNotifier.removeListener(_onBillsChanged);
     _nameCtrl.dispose();
     _sizeCtrl.dispose();
     _locationCtrl.dispose();
@@ -654,6 +706,11 @@ class _HomeTabState extends State<HomeTab> {
                   t(widget.language, 'profitLabel'),
                   '₹ ${profit.toStringAsFixed(2)}',
                   profit >= 0 ? Colors.green : Colors.red,
+                ),
+                statCard(
+                  t(widget.language, 'agroBillsTotal'),
+                  _totalBillsCount.toString(),
+                  Colors.indigo,
                 ),
                 _incomeDropdownCard(
                   title: t(widget.language, 'incomeLabel'),

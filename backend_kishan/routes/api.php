@@ -31,6 +31,9 @@ Route::prefix('v1')->group(function () {
 
         Route::get('/me', [ProfileController::class, 'me']);
         Route::get('/me/bills', [ProfileController::class, 'myBills']);
+        Route::post('/me/farmer-bills', [ProfileController::class, 'storeFarmerBill']);
+        Route::put('/me/farmer-bills/{farmerBill}', [ProfileController::class, 'updateFarmerBill']);
+        Route::delete('/me/farmer-bills/{farmerBill}', [ProfileController::class, 'deleteFarmerBill']);
         Route::put('/me', [ProfileController::class, 'update']);
         Route::post('/me/profile-image', [ProfileController::class, 'updateProfileImage']);
         Route::patch('/me/language', [ProfileController::class, 'updateLanguage']);
