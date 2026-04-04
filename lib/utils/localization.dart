@@ -336,6 +336,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Enter a value greater than 0',
     AppLanguage.gujarati: '0 કરતાં મોટી કિંમત દાખલ કરો',
   },
+  'validationEnterZeroOrPositiveNumber': {
+    AppLanguage.english: 'Enter a value greater than or equal to 0',
+    AppLanguage.gujarati: '0 કે તેથી મોટી કિંમત દાખલ કરો',
+  },
   'validationSelectDate': {
     AppLanguage.english: 'Please select a date',
     AppLanguage.gujarati: 'કૃપા કરીને તારીખ પસંદ કરો',

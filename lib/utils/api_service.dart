@@ -22,11 +22,24 @@ class ApiService {
 
   static final ApiService instance = ApiService._();
   static final ValueNotifier<int> billsRefreshNotifier = ValueNotifier<int>(0);
+  static int? cachedBillsTotalCount;
   static const String _androidDefaultApiBase =
       'https://kishan-diary.onrender.com/api/v1';
 
   void _notifyBillsChanged() {
     billsRefreshNotifier.value = billsRefreshNotifier.value + 1;
+  }
+
+  void _increaseCachedBillsTotal() {
+    if (cachedBillsTotalCount != null) {
+      cachedBillsTotalCount = cachedBillsTotalCount! + 1;
+    }
+  }
+
+  void _decreaseCachedBillsTotal() {
+    if (cachedBillsTotalCount != null) {
+      cachedBillsTotalCount = (cachedBillsTotalCount! - 1).clamp(0, 1 << 30);
+    }
   }
 
   static String get _baseUrl {
@@ -371,7 +384,16 @@ class ApiService {
       query: query.isEmpty ? null : query,
     );
     final rows = ((data as Map)['bills'] as List?) ?? [];
-    return rows.map((item) => (item as Map).cast<String, dynamic>()).toList();
+    final parsed = rows
+        .map((item) => (item as Map).cast<String, dynamic>())
+        .toList();
+
+    final requestedSource = source?.trim().toLowerCase() ?? 'all';
+    if (requestedSource == 'all') {
+      cachedBillsTotalCount = parsed.length;
+    }
+
+    return parsed;
   }
 
   Future<Map<String, dynamic>> createFarmerBill({
@@ -391,6 +413,7 @@ class ApiService {
       },
     );
 
+    _increaseCachedBillsTotal();
     _notifyBillsChanged();
 
     return ((data as Map)['bill'] as Map).cast<String, dynamic>();
@@ -421,6 +444,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> deleteFarmerBill(int billId) async {
     final data = await _request('DELETE', '/me/farmer-bills/$billId');
+    _decreaseCachedBillsTotal();
     _notifyBillsChanged();
     return (data as Map).cast<String, dynamic>();
   }

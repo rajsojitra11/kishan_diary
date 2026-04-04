@@ -198,6 +198,21 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     return null;
   }
 
+  String? _nonNegativeDoubleValidator(String? value) {
+    final raw = value?.trim() ?? '';
+    if (raw.isEmpty) {
+      return t(widget.language, 'validationRequiredField');
+    }
+    final parsed = _tryParseNumber(raw);
+    if (parsed == null) {
+      return t(widget.language, 'validationEnterValidNumber');
+    }
+    if (parsed < 0) {
+      return t(widget.language, 'validationEnterZeroOrPositiveNumber');
+    }
+    return null;
+  }
+
   String? _positiveDayValidator(String? value) {
     final raw = value?.trim() ?? '';
     if (raw.isEmpty) {
@@ -207,8 +222,8 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
     if (parsed == null) {
       return t(widget.language, 'validationEnterValidNumber');
     }
-    if (parsed <= 0) {
-      return t(widget.language, 'validationEnterPositiveNumber');
+    if (parsed < 0) {
+      return t(widget.language, 'validationEnterZeroOrPositiveNumber');
     }
     return null;
   }
@@ -606,7 +621,7 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
                   prefixIcon: const Icon(Icons.money),
                 ),
                 autovalidateMode: AutovalidateMode.onUserInteraction,
-                validator: _positiveDoubleValidator,
+                validator: _nonNegativeDoubleValidator,
               ),
               const SizedBox(height: 10),
               TextFormField(

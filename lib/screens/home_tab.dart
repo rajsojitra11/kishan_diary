@@ -31,6 +31,7 @@ class HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<HomeTab> {
+  static int _lastKnownTotalBillsCount = 0;
   static const List<String> _expenseTypeKeys = [
     'expenseTypeMedicine',
     'expenseTypeSeeds',
@@ -55,10 +56,14 @@ class _HomeTabState extends State<HomeTab> {
   final TextEditingController _sizeCtrl = TextEditingController();
   final TextEditingController _locationCtrl = TextEditingController();
   bool _isSubmittingSuggestion = false;
+  bool _isBillsExpanded = false;
   bool _isIncomeExpanded = false;
   bool _isExpenseExpanded = false;
   bool _isCropExpanded = false;
-  int _totalBillsCount = 0;
+  int _totalBillsCount =
+      ApiService.cachedBillsTotalCount ?? _lastKnownTotalBillsCount;
+  int _completedBillsCount = 0;
+  int _pendingBillsCount = 0;
   int _billsCountRequestId = 0;
 
   @override
@@ -69,7 +74,18 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   void _onBillsChanged() {
+    final cached = ApiService.cachedBillsTotalCount;
+    if (cached != null && mounted && cached != _totalBillsCount) {
+      setState(() => _totalBillsCount = cached);
+      _lastKnownTotalBillsCount = cached;
+    }
+
     _loadTotalBillsCount();
+  }
+
+  String _normalizedBillStatus(dynamic rawStatus) {
+    final status = rawStatus?.toString().trim().toLowerCase() ?? '';
+    return status == 'completed' ? 'completed' : 'pending';
   }
 
   Future<void> _loadTotalBillsCount() async {
@@ -80,35 +96,65 @@ class _HomeTabState extends State<HomeTab> {
     final requestId = ++_billsCountRequestId;
 
     try {
-      final allBills = await ApiService.instance.getMyBills(source: 'all');
+      var allBills = await ApiService.instance.getMyBills(source: 'all');
 
       if (!mounted || requestId != _billsCountRequestId) {
         return;
       }
 
-      if (allBills.isNotEmpty || _totalBillsCount == 0) {
-        setState(() => _totalBillsCount = allBills.length);
-        return;
+      var nextCount = allBills.length;
+      var completedCount = allBills
+          .where(
+            (bill) =>
+                _normalizedBillStatus(bill['payment_status']) == 'completed',
+          )
+          .length;
+      var pendingCount = allBills
+          .where(
+            (bill) =>
+                _normalizedBillStatus(bill['payment_status']) == 'pending',
+          )
+          .length;
+
+      if (nextCount == 0 && _lastKnownTotalBillsCount > 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 350));
+
+        if (!mounted || requestId != _billsCountRequestId) {
+          return;
+        }
+
+        allBills = await ApiService.instance.getMyBills(source: 'all');
+
+        if (!mounted || requestId != _billsCountRequestId) {
+          return;
+        }
+
+        nextCount = allBills.length;
+        completedCount = allBills
+            .where(
+              (bill) =>
+                  _normalizedBillStatus(bill['payment_status']) == 'completed',
+            )
+            .length;
+        pendingCount = allBills
+            .where(
+              (bill) =>
+                  _normalizedBillStatus(bill['payment_status']) == 'pending',
+            )
+            .length;
       }
 
-      // Verify zero before updating UI to avoid transient drops.
-      final agroBills = await ApiService.instance.getMyBills(source: 'agro');
-      final farmerBills = await ApiService.instance.getMyBills(
-        source: 'farmer',
-      );
+      _lastKnownTotalBillsCount = nextCount;
+      ApiService.cachedBillsTotalCount = nextCount;
 
-      if (!mounted || requestId != _billsCountRequestId) {
-        return;
-      }
-
-      final uniqueBillKeys = <String>{
-        ...agroBills.map((bill) => 'agro:${bill['id']?.toString() ?? ''}'),
-        ...farmerBills.map((bill) => 'farmer:${bill['id']?.toString() ?? ''}'),
-      };
-
-      final verifiedCount = uniqueBillKeys.length;
-      if (verifiedCount > 0 || _totalBillsCount == 0) {
-        setState(() => _totalBillsCount = verifiedCount);
+      if (_totalBillsCount != nextCount ||
+          _completedBillsCount != completedCount ||
+          _pendingBillsCount != pendingCount) {
+        setState(() {
+          _totalBillsCount = nextCount;
+          _completedBillsCount = completedCount;
+          _pendingBillsCount = pendingCount;
+        });
       }
     } on ApiException {
       // Keep previous value on transient API errors.
@@ -127,35 +173,39 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Future<void> _submitSuggestionMessage(String message) async {
-    if (message.trim().isEmpty) {
+    if (!mounted) {
       return;
     }
 
-    FocusScope.of(context).unfocus();
+    final trimmedMessage = message.trim();
+    if (trimmedMessage.isEmpty) {
+      return;
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _isSubmittingSuggestion = true);
+    final messenger = ScaffoldMessenger.maybeOf(context);
 
     try {
-      await ApiService.instance.submitSuggestion(message.trim());
+      await ApiService.instance.submitSuggestion(trimmedMessage);
 
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger?.showSnackBar(
         SnackBar(content: Text(t(widget.language, 'contactSuggestionSuccess'))),
       );
     } on ApiException catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      messenger?.showSnackBar(SnackBar(content: Text(error.message)));
     } catch (_) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger?.showSnackBar(
         SnackBar(content: Text(t(widget.language, 'contactSuggestionError'))),
       );
     } finally {
@@ -168,55 +218,76 @@ class _HomeTabState extends State<HomeTab> {
   Future<void> _showSuggestionDialog() async {
     final suggestionCtrl = TextEditingController();
 
-    final message = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(t(widget.language, 'contactSuggestionTitle')),
-          content: TextField(
-            controller: suggestionCtrl,
-            minLines: 3,
-            maxLines: 5,
-            decoration: InputDecoration(
-              hintText: t(widget.language, 'contactSuggestionHint'),
-              border: const OutlineInputBorder(),
+    try {
+      final message = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: Text(t(widget.language, 'contactSuggestionTitle')),
+            content: TextField(
+              controller: suggestionCtrl,
+              minLines: 3,
+              maxLines: 5,
+              decoration: InputDecoration(
+                hintText: t(widget.language, 'contactSuggestionHint'),
+                border: const OutlineInputBorder(),
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(t(widget.language, 'cancelButton')),
-            ),
-            ElevatedButton.icon(
-              onPressed: () {
-                final text = suggestionCtrl.text.trim();
-                if (text.isEmpty) {
-                  ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        t(widget.language, 'validationRequiredField'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(t(widget.language, 'cancelButton')),
+              ),
+              ElevatedButton.icon(
+                onPressed: () {
+                  try {
+                    final text = suggestionCtrl.text.trim();
+                    if (text.isEmpty) {
+                      final messenger = ScaffoldMessenger.maybeOf(context);
+                      messenger?.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            t(widget.language, 'validationRequiredField'),
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.pop(dialogContext, text);
+                  } catch (_) {
+                    final messenger = ScaffoldMessenger.maybeOf(context);
+                    messenger?.showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          t(widget.language, 'contactSuggestionError'),
+                        ),
                       ),
-                    ),
-                  );
-                  return;
-                }
-                Navigator.pop(dialogContext, text);
-              },
-              icon: const Icon(Icons.send),
-              label: Text(t(widget.language, 'contactSuggestionSubmit')),
-            ),
-          ],
-        );
-      },
-    );
+                    );
+                  }
+                },
+                icon: const Icon(Icons.send),
+                label: Text(t(widget.language, 'contactSuggestionSubmit')),
+              ),
+            ],
+          );
+        },
+      );
 
-    suggestionCtrl.dispose();
+      if (!mounted || message == null || message.trim().isEmpty) {
+        return;
+      }
 
-    if (!mounted || message == null || message.trim().isEmpty) {
-      return;
+      await _submitSuggestionMessage(message);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text(t(widget.language, 'contactSuggestionError'))),
+      );
+    } finally {
+      suggestionCtrl.dispose();
     }
-
-    await _submitSuggestionMessage(message);
   }
 
   Future<void> _submit() async {
@@ -541,6 +612,69 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
+  Widget _billsDropdownCard({
+    required String title,
+    required int totalCount,
+    required int completedCount,
+    required int pendingCount,
+  }) {
+    const baseColor = Colors.indigo;
+
+    return Card(
+      color: baseColor.withAlpha(28),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          setState(() => _isBillsExpanded = !_isBillsExpanded);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    _isBillsExpanded
+                        ? Icons.keyboard_arrow_down
+                        : Icons.chevron_right,
+                    color: baseColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.receipt_long, color: baseColor),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Text('$totalCount', style: const TextStyle(fontSize: 15)),
+                ],
+              ),
+              if (_isBillsExpanded) ...[
+                const SizedBox(height: 8),
+                const Divider(height: 1),
+                _expenseBreakdownRow(
+                  icon: Icons.check_circle_outline,
+                  label: t(widget.language, 'agroCompleted'),
+                  value: '$completedCount',
+                  color: Colors.green,
+                ),
+                _expenseBreakdownRow(
+                  icon: Icons.schedule,
+                  label: t(widget.language, 'agroPending'),
+                  value: '$pendingCount',
+                  color: Colors.orange,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final selectedLand = widget.selectedLand;
@@ -714,10 +848,11 @@ class _HomeTabState extends State<HomeTab> {
                   '₹ ${profit.toStringAsFixed(2)}',
                   profit >= 0 ? Colors.green : Colors.red,
                 ),
-                statCard(
-                  t(widget.language, 'agroBillsTotal'),
-                  _totalBillsCount.toString(),
-                  Colors.indigo,
+                _billsDropdownCard(
+                  title: t(widget.language, 'agroBillsTotal'),
+                  totalCount: _totalBillsCount,
+                  completedCount: _completedBillsCount,
+                  pendingCount: _pendingBillsCount,
                 ),
                 _incomeDropdownCard(
                   title: t(widget.language, 'incomeLabel'),
@@ -738,6 +873,7 @@ class _HomeTabState extends State<HomeTab> {
               ];
 
               if (constraints.maxWidth < 640 ||
+                  _isBillsExpanded ||
                   _isExpenseExpanded ||
                   _isIncomeExpanded ||
                   _isCropExpanded) {
