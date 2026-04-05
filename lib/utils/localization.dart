@@ -251,6 +251,50 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Crop Production (kg)',
     AppLanguage.gujarati: 'ફસલ ઉત્પાદન (કિગ્રા)',
   },
+  'dashboardDiaryLabel': {
+    AppLanguage.english: 'Note',
+    AppLanguage.gujarati: 'નોંધ',
+  },
+  'dashboardDiaryAdd': {
+    AppLanguage.english: 'Add Note',
+    AppLanguage.gujarati: 'નોંધ ઉમેરો',
+  },
+  'dashboardDiaryOpen': {
+    AppLanguage.english: 'Open Note',
+    AppLanguage.gujarati: 'નોંધ ખોલો',
+  },
+  'dashboardDiaryTitle': {
+    AppLanguage.english: 'Note',
+    AppLanguage.gujarati: 'નોંધ',
+  },
+  'dashboardDiaryHint': {
+    AppLanguage.english: 'Write anything about this land...',
+    AppLanguage.gujarati: 'આ જમીન વિશે અહીં નોંધ લખો...',
+  },
+  'dashboardDiaryAutosaveHint': {
+    AppLanguage.english: 'Auto-saved while typing',
+    AppLanguage.gujarati: 'લખતા લખતા આપમેળે સાચવાશે',
+  },
+  'dashboardDiaryRows': {
+    AppLanguage.english: 'rows',
+    AppLanguage.gujarati: 'રો',
+  },
+  'dashboardDiaryColumnOne': {
+    AppLanguage.english: 'Key',
+    AppLanguage.gujarati: 'કી',
+  },
+  'dashboardDiaryColumnTwo': {
+    AppLanguage.english: 'Value',
+    AppLanguage.gujarati: 'વેલ્યુ',
+  },
+  'dashboardDiaryColumnOneHint': {
+    AppLanguage.english: 'Enter key',
+    AppLanguage.gujarati: 'કી લખો',
+  },
+  'dashboardDiaryColumnTwoHint': {
+    AppLanguage.english: 'Enter value',
+    AppLanguage.gujarati: 'વેલ્યુ લખો',
+  },
   'addCropButton': {
     AppLanguage.english: 'Add Crop',
     AppLanguage.gujarati: 'ફસલ ઉમેરો',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/land.dart';
+import '../utils/app_session.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
@@ -60,6 +61,7 @@ class _HomeTabState extends State<HomeTab> {
   bool _isIncomeExpanded = false;
   bool _isExpenseExpanded = false;
   bool _isCropExpanded = false;
+  final Map<String, String> _landDiaryNotes = <String, String>{};
   int _totalBillsCount =
       ApiService.cachedBillsTotalCount ?? _lastKnownTotalBillsCount;
   int _completedBillsCount = 0;
@@ -71,6 +73,7 @@ class _HomeTabState extends State<HomeTab> {
     super.initState();
     ApiService.billsRefreshNotifier.addListener(_onBillsChanged);
     _loadTotalBillsCount();
+    _loadDiaryNotes();
   }
 
   void _onBillsChanged() {
@@ -407,6 +410,194 @@ class _HomeTabState extends State<HomeTab> {
     return land.cropProductionKg;
   }
 
+  Future<void> _loadDiaryNotes() async {
+    try {
+      final savedNotes = await AppSession.getDashboardDiaryNotes();
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _landDiaryNotes
+          ..clear()
+          ..addAll(savedNotes);
+      });
+    } catch (_) {
+      // Keep defaults when persisted diary notes cannot be loaded.
+    }
+  }
+
+  Future<void> _persistDiaryNotes() async {
+    try {
+      await AppSession.saveDashboardDiaryNotes(_landDiaryNotes);
+    } catch (_) {
+      // Keep UI responsive even if local persistence fails.
+    }
+  }
+
+  String _landDiaryKey(Land land) {
+    if (land.id != null) {
+      return 'id_${land.id}';
+    }
+    return '${land.name}|${land.location}|${land.size.toStringAsFixed(4)}';
+  }
+
+  String _landDiaryNote(Land land) {
+    return _landDiaryNotes[_landDiaryKey(land)] ?? '';
+  }
+
+  Future<void> _showDiaryNoteDialog(Land land) async {
+    final noteKey = _landDiaryKey(land);
+    var draftNote = _landDiaryNote(land);
+    var didTapSave = false;
+    const rowCount = 15;
+    final keys = List<String>.filled(rowCount, '', growable: false);
+    final values = List<String>.filled(rowCount, '', growable: false);
+
+    final existingLines = draftNote.split('\n');
+    for (int i = 0; i < existingLines.length && i < rowCount; i++) {
+      final line = existingLines[i].trim();
+      if (line.isEmpty) {
+        continue;
+      }
+
+      final separatorIndex = line.indexOf('|');
+      if (separatorIndex >= 0) {
+        keys[i] = line.substring(0, separatorIndex).trim();
+        values[i] = line.substring(separatorIndex + 1).trim();
+      } else {
+        keys[i] = line;
+      }
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final mediaQuery = MediaQuery.of(dialogContext);
+        final availableHeight =
+            mediaQuery.size.height - mediaQuery.viewInsets.bottom;
+        final editorHeight = availableHeight < 620 ? 180.0 : 260.0;
+
+        return AlertDialog(
+          scrollable: true,
+          title: Text(t(widget.language, 'dashboardDiaryTitle')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  height: editorHeight,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFFCBD5E1)),
+                    color: Colors.white,
+                  ),
+                  child: ListView.separated(
+                    itemCount: rowCount,
+                    separatorBuilder: (_, __) => const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: Color(0xFFE2E8F0),
+                    ),
+                    itemBuilder: (_, index) {
+                      return SizedBox(
+                        height: 42,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                initialValue: keys[index],
+                                onChanged: (value) {
+                                  keys[index] = value;
+                                },
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 10,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(width: 1, color: const Color(0xFFE2E8F0)),
+                            Expanded(
+                              child: TextFormField(
+                                initialValue: values[index],
+                                onChanged: (value) {
+                                  values[index] = value;
+                                },
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 10,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    t(widget.language, 'dashboardDiaryAutosaveHint'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            ElevatedButton.icon(
+              onPressed: () {
+                final lines = <String>[];
+                for (int i = 0; i < rowCount; i++) {
+                  final key = keys[i].trim();
+                  final value = values[i].trim();
+                  if (key.isEmpty && value.isEmpty) {
+                    continue;
+                  }
+                  lines.add(value.isEmpty ? key : '$key | $value');
+                }
+                draftNote = lines.join('\n');
+                didTapSave = true;
+                Navigator.of(dialogContext).pop();
+              },
+              icon: const Icon(Icons.save_outlined),
+              label: Text(t(widget.language, 'saveButton')),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted || !didTapSave) {
+      return;
+    }
+
+    final result = draftNote;
+    final trimmed = result.trim();
+    if (trimmed.isEmpty) {
+      _landDiaryNotes.remove(noteKey);
+    } else {
+      _landDiaryNotes[noteKey] = result;
+    }
+    await _persistDiaryNotes();
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   Widget _expenseBreakdownRow({
     required IconData icon,
     required String label,
@@ -589,8 +780,9 @@ class _HomeTabState extends State<HomeTab> {
     required String value,
     required IconData icon,
     required Color color,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    final child = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -617,29 +809,48 @@ class _HomeTabState extends State<HomeTab> {
             child: Icon(icon, size: 16, color: color),
           ),
           const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
+                  ),
                 ),
-              ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
+      ),
+    );
+
+    if (onTap == null) {
+      return child;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: child,
       ),
     );
   }
@@ -1090,46 +1301,107 @@ class _HomeTabState extends State<HomeTab> {
             ),
           ],
           const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _quickMetricCard(
-                title: t(widget.language, 'incomeLabel'),
-                value: '₹ ${totalIncome.toStringAsFixed(2)}',
-                icon: Icons.trending_up,
-                color: const Color(0xFF15803D),
-              ),
-              _quickMetricCard(
-                title: t(widget.language, 'expensesLabel'),
-                value: '₹ ${totalExpense.toStringAsFixed(2)}',
-                icon: Icons.trending_down,
-                color: const Color(0xFFB45309),
-              ),
-              _quickMetricCard(
-                title: t(widget.language, 'cropProductionLabel'),
-                value: '${totalCropProductionKg.toStringAsFixed(2)} kg',
-                icon: Icons.eco,
-                color: const Color(0xFF16A34A),
-              ),
-              _quickMetricCard(
-                title: t(widget.language, 'agroBillsTotal'),
-                value: '$_totalBillsCount',
-                icon: Icons.receipt_long,
-                color: const Color(0xFF14532D),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final notePreview = _landDiaryNote(
+                selectedLand,
+              ).replaceAll(RegExp(r'\s+'), ' ').trim();
+              final noteCardValue = notePreview.isEmpty
+                  ? t(widget.language, 'dashboardDiaryAdd')
+                  : (notePreview.length > 16
+                        ? '${notePreview.substring(0, 16)}...'
+                        : notePreview);
+
+              final noteCard = _quickMetricCard(
+                title: t(widget.language, 'dashboardDiaryTitle'),
+                value: noteCardValue,
+                icon: Icons.menu_book_rounded,
+                color: const Color(0xFF1D4ED8),
+                onTap: () => _showDiaryNoteDialog(selectedLand),
+              );
+
+              final useSingleColumn = constraints.maxWidth < 320;
+
+              if (useSingleColumn) {
+                return Column(
+                  children: [
+                    _quickMetricCard(
+                      title: t(widget.language, 'incomeLabel'),
+                      value: '₹ ${totalIncome.toStringAsFixed(2)}',
+                      icon: Icons.trending_up,
+                      color: const Color(0xFF15803D),
+                    ),
+                    const SizedBox(height: 8),
+                    _quickMetricCard(
+                      title: t(widget.language, 'expensesLabel'),
+                      value: '₹ ${totalExpense.toStringAsFixed(2)}',
+                      icon: Icons.trending_down,
+                      color: const Color(0xFFB45309),
+                    ),
+                    const SizedBox(height: 8),
+                    _quickMetricCard(
+                      title: t(widget.language, 'agroBillsTotal'),
+                      value: '$_totalBillsCount',
+                      icon: Icons.receipt_long,
+                      color: const Color(0xFF14532D),
+                    ),
+                    const SizedBox(height: 8),
+                    noteCard,
+                  ],
+                );
+              }
+
+              final columnWidth = (constraints.maxWidth - 8) / 2;
+
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: columnWidth,
+                        child: _quickMetricCard(
+                          title: t(widget.language, 'incomeLabel'),
+                          value: '₹ ${totalIncome.toStringAsFixed(2)}',
+                          icon: Icons.trending_up,
+                          color: const Color(0xFF15803D),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: columnWidth,
+                        child: _quickMetricCard(
+                          title: t(widget.language, 'expensesLabel'),
+                          value: '₹ ${totalExpense.toStringAsFixed(2)}',
+                          icon: Icons.trending_down,
+                          color: const Color(0xFFB45309),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: columnWidth,
+                        child: _quickMetricCard(
+                          title: t(widget.language, 'agroBillsTotal'),
+                          value: '$_totalBillsCount',
+                          icon: Icons.receipt_long,
+                          color: const Color(0xFF14532D),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(width: columnWidth, child: noteCard),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 12),
           LayoutBuilder(
             builder: (context, constraints) {
               final cards = [
-                _billsDropdownCard(
-                  title: t(widget.language, 'agroBillsTotal'),
-                  totalCount: _totalBillsCount,
-                  completedCount: _completedBillsCount,
-                  pendingCount: _pendingBillsCount,
-                ),
                 _incomeDropdownCard(
                   title: t(widget.language, 'incomeLabel'),
                   totalValue: '₹ ${totalIncome.toStringAsFixed(2)}',
@@ -1140,6 +1412,12 @@ class _HomeTabState extends State<HomeTab> {
                   totalValue: '₹ ${totalExpense.toStringAsFixed(2)}',
                   expenseTypeTotals: expenseTypeTotals,
                   laborValue: '₹ ${majuriKharch.toStringAsFixed(2)}',
+                ),
+                _billsDropdownCard(
+                  title: t(widget.language, 'agroBillsTotal'),
+                  totalCount: _totalBillsCount,
+                  completedCount: _completedBillsCount,
+                  pendingCount: _pendingBillsCount,
                 ),
                 _cropDropdownCard(
                   title: t(widget.language, 'cropProductionLabel'),

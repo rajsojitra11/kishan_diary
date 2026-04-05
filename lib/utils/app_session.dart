@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppSession {
@@ -14,6 +16,7 @@ class AppSession {
       'pending_registration_mobile';
   static const String _selectedLandIdKey = 'selected_land_id';
   static const String _selectedLandNameKey = 'selected_land_name';
+  static const String _dashboardDiaryNotesKey = 'dashboard_diary_notes';
 
   static Future<void> saveToken(String token) async {
     final prefs = await _prefsFuture;
@@ -112,6 +115,32 @@ class AppSession {
     await prefs.remove(_selectedLandNameKey);
   }
 
+  static Future<void> saveDashboardDiaryNotes(Map<String, String> notes) async {
+    final prefs = await _prefsFuture;
+    await prefs.setString(_dashboardDiaryNotesKey, jsonEncode(notes));
+  }
+
+  static Future<Map<String, String>> getDashboardDiaryNotes() async {
+    final prefs = await _prefsFuture;
+    final raw = prefs.getString(_dashboardDiaryNotesKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return <String, String>{};
+    }
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return <String, String>{};
+      }
+
+      return decoded.map(
+        (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+      );
+    } catch (_) {
+      return <String, String>{};
+    }
+  }
+
   static Future<void> clearAll() async {
     final prefs = await _prefsFuture;
     await prefs.remove(_tokenKey);
@@ -123,5 +152,6 @@ class AppSession {
     await prefs.remove(_pendingRegistrationMobileKey);
     await prefs.remove(_selectedLandIdKey);
     await prefs.remove(_selectedLandNameKey);
+    await prefs.remove(_dashboardDiaryNotesKey);
   }
 }
