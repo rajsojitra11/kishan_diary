@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/labor_entry.dart';
 import '../models/upad_entry.dart';
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/custom_app_bar.dart';
@@ -18,7 +20,7 @@ class EditLabourResult {
   });
 }
 
-class EditLabourScreen extends StatefulWidget {
+class EditLabourScreen extends ConsumerStatefulWidget {
   final AppLanguage language;
   final LaborEntry initialEntry;
   final List<UpadEntry> initialUpadEntries;
@@ -31,10 +33,10 @@ class EditLabourScreen extends StatefulWidget {
   });
 
   @override
-  State<EditLabourScreen> createState() => _EditLabourScreenState();
+  ConsumerState<EditLabourScreen> createState() => _EditLabourScreenState();
 }
 
-class _EditLabourScreenState extends State<EditLabourScreen> {
+class _EditLabourScreenState extends ConsumerState<EditLabourScreen> {
   final _laborFormKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
@@ -332,14 +334,14 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
                 if (widget.initialEntry.id != null) {
                   try {
                     final payload = existing?.id == null
-                        ? await ApiService.instance.createUpadEntry(
+                        ? await ref.read(apiServiceProvider).createUpadEntry(
                             laborEntryId: widget.initialEntry.id!,
                             amount: amount,
                             paymentDate: date,
                             note: note,
                             laborNameSnapshot: _nameController.text.trim(),
                           )
-                        : await ApiService.instance.updateUpadEntry(
+                        : await ref.read(apiServiceProvider).updateUpadEntry(
                             upadEntryId: existing!.id!,
                             amount: amount,
                             paymentDate: date,
@@ -434,7 +436,7 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
 
     if (widget.initialEntry.id != null) {
       try {
-        final payload = await ApiService.instance.updateLaborEntry(
+        final payload = await ref.read(apiServiceProvider).updateLaborEntry(
           laborEntryId: widget.initialEntry.id!,
           laborName: name,
           mobile: mobile,
@@ -540,7 +542,7 @@ class _EditLabourScreenState extends State<EditLabourScreen> {
 
     if (target.id != null) {
       try {
-        await ApiService.instance.deleteUpadEntry(target.id!);
+        await ref.read(apiServiceProvider).deleteUpadEntry(target.id!);
       } on ApiException catch (error) {
         if (!mounted) {
           return;

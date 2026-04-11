@@ -1,23 +1,25 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
 import 'agro_owner_screen.dart';
 import 'forgot_password_screen.dart';
 import 'home_screen.dart';
 import 'register_screen.dart';
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/app_session.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _mobileController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -90,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _isSubmitting = true;
       });
 
-      final check = await ApiService.instance.mobileCheck(mobile);
+      final check = await ref.read(apiServiceProvider).mobileCheck(mobile);
       final exists = check['exists'] == true;
 
       if (!mounted) {
@@ -133,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final loginData = await ApiService.instance.login(
+      final loginData = await ref.read(apiServiceProvider).login(
         mobile: mobile,
         password: password,
         userRole: _selectedLoginRole,

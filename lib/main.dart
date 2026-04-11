@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'screens/agro_owner_screen.dart';
 import 'screens/home_screen.dart';
@@ -6,7 +7,7 @@ import 'screens/login_screen.dart';
 import 'utils/app_session.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -30,15 +31,15 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class _SessionBootstrapScreen extends StatefulWidget {
+class _SessionBootstrapScreen extends ConsumerStatefulWidget {
   const _SessionBootstrapScreen();
 
   @override
-  State<_SessionBootstrapScreen> createState() =>
+  ConsumerState<_SessionBootstrapScreen> createState() =>
       _SessionBootstrapScreenState();
 }
 
-class _SessionBootstrapScreenState extends State<_SessionBootstrapScreen> {
+class _SessionBootstrapScreenState extends ConsumerState<_SessionBootstrapScreen> {
   late final Future<_SessionBootstrapData> _bootstrapFuture =
       _loadBootstrapData();
 

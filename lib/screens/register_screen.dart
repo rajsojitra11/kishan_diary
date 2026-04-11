@@ -1,13 +1,15 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'agro_owner_screen.dart';
 import 'home_screen.dart';
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/app_session.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({
     super.key,
     required this.mobileNumber,
@@ -18,10 +20,10 @@ class RegisterScreen extends StatefulWidget {
   final String userRole;
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   static const String _backgroundImagePath = 'lib/assets/images/download.jpg';
   static const String _registerLogoPath = 'lib/assets/images/register.png';
   final _formKey = GlobalKey<FormState>();
@@ -165,7 +167,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     try {
-      final registerData = await ApiService.instance.register(
+      final registerData = await ref.read(apiServiceProvider).register(
         name: _nameController.text.trim(),
         email: _emailController.text.trim().isEmpty
             ? null

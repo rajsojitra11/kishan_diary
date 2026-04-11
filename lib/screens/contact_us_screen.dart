@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 
-class ContactUsScreen extends StatefulWidget {
+class ContactUsScreen extends ConsumerStatefulWidget {
   const ContactUsScreen({super.key, required this.language});
 
   final AppLanguage language;
 
   @override
-  State<ContactUsScreen> createState() => _ContactUsScreenState();
+  ConsumerState<ContactUsScreen> createState() => _ContactUsScreenState();
 }
 
-class _ContactUsScreenState extends State<ContactUsScreen> {
+class _ContactUsScreenState extends ConsumerState<ContactUsScreen> {
   final _formKey = GlobalKey<FormState>();
   final _suggestionController = TextEditingController();
   bool _isSubmitting = false;
@@ -41,7 +43,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
     });
 
     try {
-      await ApiService.instance.submitSuggestion(message);
+      await ref.read(apiServiceProvider).submitSuggestion(message);
 
       if (!mounted) {
         return;

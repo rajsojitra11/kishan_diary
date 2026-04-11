@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../providers/app_providers.dart';
 import '../../utils/api_service.dart';
 import '../../utils/localization.dart';
 import '../../widgets/cached_network_image_view.dart';
 
-class AgroFarmerBillsScreen extends StatefulWidget {
+class AgroFarmerBillsScreen extends ConsumerStatefulWidget {
   const AgroFarmerBillsScreen({
     super.key,
     required this.language,
@@ -19,10 +21,10 @@ class AgroFarmerBillsScreen extends StatefulWidget {
   final String farmerMobile;
 
   @override
-  State<AgroFarmerBillsScreen> createState() => _AgroFarmerBillsScreenState();
+  ConsumerState<AgroFarmerBillsScreen> createState() => _AgroFarmerBillsScreenState();
 }
 
-class _AgroFarmerBillsScreenState extends State<AgroFarmerBillsScreen> {
+class _AgroFarmerBillsScreenState extends ConsumerState<AgroFarmerBillsScreen> {
   bool _loading = true;
   List<Map<String, dynamic>> _bills = [];
 
@@ -199,7 +201,7 @@ class _AgroFarmerBillsScreenState extends State<AgroFarmerBillsScreen> {
                         double.tryParse(amountCtrl.text.trim()) ?? 0.0;
 
                     try {
-                      await ApiService.instance.updateAgroBill(
+                      await ref.read(apiServiceProvider).updateAgroBill(
                         billId: billId,
                         farmerId: widget.farmerId,
                         billDate: dateCtrl.text.trim(),
@@ -235,7 +237,7 @@ class _AgroFarmerBillsScreenState extends State<AgroFarmerBillsScreen> {
   Future<void> _loadBills() async {
     setState(() => _loading = true);
     try {
-      final payload = await ApiService.instance.getAgroBills(
+      final payload = await ref.read(apiServiceProvider).getAgroBills(
         farmerId: widget.farmerId,
       );
       final rows = ((payload['bills'] as List?) ?? [])

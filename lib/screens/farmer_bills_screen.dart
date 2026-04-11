@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/cached_network_image_view.dart';
 
-class FarmerBillsScreen extends StatefulWidget {
+class FarmerBillsScreen extends ConsumerStatefulWidget {
   const FarmerBillsScreen({super.key, required this.language});
 
   final AppLanguage language;
 
   @override
-  State<FarmerBillsScreen> createState() => _FarmerBillsScreenState();
+  ConsumerState<FarmerBillsScreen> createState() => _FarmerBillsScreenState();
 }
 
-class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
+class _FarmerBillsScreenState extends ConsumerState<FarmerBillsScreen> {
   bool _loading = true;
   bool _savingFarmerBill = false;
   List<Map<String, dynamic>> _bills = [];
@@ -61,7 +63,7 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
     }
 
     try {
-      final bills = await ApiService.instance.getMyBills(source: _sourceFilter);
+      final bills = await ref.read(apiServiceProvider).getMyBills(source: _sourceFilter);
       if (!mounted) {
         return;
       }
@@ -120,7 +122,7 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
     }
 
     try {
-      await ApiService.instance.createFarmerBill(
+      await ref.read(apiServiceProvider).createFarmerBill(
         billDate: payload['bill_date'].toString(),
         paymentStatus: payload['payment_status'].toString(),
         amount: (payload['amount'] as num).toDouble(),
@@ -339,7 +341,7 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
     }
 
     try {
-      await ApiService.instance.updateFarmerBill(
+      await ref.read(apiServiceProvider).updateFarmerBill(
         billId: billId,
         billDate: payload['bill_date'].toString(),
         paymentStatus: payload['payment_status'].toString(),
@@ -399,7 +401,7 @@ class _FarmerBillsScreenState extends State<FarmerBillsScreen> {
     }
 
     try {
-      await ApiService.instance.deleteFarmerBill(billId);
+      await ref.read(apiServiceProvider).deleteFarmerBill(billId);
 
       if (!mounted) {
         return;

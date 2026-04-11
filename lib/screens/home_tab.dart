@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/land.dart';
 import '../utils/app_session.dart';
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
@@ -10,7 +12,7 @@ import '../widgets/text_input_config.dart';
 /// Displays the home dashboard — land summary stats.
 /// If no lands exist it shows the Add Land form.
 /// If lands exist but none is selected it shows a prompt.
-class HomeTab extends StatefulWidget {
+class HomeTab extends ConsumerStatefulWidget {
   final List<Land> lands;
   final Land? selectedLand;
   final AppLanguage language;
@@ -28,10 +30,10 @@ class HomeTab extends StatefulWidget {
   });
 
   @override
-  State<HomeTab> createState() => _HomeTabState();
+  ConsumerState<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> {
+class _HomeTabState extends ConsumerState<HomeTab> {
   static int _lastKnownTotalBillsCount = 0;
   static const List<String> _expenseTypeKeys = [
     'expenseTypeMedicine',
@@ -99,7 +101,7 @@ class _HomeTabState extends State<HomeTab> {
     final requestId = ++_billsCountRequestId;
 
     try {
-      var allBills = await ApiService.instance.getMyBills(source: 'all');
+      var allBills = await ref.read(apiServiceProvider).getMyBills(source: 'all');
 
       if (!mounted || requestId != _billsCountRequestId) {
         return;
@@ -126,7 +128,7 @@ class _HomeTabState extends State<HomeTab> {
           return;
         }
 
-        allBills = await ApiService.instance.getMyBills(source: 'all');
+        allBills = await ref.read(apiServiceProvider).getMyBills(source: 'all');
 
         if (!mounted || requestId != _billsCountRequestId) {
           return;
@@ -190,7 +192,7 @@ class _HomeTabState extends State<HomeTab> {
     final messenger = ScaffoldMessenger.maybeOf(context);
 
     try {
-      await ApiService.instance.submitSuggestion(trimmedMessage);
+      await ref.read(apiServiceProvider).submitSuggestion(trimmedMessage);
 
       if (!mounted) {
         return;

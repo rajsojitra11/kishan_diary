@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,6 +21,7 @@ import '../screens/income_screen.dart';
 import '../screens/labour_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/rules_regulation_screen.dart';
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/app_session.dart';
 import '../utils/image_cache.dart';
@@ -37,7 +39,7 @@ import '../widgets/text_input_config.dart';
 /// - [_selectedLand]      — currently active land
 ///
 /// Each tab is a separate widget defined in its own screen file.
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({
     super.key,
     this.initialUserName,
@@ -52,10 +54,10 @@ class HomeScreen extends StatefulWidget {
   final String? initialUserPassword;
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
   AppLanguage _language = AppLanguage.gujarati;
   static const String _defaultProfileImagePath =
       'lib/assets/images/register.png';
@@ -119,12 +121,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
 
-      final profileData = await ApiService.instance.me();
+      final profileData = await ref.read(apiServiceProvider).me();
       _applyProfileFromPayload(profileData);
       final savedSelectedLandId = await AppSession.getSelectedLandId();
       final savedSelectedLandName = await AppSession.getSelectedLandName();
 
-      final landsPayload = await ApiService.instance.getLands();
+      final landsPayload = await ref.read(apiServiceProvider).getLands();
 
       final mappedLands = landsPayload.map(_landFromApi).toList();
       Land? selectedLand;
@@ -352,7 +354,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     String location,
   ) async {
     try {
-      final payload = await ApiService.instance.createLand(
+      final payload = await ref.read(apiServiceProvider).createLand(
         name: name,
         size: size,
         location: location,
@@ -429,7 +431,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     try {
-      await ApiService.instance.clearAllData();
+      await ref.read(apiServiceProvider).clearAllData();
 
       if (!mounted) {
         return;
@@ -488,7 +490,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     try {
       if (land.id != null) {
-        await ApiService.instance.deleteLand(land.id!);
+        await ref.read(apiServiceProvider).deleteLand(land.id!);
       }
 
       if (!mounted) {
@@ -777,7 +779,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
               try {
                 if (land.id != null) {
-                  final payload = await ApiService.instance.updateLand(
+                  final payload = await ref.read(apiServiceProvider).updateLand(
                     landId: land.id!,
                     name: name,
                     size: size,
@@ -956,7 +958,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 }
 
                 try {
-                  final updated = await ApiService.instance.updateProfile(
+                  final updated = await ref.read(apiServiceProvider).updateProfile(
                     name: nameCtrl.text.trim(),
                     email: emailCtrl.text.trim(),
                     birthDate: birthdateCtrl.text.trim(),
@@ -972,7 +974,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
                   if (tempProfileImagePath != null &&
                       tempProfileImagePath!.isNotEmpty) {
-                    final imagePayload = await ApiService.instance
+                    final imagePayload = await ref.read(apiServiceProvider)
                         .updateProfileImage(
                           imagePath: tempProfileImagePath,
                           imageBytes: tempProfileImageBytes,
@@ -981,7 +983,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     updatedProfileImageUrl = imagePayload['profile_image_url']
                         ?.toString();
                   } else if (tempProfileImageBytes != null) {
-                    final imagePayload = await ApiService.instance
+                    final imagePayload = await ref.read(apiServiceProvider)
                         .updateProfileImage(
                           imageBytes: tempProfileImageBytes,
                           fileName: 'profile_image.jpg',
@@ -1072,7 +1074,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     try {
-      await ApiService.instance.logout();
+      await ref.read(apiServiceProvider).logout();
     } catch (_) {}
 
     await AppSession.clearAll();
@@ -1112,7 +1114,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         continue;
       }
 
-      final incomePayload = await ApiService.instance.getIncomeEntries(
+      final incomePayload = await ref.read(apiServiceProvider).getIncomeEntries(
         land.id!,
       );
       final incomeEntries = ((incomePayload['income_entries'] as List?) ?? [])
@@ -1122,7 +1124,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           )
           .toList();
 
-      final expensePayload = await ApiService.instance.getExpenseEntries(
+      final expensePayload = await ref.read(apiServiceProvider).getExpenseEntries(
         land.id!,
       );
       final expenseEntries =
@@ -1133,14 +1135,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               )
               .toList();
 
-      final cropPayload = await ApiService.instance.getCropEntries(land.id!);
+      final cropPayload = await ref.read(apiServiceProvider).getCropEntries(land.id!);
       final cropEntries = ((cropPayload['crop_entries'] as List?) ?? [])
           .map(
             (item) => _cropEntryFromApi((item as Map).cast<String, dynamic>()),
           )
           .toList();
 
-      final laborPayload = await ApiService.instance.getLaborEntries(land.id!);
+      final laborPayload = await ref.read(apiServiceProvider).getLaborEntries(land.id!);
       final laborEntries = ((laborPayload['labor_entries'] as List?) ?? [])
           .map(
             (item) => _laborEntryFromApi((item as Map).cast<String, dynamic>()),
@@ -1152,7 +1154,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         if (labor.id == null) {
           continue;
         }
-        final upadPayload = await ApiService.instance.getUpadEntries(labor.id!);
+        final upadPayload = await ref.read(apiServiceProvider).getUpadEntries(labor.id!);
         final entries = ((upadPayload['upad_entries'] as List?) ?? [])
             .map(
               (item) => _upadEntryFromApi(
@@ -1490,7 +1492,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                     groupValue: _language,
                                     onChanged: (v) {
                                       if (v != null) {
-                                        ApiService.instance
+                                        ref.read(apiServiceProvider)
                                             .updateLanguage(
                                               _languageToApiCode(v),
                                             )

@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 
 import '../models/income_entry.dart';
 import '../models/land.dart';
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/cached_network_image_view.dart';
 
 /// Allows the user to add, edit and delete income records for the selected land.
-class IncomeScreen extends StatefulWidget {
+class IncomeScreen extends ConsumerStatefulWidget {
   final Land? selectedLand;
   final AppLanguage language;
   final VoidCallback onSaved;
@@ -23,10 +25,10 @@ class IncomeScreen extends StatefulWidget {
   });
 
   @override
-  State<IncomeScreen> createState() => _IncomeScreenState();
+  ConsumerState<IncomeScreen> createState() => _IncomeScreenState();
 }
 
-class _IncomeScreenState extends State<IncomeScreen> {
+class _IncomeScreenState extends ConsumerState<IncomeScreen> {
   final List<String> _incomeTypeKeys = const [
     'incomeTypeCropSale',
     'incomeTypeTractorHarvester',
@@ -143,7 +145,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
 
     setState(() => _loading = true);
     try {
-      final payload = await ApiService.instance.getIncomeEntries(land.id!);
+      final payload = await ref.read(apiServiceProvider).getIncomeEntries(land.id!);
       final entries = ((payload['income_entries'] as List?) ?? [])
           .map((item) => _entryFromApi((item as Map).cast<String, dynamic>()))
           .toList();
@@ -531,7 +533,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
     }
 
     try {
-      final payload = await ApiService.instance.createIncomeEntry(
+      final payload = await ref.read(apiServiceProvider).createIncomeEntry(
         landId: land.id!,
         incomeType: entry.type,
         amount: entry.amount,
@@ -589,7 +591,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
     }
 
     try {
-      final payload = await ApiService.instance.updateIncomeEntry(
+      final payload = await ref.read(apiServiceProvider).updateIncomeEntry(
         incomeEntryId: existing.id!,
         incomeType: updated.type,
         amount: updated.amount,
@@ -672,7 +674,7 @@ class _IncomeScreenState extends State<IncomeScreen> {
     }
 
     try {
-      final payload = await ApiService.instance.deleteIncomeEntry(target.id!);
+      final payload = await ref.read(apiServiceProvider).deleteIncomeEntry(target.id!);
 
       if (!mounted) {
         return;

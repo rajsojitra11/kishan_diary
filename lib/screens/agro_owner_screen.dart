@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/app_session.dart';
 import '../utils/image_cache.dart';
@@ -21,7 +23,7 @@ import 'contact_us_screen.dart';
 import 'login_screen.dart';
 import 'rules_regulation_screen.dart';
 
-class AgroOwnerScreen extends StatefulWidget {
+class AgroOwnerScreen extends ConsumerStatefulWidget {
   const AgroOwnerScreen({
     super.key,
     this.initialUserName,
@@ -34,10 +36,10 @@ class AgroOwnerScreen extends StatefulWidget {
   final String? initialUserBirthdate;
 
   @override
-  State<AgroOwnerScreen> createState() => _AgroOwnerScreenState();
+  ConsumerState<AgroOwnerScreen> createState() => _AgroOwnerScreenState();
 }
 
-class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
+class _AgroOwnerScreenState extends ConsumerState<AgroOwnerScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final ImagePicker _picker = ImagePicker();
   static const String _defaultProfileImagePath =
@@ -116,7 +118,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
 
   Future<void> _bootstrap() async {
     try {
-      final profileData = await ApiService.instance.me();
+      final profileData = await ref.read(apiServiceProvider).me();
       final profile = profileData['user'] is Map
           ? (profileData['user'] as Map).cast<String, dynamic>()
           : profileData;
@@ -151,10 +153,10 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
   }
 
   Future<void> _reloadAll() async {
-    final dashboard = await ApiService.instance.getAgroDashboardSummary();
-    final farmers = await ApiService.instance.getAgroFarmers();
-    final billsData = await ApiService.instance.getAgroBills();
-    final report = await ApiService.instance.getAgroReport();
+    final dashboard = await ref.read(apiServiceProvider).getAgroDashboardSummary();
+    final farmers = await ref.read(apiServiceProvider).getAgroFarmers();
+    final billsData = await ref.read(apiServiceProvider).getAgroBills();
+    final report = await ref.read(apiServiceProvider).getAgroReport();
 
     if (!mounted) {
       return;
@@ -190,7 +192,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
 
   Future<void> _logout() async {
     try {
-      await ApiService.instance.logout();
+      await ref.read(apiServiceProvider).logout();
     } catch (_) {}
 
     await AppSession.clearAll();
@@ -453,7 +455,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
                 }
 
                 try {
-                  final updated = await ApiService.instance.updateProfile(
+                  final updated = await ref.read(apiServiceProvider).updateProfile(
                     name: nameCtrl.text.trim(),
                     email: emailCtrl.text.trim(),
                     birthDate: birthdateCtrl.text.trim(),
@@ -468,7 +470,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
                   String? updatedProfileImageUrl;
                   if (tempProfileImagePath != null &&
                       tempProfileImagePath!.isNotEmpty) {
-                    final imagePayload = await ApiService.instance
+                    final imagePayload = await ref.read(apiServiceProvider)
                         .updateProfileImage(
                           imagePath: tempProfileImagePath,
                           imageBytes: tempProfileImageBytes,
@@ -477,7 +479,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
                     updatedProfileImageUrl = imagePayload['profile_image_url']
                         ?.toString();
                   } else if (tempProfileImageBytes != null) {
-                    final imagePayload = await ApiService.instance
+                    final imagePayload = await ref.read(apiServiceProvider)
                         .updateProfileImage(
                           imageBytes: tempProfileImageBytes,
                           fileName: 'profile_image.jpg',
@@ -691,7 +693,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
       setState(() => _savingBill = true);
 
       if (_editingBillId == null) {
-        await ApiService.instance.createAgroBill(
+        await ref.read(apiServiceProvider).createAgroBill(
           farmerId: _selectedFarmerId!,
           billDate: _dateCtrl.text.trim(),
           paymentStatus: _paymentStatus,
@@ -702,7 +704,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
           billPhotoFileName: _billPhotoName,
         );
       } else {
-        await ApiService.instance.updateAgroBill(
+        await ref.read(apiServiceProvider).updateAgroBill(
           billId: _editingBillId!,
           farmerId: _selectedFarmerId!,
           billDate: _dateCtrl.text.trim(),
@@ -764,7 +766,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
     }
 
     try {
-      await ApiService.instance.deleteAgroBill(billId);
+      await ref.read(apiServiceProvider).deleteAgroBill(billId);
       await _reloadAll();
       if (!mounted) {
         return;
@@ -807,7 +809,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
     try {
       setState(() => _savingFarmer = true);
 
-      final response = await ApiService.instance.createAgroFarmer(
+      final response = await ref.read(apiServiceProvider).createAgroFarmer(
         name: name,
         mobile: mobile,
       );
@@ -911,7 +913,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
               }
 
               try {
-                await ApiService.instance.updateAgroFarmer(
+                await ref.read(apiServiceProvider).updateAgroFarmer(
                   farmerId: farmerId,
                   name: name,
                   mobile: mobile,
@@ -976,7 +978,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
     }
 
     try {
-      await ApiService.instance.deleteAgroFarmer(farmerId);
+      await ref.read(apiServiceProvider).deleteAgroFarmer(farmerId);
       await _reloadAll();
 
       if (!mounted) {
@@ -1277,7 +1279,7 @@ class _AgroOwnerScreenState extends State<AgroOwnerScreen> {
                                     if (v == null) {
                                       return;
                                     }
-                                    ApiService.instance
+                                    ref.read(apiServiceProvider)
                                         .updateLanguage(
                                           v == AppLanguage.english
                                               ? 'en'

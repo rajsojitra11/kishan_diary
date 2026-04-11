@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/labor_entry.dart';
 import '../models/land.dart';
 import '../models/upad_entry.dart';
 import '../screens/edit_labour_screen.dart';
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
@@ -11,7 +13,7 @@ import '../widgets/text_input_config.dart';
 
 /// Full labour management screen.
 /// Manages its own list of [LaborEntry] and [UpadEntry] records.
-class LabourScreen extends StatefulWidget {
+class LabourScreen extends ConsumerStatefulWidget {
   final Land? selectedLand;
   final AppLanguage language;
   final VoidCallback onSaved;
@@ -24,10 +26,10 @@ class LabourScreen extends StatefulWidget {
   });
 
   @override
-  State<LabourScreen> createState() => _LabourScreenState();
+  ConsumerState<LabourScreen> createState() => _LabourScreenState();
 }
 
-class _LabourScreenState extends State<LabourScreen> {
+class _LabourScreenState extends ConsumerState<LabourScreen> {
   // ── Labor entries state ──────────────────────────────────────────────────
   final _laborFormKey = GlobalKey<FormState>();
   bool _showLaborForm = false;
@@ -154,7 +156,7 @@ class _LabourScreenState extends State<LabourScreen> {
     setState(() => _loading = true);
 
     try {
-      final payload = await ApiService.instance.getLaborEntries(land.id!);
+      final payload = await ref.read(apiServiceProvider).getLaborEntries(land.id!);
       final laborEntries = ((payload['labor_entries'] as List?) ?? [])
           .map((item) => _laborFromApi((item as Map).cast<String, dynamic>()))
           .toList();
@@ -165,7 +167,7 @@ class _LabourScreenState extends State<LabourScreen> {
           continue;
         }
 
-        final upadPayload = await ApiService.instance.getUpadEntries(labor.id!);
+        final upadPayload = await ref.read(apiServiceProvider).getUpadEntries(labor.id!);
         final entries = ((upadPayload['upad_entries'] as List?) ?? [])
             .map(
               (item) =>
@@ -335,7 +337,7 @@ class _LabourScreenState extends State<LabourScreen> {
     }
 
     try {
-      final payload = await ApiService.instance.createLaborEntry(
+      final payload = await ref.read(apiServiceProvider).createLaborEntry(
         landId: selectedLand.id!,
         laborName: name,
         mobile: mobile,
@@ -453,7 +455,7 @@ class _LabourScreenState extends State<LabourScreen> {
     }
 
     try {
-      final payload = await ApiService.instance.deleteLaborEntry(labor.id!);
+      final payload = await ref.read(apiServiceProvider).deleteLaborEntry(labor.id!);
 
       if (!mounted) {
         return;

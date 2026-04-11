@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../utils/localization.dart';
 import '../../widgets/app_widgets.dart';
 
-class AgroReportTab extends StatefulWidget {
+class AgroReportTab extends ConsumerStatefulWidget {
   const AgroReportTab({
     super.key,
     required this.language,
@@ -16,10 +17,10 @@ class AgroReportTab extends StatefulWidget {
   final String Function(String? serverDate) toDisplayDate;
 
   @override
-  State<AgroReportTab> createState() => _AgroReportTabState();
+  ConsumerState<AgroReportTab> createState() => _AgroReportTabState();
 }
 
-class _AgroReportTabState extends State<AgroReportTab> {
+class _AgroReportTabState extends ConsumerState<AgroReportTab> {
   String _statusFilter = 'all';
   String _searchQuery = '';
 

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/upad_entry.dart';
 import '../utils/localization.dart';
 import '../widgets/custom_app_bar.dart';
 import '../widgets/text_input_config.dart';
 
-class UpadScreen extends StatefulWidget {
+class UpadScreen extends ConsumerStatefulWidget {
   final String laborName;
   final List<UpadEntry> upadEntries;
   final ValueChanged<List<UpadEntry>> onEntriesChanged;
@@ -20,10 +21,10 @@ class UpadScreen extends StatefulWidget {
   });
 
   @override
-  State<UpadScreen> createState() => _UpadScreenState();
+  ConsumerState<UpadScreen> createState() => _UpadScreenState();
 }
 
-class _UpadScreenState extends State<UpadScreen> {
+class _UpadScreenState extends ConsumerState<UpadScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _noteController = TextEditingController();

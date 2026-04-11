@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 
 import '../models/expense_entry.dart';
 import '../models/land.dart';
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/cached_network_image_view.dart';
 
 /// Allows the user to add, edit and delete expense records for the selected land.
-class ExpenseScreen extends StatefulWidget {
+class ExpenseScreen extends ConsumerStatefulWidget {
   final Land? selectedLand;
   final AppLanguage language;
   final VoidCallback onSaved;
@@ -23,10 +25,10 @@ class ExpenseScreen extends StatefulWidget {
   });
 
   @override
-  State<ExpenseScreen> createState() => _ExpenseScreenState();
+  ConsumerState<ExpenseScreen> createState() => _ExpenseScreenState();
 }
 
-class _ExpenseScreenState extends State<ExpenseScreen> {
+class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
   final List<String> _expenseTypeKeys = const [
     'expenseTypeMedicine',
     'expenseTypeSeeds',
@@ -110,7 +112,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     setState(() => _loading = true);
 
     try {
-      final payload = await ApiService.instance.getExpenseEntries(land.id!);
+      final payload = await ref.read(apiServiceProvider).getExpenseEntries(land.id!);
       final entries = ((payload['expense_entries'] as List?) ?? [])
           .map((item) => _entryFromApi((item as Map).cast<String, dynamic>()))
           .toList();
@@ -502,7 +504,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     }
 
     try {
-      final payload = await ApiService.instance.createExpenseEntry(
+      final payload = await ref.read(apiServiceProvider).createExpenseEntry(
         landId: land.id!,
         expenseType: entry.type,
         amount: entry.amount,
@@ -563,7 +565,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     }
 
     try {
-      final payload = await ApiService.instance.updateExpenseEntry(
+      final payload = await ref.read(apiServiceProvider).updateExpenseEntry(
         expenseEntryId: existing.id!,
         expenseType: updated.type,
         amount: updated.amount,
@@ -649,7 +651,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     }
 
     try {
-      final payload = await ApiService.instance.deleteExpenseEntry(target.id!);
+      final payload = await ref.read(apiServiceProvider).deleteExpenseEntry(target.id!);
 
       if (!mounted) {
         return;

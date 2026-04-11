@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/crop_entry.dart';
 import '../models/land.dart';
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 import '../utils/localization.dart';
 import '../widgets/app_widgets.dart';
 
 /// Allows the user to record / update crop production for the selected land.
-class CropScreen extends StatefulWidget {
+class CropScreen extends ConsumerStatefulWidget {
   final Land? selectedLand;
   final AppLanguage language;
   final VoidCallback onSaved;
@@ -20,10 +22,10 @@ class CropScreen extends StatefulWidget {
   });
 
   @override
-  State<CropScreen> createState() => _CropScreenState();
+  ConsumerState<CropScreen> createState() => _CropScreenState();
 }
 
-class _CropScreenState extends State<CropScreen> {
+class _CropScreenState extends ConsumerState<CropScreen> {
   final List<String> _cropTypeKeys = [
     'cropTypeWheat',
     'cropTypeCotton',
@@ -87,7 +89,7 @@ class _CropScreenState extends State<CropScreen> {
     setState(() => _loading = true);
 
     try {
-      final payload = await ApiService.instance.getCropEntries(land.id!);
+      final payload = await ref.read(apiServiceProvider).getCropEntries(land.id!);
       final entries = ((payload['crop_entries'] as List?) ?? [])
           .map((item) => _entryFromApi((item as Map).cast<String, dynamic>()))
           .toList();
@@ -427,14 +429,14 @@ class _CropScreenState extends State<CropScreen> {
 
     try {
       final payload = isEditing
-          ? await ApiService.instance.updateCropEntry(
+          ? await ref.read(apiServiceProvider).updateCropEntry(
               cropEntryId: editingEntry!.id!,
               cropType: entry.cropType,
               landSize: entry.landSize,
               cropWeight: entry.cropWeight,
               weightUnit: entry.weightUnit,
             )
-          : await ApiService.instance.createCropEntry(
+          : await ref.read(apiServiceProvider).createCropEntry(
               landId: selectedLand.id!,
               cropType: entry.cropType,
               landSize: entry.landSize,
@@ -516,7 +518,7 @@ class _CropScreenState extends State<CropScreen> {
     }
 
     try {
-      final payload = await ApiService.instance.deleteCropEntry(target.id!);
+      final payload = await ref.read(apiServiceProvider).deleteCropEntry(target.id!);
 
       if (!mounted) {
         return;

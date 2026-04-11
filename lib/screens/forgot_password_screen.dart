@@ -1,19 +1,21 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import '../providers/app_providers.dart';
 import '../utils/api_service.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   static const String _backgroundImagePath = 'lib/assets/images/download.jpg';
   static const String _registerLogoPath = 'lib/assets/images/register.png';
   final _formKey = GlobalKey<FormState>();
@@ -172,7 +174,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
 
     try {
-      await ApiService.instance.resetForgotPassword(
+      await ref.read(apiServiceProvider).resetForgotPassword(
         mobile: _mobileController.text.trim(),
         birthDate: _birthdateController.text.trim(),
         newPassword: _newPasswordController.text,
