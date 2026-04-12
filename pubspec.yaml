@@ -72,6 +72,8 @@ flutter:
     - android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
     - lib/assets/images/download.jpg
     - lib/assets/images/register.png
+    - lib/assets/fonts/HindVadodara-Regular.ttf
+    - lib/assets/fonts/HindVadodara-Bold.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

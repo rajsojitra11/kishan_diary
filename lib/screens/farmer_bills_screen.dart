@@ -63,7 +63,9 @@ class _FarmerBillsScreenState extends ConsumerState<FarmerBillsScreen> {
     }
 
     try {
-      final bills = await ref.read(apiServiceProvider).getMyBills(source: _sourceFilter);
+      final bills = await ref
+          .read(apiServiceProvider)
+          .getMyBills(source: _sourceFilter);
       if (!mounted) {
         return;
       }
@@ -111,6 +113,11 @@ class _FarmerBillsScreenState extends ConsumerState<FarmerBillsScreen> {
   }
 
   Future<void> _showAddFarmerBillDialog() async {
+    if (_sourceFilter != 'farmer') {
+      setState(() => _sourceFilter = 'farmer');
+      await _loadBills(showLoader: false);
+    }
+
     final payload = await _showFarmerBillFormDialog();
 
     if (payload == null) {
@@ -122,12 +129,15 @@ class _FarmerBillsScreenState extends ConsumerState<FarmerBillsScreen> {
     }
 
     try {
-      await ref.read(apiServiceProvider).createFarmerBill(
-        billDate: payload['bill_date'].toString(),
-        paymentStatus: payload['payment_status'].toString(),
-        amount: (payload['amount'] as num).toDouble(),
-        note: payload['note']?.toString(),
-      );
+      setState(() => _savingFarmerBill = true);
+      await ref
+          .read(apiServiceProvider)
+          .createFarmerBill(
+            billDate: payload['bill_date'].toString(),
+            paymentStatus: payload['payment_status'].toString(),
+            amount: (payload['amount'] as num).toDouble(),
+            note: payload['note']?.toString(),
+          );
 
       if (!mounted) {
         return;
@@ -151,6 +161,10 @@ class _FarmerBillsScreenState extends ConsumerState<FarmerBillsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(t(widget.language, 'farmerBillsLoadError'))),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _savingFarmerBill = false);
+      }
     }
   }
 
@@ -341,13 +355,15 @@ class _FarmerBillsScreenState extends ConsumerState<FarmerBillsScreen> {
     }
 
     try {
-      await ref.read(apiServiceProvider).updateFarmerBill(
-        billId: billId,
-        billDate: payload['bill_date'].toString(),
-        paymentStatus: payload['payment_status'].toString(),
-        amount: (payload['amount'] as num).toDouble(),
-        note: payload['note']?.toString(),
-      );
+      await ref
+          .read(apiServiceProvider)
+          .updateFarmerBill(
+            billId: billId,
+            billDate: payload['bill_date'].toString(),
+            paymentStatus: payload['payment_status'].toString(),
+            amount: (payload['amount'] as num).toDouble(),
+            note: payload['note']?.toString(),
+          );
 
       if (!mounted) {
         return;
@@ -537,17 +553,15 @@ class _FarmerBillsScreenState extends ConsumerState<FarmerBillsScreen> {
             ),
           ],
         ),
-        if (_sourceFilter == 'farmer') ...[
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              onPressed: _savingFarmerBill ? null : _showAddFarmerBillDialog,
-              icon: const Icon(Icons.add),
-              label: Text(t(widget.language, 'farmerAddBillButton')),
-            ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerRight,
+          child: ElevatedButton.icon(
+            onPressed: _savingFarmerBill ? null : _showAddFarmerBillDialog,
+            icon: const Icon(Icons.add),
+            label: Text(t(widget.language, 'farmerAddBillButton')),
           ),
-        ],
+        ),
         const SizedBox(height: 10),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,

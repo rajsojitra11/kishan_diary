@@ -33,6 +33,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     'incomeTypeCropSale',
     'incomeTypeTractorHarvester',
     'incomeTypeVegetables',
+    'incomeTypeAnimalPasu',
     'incomeTypeSubsidy',
     'incomeTypeOther',
   ];
@@ -145,7 +146,9 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
 
     setState(() => _loading = true);
     try {
-      final payload = await ref.read(apiServiceProvider).getIncomeEntries(land.id!);
+      final payload = await ref
+          .read(apiServiceProvider)
+          .getIncomeEntries(land.id!);
       final entries = ((payload['income_entries'] as List?) ?? [])
           .map((item) => _entryFromApi((item as Map).cast<String, dynamic>()))
           .toList();
@@ -229,7 +232,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     }
 
     if (value == 'incomeTypeMilkSale') {
-      return 'incomeTypeOther';
+      return 'incomeTypeAnimalPasu';
     }
 
     return _incomeTypeKeys.first;
@@ -533,16 +536,18 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     }
 
     try {
-      final payload = await ref.read(apiServiceProvider).createIncomeEntry(
-        landId: land.id!,
-        incomeType: entry.type,
-        amount: entry.amount,
-        entryDate: entry.date,
-        note: entry.note,
-        billPhotoPath: entry.billPhotoPath,
-        billPhotoBytes: entry.billPhotoBytes,
-        billPhotoFileName: entry.billPhotoPath?.split('/').last,
-      );
+      final payload = await ref
+          .read(apiServiceProvider)
+          .createIncomeEntry(
+            landId: land.id!,
+            incomeType: entry.type,
+            amount: entry.amount,
+            entryDate: entry.date,
+            note: entry.note,
+            billPhotoPath: entry.billPhotoPath,
+            billPhotoBytes: entry.billPhotoBytes,
+            billPhotoFileName: entry.billPhotoPath?.split('/').last,
+          );
 
       final created = _entryFromApi(
         ((payload['income_entry'] as Map?) ?? {}).cast<String, dynamic>(),
@@ -591,16 +596,18 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     }
 
     try {
-      final payload = await ref.read(apiServiceProvider).updateIncomeEntry(
-        incomeEntryId: existing.id!,
-        incomeType: updated.type,
-        amount: updated.amount,
-        entryDate: updated.date,
-        note: updated.note,
-        billPhotoPath: updated.billPhotoPath,
-        billPhotoBytes: updated.billPhotoBytes,
-        billPhotoFileName: updated.billPhotoPath?.split('/').last,
-      );
+      final payload = await ref
+          .read(apiServiceProvider)
+          .updateIncomeEntry(
+            incomeEntryId: existing.id!,
+            incomeType: updated.type,
+            amount: updated.amount,
+            entryDate: updated.date,
+            note: updated.note,
+            billPhotoPath: updated.billPhotoPath,
+            billPhotoBytes: updated.billPhotoBytes,
+            billPhotoFileName: updated.billPhotoPath?.split('/').last,
+          );
 
       final updatedEntry = _entryFromApi(
         ((payload['income_entry'] as Map?) ?? {}).cast<String, dynamic>(),
@@ -674,7 +681,9 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
     }
 
     try {
-      final payload = await ref.read(apiServiceProvider).deleteIncomeEntry(target.id!);
+      final payload = await ref
+          .read(apiServiceProvider)
+          .deleteIncomeEntry(target.id!);
 
       if (!mounted) {
         return;
@@ -847,7 +856,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '₹ ${record.amount.toStringAsFixed(2)}',
+                              '₹ ${record.amount.toStringAsFixed(0)}',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: colorScheme.onPrimaryContainer,
@@ -920,7 +929,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${t(widget.language, 'incomeAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
+                  '${t(widget.language, 'incomeAmountLabel')}: ${record.amount.toStringAsFixed(0)}',
                 ),
                 Text(
                   '${t(widget.language, 'incomeDateLabel')}: ${record.date}',
@@ -982,7 +991,7 @@ class _IncomeScreenState extends ConsumerState<IncomeScreen> {
         const SizedBox(height: 12),
         statCard(
           t(widget.language, 'incomeLabel'),
-          '₹ ${widget.selectedLand!.income.toStringAsFixed(2)}',
+          '₹ ${widget.selectedLand!.income.toStringAsFixed(0)}',
           Colors.teal,
         ),
         const SizedBox(height: 12),

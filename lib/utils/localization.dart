@@ -8,7 +8,7 @@ const Map<AppLanguage, String> appLanguageNames = {
 const Map<String, Map<AppLanguage, String>> translations = {
   'appTitle': {
     AppLanguage.english: 'Kishan Diary',
-    AppLanguage.gujarati: 'કિસાન ડાયરી',
+    AppLanguage.gujarati: 'કિશાન ડાયરી',
   },
   'addNewLand': {
     AppLanguage.english: 'Add New Land',
@@ -20,7 +20,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'landSize': {
     AppLanguage.english: 'Land Size (bigha)',
-    AppLanguage.gujarati: 'જમીનનું કદ (વીઘા)',
+    AppLanguage.gujarati: 'જમીનનું ક્ષેત્રફળ (વીઘા)',
   },
   'location': {AppLanguage.english: 'Location', AppLanguage.gujarati: 'સ્થળ'},
   'addLandButton': {
@@ -29,7 +29,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'selectLandHeading': {
     AppLanguage.english: 'Select Land',
-    AppLanguage.gujarati: 'જમીન પસંદ કરો',
+    AppLanguage.gujarati: 'જમીનની યાદી',
   },
   'selectLandLabel': {
     AppLanguage.english: 'Choose Land',
@@ -37,7 +37,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'landDashboard': {
     AppLanguage.english: 'Land Dashboard',
-    AppLanguage.gujarati: 'જમીન ડેશબોર્ડ',
+    AppLanguage.gujarati: 'જમીનનો સારાંશ',
   },
   'laborHoursLabel': {
     AppLanguage.english: 'Labor Cost',
@@ -58,7 +58,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'incomeTypeLabel': {
     AppLanguage.english: 'Income Type',
-    AppLanguage.gujarati: 'આવક પ્રકાર',
+    AppLanguage.gujarati: 'આવકનો પ્રકાર',
   },
   'incomeTypeAll': {AppLanguage.english: 'All', AppLanguage.gujarati: 'બધા'},
   'incomeAmountLabel': {
@@ -137,6 +137,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english: 'Vegetable Sale',
     AppLanguage.gujarati: 'શાકભાજી વેચાણ',
   },
+  'incomeTypeAnimalPasu': {
+    AppLanguage.english: 'Animal (Pasu)',
+    AppLanguage.gujarati: 'પશુ',
+  },
   'incomeTypeMilkSale': {
     AppLanguage.english: 'Milk Sale',
     AppLanguage.gujarati: 'દૂધ વેચાણ',
@@ -168,7 +172,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'expenseTypeLabel': {
     AppLanguage.english: 'Expense Type',
-    AppLanguage.gujarati: 'ખર્ચ પ્રકાર',
+    AppLanguage.gujarati: 'ખર્ચનો પ્રકાર',
   },
   'expenseTypeAll': {AppLanguage.english: 'All', AppLanguage.gujarati: 'બધા'},
   'expenseAmountLabel': {
@@ -249,7 +253,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'cropProductionLabel': {
     AppLanguage.english: 'Crop Production (kg)',
-    AppLanguage.gujarati: 'ફસલ ઉત્પાદન (કિગ્રા)',
+    AppLanguage.gujarati: 'પાક ઉત્પાદન (કિલો)',
   },
   'dashboardDiaryLabel': {
     AppLanguage.english: 'Note',
@@ -305,7 +309,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'cropType': {
     AppLanguage.english: 'Crop Type',
-    AppLanguage.gujarati: 'ફસલનો પ્રકાર',
+    AppLanguage.gujarati: 'પાકનો પ્રકાર',
   },
   'cropTypeWheat': {AppLanguage.english: 'Wheat', AppLanguage.gujarati: 'ઘઉં'},
   'cropTypeCotton': {
@@ -335,16 +339,16 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'cropWeight': {
     AppLanguage.english: 'Crop Weight',
-    AppLanguage.gujarati: 'ફસલ વજન',
+    AppLanguage.gujarati: 'પાકનું વજન',
   },
   'weightUnit': {
     AppLanguage.english: 'Weight Unit',
-    AppLanguage.gujarati: 'વજન એકમ',
+    AppLanguage.gujarati: 'વજનનું એકમ',
   },
-  'weightUnitKg': {AppLanguage.english: 'kg', AppLanguage.gujarati: 'કિગ્રા'},
+  'weightUnitKg': {AppLanguage.english: 'kg', AppLanguage.gujarati: 'કિલો'},
   'weightUnitMan': {
     AppLanguage.english: 'Maund (20 kg)',
-    AppLanguage.gujarati: 'મણ (20 કિગ્રા)',
+    AppLanguage.gujarati: 'મણ (20 કિલો)',
   },
   'noCropRecords': {
     AppLanguage.english: 'No crop records',
@@ -410,7 +414,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'drawerHeader': {
     AppLanguage.english: 'Kishan Diary Menu',
-    AppLanguage.gujarati: 'કિસાન ડાયરી મેનૂ',
+    AppLanguage.gujarati: 'કિશાન ડાયરી મેનૂ',
   },
   'loggedUserDefaultName': {
     AppLanguage.english: 'Farmer',
@@ -434,7 +438,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'drawerWhatsAppGroup': {
     AppLanguage.english: 'Join WhatsApp Group',
-    AppLanguage.gujarati: 'WhatsApp ગ્રુપ જોડાઓ',
+    AppLanguage.gujarati: 'WhatsApp ગ્રુપમાં જોડાઓ',
   },
   'whatsAppOpenError': {
     AppLanguage.english: 'Unable to open WhatsApp group link.',
@@ -521,7 +525,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   'disableAllDataDone': {
     AppLanguage.english: 'All land records disabled. You can add new lands.',
     AppLanguage.gujarati:
-        'બધા જમીન રેકોર્ડ નિષ્ક્રિય થયા. તમે નવી જમીન ઉમેરી શકો છો.',
+        'બધા જમીનના રેકોર્ડ નિષ્ક્રિય થયા. તમે નવી જમીન ઉમેરી શકો છો.',
   },
   'drawerAddLand': {
     AppLanguage.english: 'Add Land',
@@ -535,7 +539,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english:
         'Try the Kishan Diary app to manage farm income, expenses, crop, and labor records.',
     AppLanguage.gujarati:
-        'ખેતીની આવક, ખર્ચ, પાક અને મજૂરી રેકોર્ડ માટે કિસાન ડાયરી એપ જરૂર અજમાવો.',
+        'ખેતીની આવક, ખર્ચ, પાક અને મજૂરીના રેકોર્ડ માટે કિશાન ડાયરી એપ જરૂર અજમાવો.',
   },
   'downloadPdfTooltip': {
     AppLanguage.english: 'Download PDF',
@@ -551,7 +555,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'pdfGeneratedOn': {
     AppLanguage.english: 'Generated on',
-    AppLanguage.gujarati: 'તૈયાર થયેલ તારીખ',
+    AppLanguage.gujarati: 'તૈયાર થયાની તારીખ',
   },
   'downloadNoData': {
     AppLanguage.english: 'No records available on this page',
@@ -583,17 +587,17 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.english:
         'Kishan Diary — land tracking and expense management app.',
     AppLanguage.gujarati:
-        'કિસાન ડાયરી — જમીન ટ્રેકિંગ અને ખર્ચ વ્યવસ્થાપન માટેની એપ.',
+        'કિશાન ડાયરી — જમીન ટ્રેકિંગ અને ખર્ચ વ્યવસ્થાપન માટેની એપ.',
   },
   'aboutPageTitle': {
     AppLanguage.english: 'About Kishan Diary',
-    AppLanguage.gujarati: 'કિસાન ડાયરી વિશે',
+    AppLanguage.gujarati: 'કિશાન ડાયરી વિશે',
   },
   'aboutPageIntro': {
     AppLanguage.english:
         'Kishan Diary helps farmers manage land, income, expenses, crops, labor, and animal records in one place.',
     AppLanguage.gujarati:
-        'કિસાન ડાયરી ખેડુતોને જમીન, આવક, ખર્ચ, પાક, મજૂરી અને પશુ રેકોર્ડ એક જ જગ્યાએ સંભાળવામાં મદદ કરે છે.',
+        'કિશાન ડાયરી ખેડુતોને જમીન, આવક, ખર્ચ, પાક, મજૂરી અને પશુ રેકોર્ડ એક જ જગ્યાએ સંભાળવામાં મદદ કરે છે.',
   },
   'aboutPageFeaturesTitle': {
     AppLanguage.english: 'Main Features',
@@ -663,9 +667,9 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'contactHelpThankYou': {
     AppLanguage.english:
-        'Feel free to contact us anytime. Thank you for using Kissan Yadi!',
+        'Feel free to contact us anytime. Thank you for using Kishan Diary!',
     AppLanguage.gujarati:
-        'કોઈ પણ સમયે અમારો સંપર્ક કરો. Kissan Yadi વાપરવા માટે તમારું આભાર!',
+        'કોઈ પણ સમયે અમારો સંપર્ક કરો. Kishan Diary વાપરવા માટે તમારું આભાર!',
   },
   'contactMobileLabel': {
     AppLanguage.english: 'Mobile',
@@ -697,12 +701,18 @@ const Map<String, Map<AppLanguage, String>> translations = {
     AppLanguage.gujarati: 'સૂચન મોકલી શકાયું નથી. કૃપા કરીને ફરી પ્રયાસ કરો.',
   },
   'okButton': {AppLanguage.english: 'OK', AppLanguage.gujarati: 'બરાબર'},
-  'navHome': {AppLanguage.english: 'Home', AppLanguage.gujarati: 'હોમ'},
+  'navHome': {AppLanguage.english: 'Home', AppLanguage.gujarati: 'મુખ્ય પાનું'},
   'navIncome': {AppLanguage.english: 'Income', AppLanguage.gujarati: 'આવક'},
   'navExpense': {AppLanguage.english: 'Expense', AppLanguage.gujarati: 'ખર્ચ'},
-  'navCrop': {AppLanguage.english: 'Crop', AppLanguage.gujarati: 'ફસલ'},
-  'navLabor': {AppLanguage.english: 'Labor', AppLanguage.gujarati: 'મજૂર'},
-  'navBills': {AppLanguage.english: 'Bills', AppLanguage.gujarati: 'બિલ'},
+  'navCrop': {AppLanguage.english: 'Crop', AppLanguage.gujarati: 'પાક'},
+  'navLabor': {
+    AppLanguage.english: 'Labor',
+    AppLanguage.gujarati: 'મજૂરીની વિગતો',
+  },
+  'navBills': {
+    AppLanguage.english: 'Bills',
+    AppLanguage.gujarati: 'બિલોની વિગતો',
+  },
   'farmerNoBills': {
     AppLanguage.english: 'No bills found for your mobile number.',
     AppLanguage.gujarati: 'તમારા મોબાઇલ નંબર માટે કોઈ બિલ મળ્યું નથી.',
@@ -868,7 +878,7 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'upadSectionTitle': {
     AppLanguage.english: 'Upad Records for',
-    AppLanguage.gujarati: 'ઉપાડ વિગતો',
+    AppLanguage.gujarati: 'ઉપાડની વિગતો',
   },
   'upadFormButton': {
     AppLanguage.english: 'Upad Form',
@@ -1036,24 +1046,24 @@ const Map<String, Map<AppLanguage, String>> translations = {
   },
   'agroBillDate': {
     AppLanguage.english: 'Bill Date',
-    AppLanguage.gujarati: 'બિલ તારીખ',
+    AppLanguage.gujarati: 'બિલની તારીખ',
   },
   'agroBillAmount': {
     AppLanguage.english: 'Bill Amount',
-    AppLanguage.gujarati: 'બિલ રકમ',
+    AppLanguage.gujarati: 'બિલની રકમ',
   },
   'agroPaymentStatus': {
     AppLanguage.english: 'Payment Status',
-    AppLanguage.gujarati: 'ચુકવણી સ્થિતિ',
+    AppLanguage.gujarati: 'ચુકવણીની સ્થિતિ',
   },
   'agroPending': {AppLanguage.english: 'Pending', AppLanguage.gujarati: 'બાકી'},
   'agroCompleted': {
     AppLanguage.english: 'Completed',
-    AppLanguage.gujarati: 'પૂર્ણ',
+    AppLanguage.gujarati: 'પૂર્ણ ચૂકવેલ',
   },
   'agroBillNote': {
     AppLanguage.english: 'Bill Note',
-    AppLanguage.gujarati: 'બિલ નોંધ',
+    AppLanguage.gujarati: 'બિલની નોંધ',
   },
   'agroPickBillPhoto': {
     AppLanguage.english: 'Pick Bill Image',
@@ -1062,6 +1072,10 @@ const Map<String, Map<AppLanguage, String>> translations = {
   'agroRemoveBillPhoto': {
     AppLanguage.english: 'Remove Bill Image',
     AppLanguage.gujarati: 'બિલ ફોટો દૂર કરો',
+  },
+  'billSourceLabel': {
+    AppLanguage.english: 'Source',
+    AppLanguage.gujarati: 'બિલનો સ્ત્રોત',
   },
   'agroSaveBill': {
     AppLanguage.english: 'Save Bill',

@@ -89,7 +89,9 @@ class _CropScreenState extends ConsumerState<CropScreen> {
     setState(() => _loading = true);
 
     try {
-      final payload = await ref.read(apiServiceProvider).getCropEntries(land.id!);
+      final payload = await ref
+          .read(apiServiceProvider)
+          .getCropEntries(land.id!);
       final entries = ((payload['crop_entries'] as List?) ?? [])
           .map((item) => _entryFromApi((item as Map).cast<String, dynamic>()))
           .toList();
@@ -429,20 +431,24 @@ class _CropScreenState extends ConsumerState<CropScreen> {
 
     try {
       final payload = isEditing
-          ? await ref.read(apiServiceProvider).updateCropEntry(
-              cropEntryId: editingEntry!.id!,
-              cropType: entry.cropType,
-              landSize: entry.landSize,
-              cropWeight: entry.cropWeight,
-              weightUnit: entry.weightUnit,
-            )
-          : await ref.read(apiServiceProvider).createCropEntry(
-              landId: selectedLand.id!,
-              cropType: entry.cropType,
-              landSize: entry.landSize,
-              cropWeight: entry.cropWeight,
-              weightUnit: entry.weightUnit,
-            );
+          ? await ref
+                .read(apiServiceProvider)
+                .updateCropEntry(
+                  cropEntryId: editingEntry!.id!,
+                  cropType: entry.cropType,
+                  landSize: entry.landSize,
+                  cropWeight: entry.cropWeight,
+                  weightUnit: entry.weightUnit,
+                )
+          : await ref
+                .read(apiServiceProvider)
+                .createCropEntry(
+                  landId: selectedLand.id!,
+                  cropType: entry.cropType,
+                  landSize: entry.landSize,
+                  cropWeight: entry.cropWeight,
+                  weightUnit: entry.weightUnit,
+                );
 
       final savedEntry = _entryFromApi(
         ((payload['crop_entry'] as Map?) ?? {}).cast<String, dynamic>(),
@@ -518,7 +524,9 @@ class _CropScreenState extends ConsumerState<CropScreen> {
     }
 
     try {
-      final payload = await ref.read(apiServiceProvider).deleteCropEntry(target.id!);
+      final payload = await ref
+          .read(apiServiceProvider)
+          .deleteCropEntry(target.id!);
 
       if (!mounted) {
         return;
@@ -658,7 +666,7 @@ class _CropScreenState extends ConsumerState<CropScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '${record.cropWeight.toStringAsFixed(2)} $unitLabel',
+                              '${record.cropWeight.toStringAsFixed(0)} $unitLabel',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: colorScheme.onPrimaryContainer,
@@ -700,7 +708,7 @@ class _CropScreenState extends ConsumerState<CropScreen> {
               DataCell(Text(_cropTypeLabel(record.cropType))),
               DataCell(Text(record.landSize.toStringAsFixed(2))),
               DataCell(
-                Text('${record.cropWeight.toStringAsFixed(2)} $unitLabel'),
+                Text('${record.cropWeight.toStringAsFixed(0)} $unitLabel'),
               ),
               DataCell(
                 Row(
@@ -745,7 +753,7 @@ class _CropScreenState extends ConsumerState<CropScreen> {
         const SizedBox(height: 12),
         statCard(
           t(widget.language, 'cropProductionLabel'),
-          '${selectedLand.cropProductionKg.toStringAsFixed(2)} kg',
+          '${selectedLand.cropProductionKg.toStringAsFixed(0)} kg',
           Colors.orange,
         ),
         const SizedBox(height: 12),

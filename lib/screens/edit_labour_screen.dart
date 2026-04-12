@@ -334,20 +334,24 @@ class _EditLabourScreenState extends ConsumerState<EditLabourScreen> {
                 if (widget.initialEntry.id != null) {
                   try {
                     final payload = existing?.id == null
-                        ? await ref.read(apiServiceProvider).createUpadEntry(
-                            laborEntryId: widget.initialEntry.id!,
-                            amount: amount,
-                            paymentDate: date,
-                            note: note,
-                            laborNameSnapshot: _nameController.text.trim(),
-                          )
-                        : await ref.read(apiServiceProvider).updateUpadEntry(
-                            upadEntryId: existing!.id!,
-                            amount: amount,
-                            paymentDate: date,
-                            note: note,
-                            laborNameSnapshot: _nameController.text.trim(),
-                          );
+                        ? await ref
+                              .read(apiServiceProvider)
+                              .createUpadEntry(
+                                laborEntryId: widget.initialEntry.id!,
+                                amount: amount,
+                                paymentDate: date,
+                                note: note,
+                                laborNameSnapshot: _nameController.text.trim(),
+                              )
+                        : await ref
+                              .read(apiServiceProvider)
+                              .updateUpadEntry(
+                                upadEntryId: existing!.id!,
+                                amount: amount,
+                                paymentDate: date,
+                                note: note,
+                                laborNameSnapshot: _nameController.text.trim(),
+                              );
 
                     upad = _upadFromApi(
                       ((payload['upad_entry'] as Map?) ?? {})
@@ -436,13 +440,15 @@ class _EditLabourScreenState extends ConsumerState<EditLabourScreen> {
 
     if (widget.initialEntry.id != null) {
       try {
-        final payload = await ref.read(apiServiceProvider).updateLaborEntry(
-          laborEntryId: widget.initialEntry.id!,
-          laborName: name,
-          mobile: mobile,
-          totalDays: days,
-          dailyRate: dailyRate,
-        );
+        final payload = await ref
+            .read(apiServiceProvider)
+            .updateLaborEntry(
+              laborEntryId: widget.initialEntry.id!,
+              laborName: name,
+              mobile: mobile,
+              totalDays: days,
+              dailyRate: dailyRate,
+            );
 
         updatedLabor = _laborFromApi(
           ((payload['labor_entry'] as Map?) ?? {}).cast<String, dynamic>(),
@@ -609,7 +615,7 @@ class _EditLabourScreenState extends ConsumerState<EditLabourScreen> {
                         ),
                         DataCell(
                           SizedBox(
-                            width: 150,
+                            width: 96,
                             child: Text(
                               upad.note,
                               maxLines: 2,
@@ -617,7 +623,17 @@ class _EditLabourScreenState extends ConsumerState<EditLabourScreen> {
                             ),
                           ),
                         ),
-                        DataCell(Text(upad.date)),
+                        DataCell(
+                          SizedBox(
+                            width: 96,
+                            child: Text(
+                              upad.date,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
                         DataCell(
                           Wrap(
                             spacing: 4,

@@ -57,7 +57,8 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   AppLanguage _language = AppLanguage.gujarati;
   static const String _defaultProfileImagePath =
       'lib/assets/images/register.png';
@@ -77,6 +78,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   Uint8List? _profileImageBytes;
   String? _profileImageUrl;
   bool _initialLoading = true;
+  bool _isLabourFormOpen = false;
+  int _labourCloseFormSignal = 0;
 
   @override
   void initState() {
@@ -354,11 +357,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     String location,
   ) async {
     try {
-      final payload = await ref.read(apiServiceProvider).createLand(
-        name: name,
-        size: size,
-        location: location,
-      );
+      final payload = await ref
+          .read(apiServiceProvider)
+          .createLand(name: name, size: size, location: location);
       final land = _landFromApi(payload);
 
       if (!mounted) {
@@ -522,6 +523,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
     }
 
     setState(() {
+      if (index != 4) {
+        _isLabourFormOpen = false;
+      }
       _navIndex = index;
       _tabHistory
         ..remove(index)
@@ -549,6 +553,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   void _handleSystemBack() {
     if (_scaffoldKey.currentState?.isDrawerOpen ?? false) {
       Navigator.of(context).pop();
+      return;
+    }
+
+    if (_navIndex == 4 && _isLabourFormOpen) {
+      setState(() {
+        _labourCloseFormSignal++;
+        _isLabourFormOpen = false;
+      });
       return;
     }
 
@@ -779,12 +791,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
 
               try {
                 if (land.id != null) {
-                  final payload = await ref.read(apiServiceProvider).updateLand(
-                    landId: land.id!,
-                    name: name,
-                    size: size,
-                    location: location,
-                  );
+                  final payload = await ref
+                      .read(apiServiceProvider)
+                      .updateLand(
+                        landId: land.id!,
+                        name: name,
+                        size: size,
+                        location: location,
+                      );
                   final updated = _landFromApi(payload);
                   setState(() {
                     land.name = updated.name;
@@ -958,23 +972,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                 }
 
                 try {
-                  final updated = await ref.read(apiServiceProvider).updateProfile(
-                    name: nameCtrl.text.trim(),
-                    email: emailCtrl.text.trim(),
-                    birthDate: birthdateCtrl.text.trim(),
-                    password: passwordCtrl.text.trim().isEmpty
-                        ? null
-                        : passwordCtrl.text,
-                    passwordConfirmation: passwordCtrl.text.trim().isEmpty
-                        ? null
-                        : passwordCtrl.text,
-                  );
+                  final updated = await ref
+                      .read(apiServiceProvider)
+                      .updateProfile(
+                        name: nameCtrl.text.trim(),
+                        email: emailCtrl.text.trim(),
+                        birthDate: birthdateCtrl.text.trim(),
+                        password: passwordCtrl.text.trim().isEmpty
+                            ? null
+                            : passwordCtrl.text,
+                        passwordConfirmation: passwordCtrl.text.trim().isEmpty
+                            ? null
+                            : passwordCtrl.text,
+                      );
 
                   String? updatedProfileImageUrl;
 
                   if (tempProfileImagePath != null &&
                       tempProfileImagePath!.isNotEmpty) {
-                    final imagePayload = await ref.read(apiServiceProvider)
+                    final imagePayload = await ref
+                        .read(apiServiceProvider)
                         .updateProfileImage(
                           imagePath: tempProfileImagePath,
                           imageBytes: tempProfileImageBytes,
@@ -983,7 +1000,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                     updatedProfileImageUrl = imagePayload['profile_image_url']
                         ?.toString();
                   } else if (tempProfileImageBytes != null) {
-                    final imagePayload = await ref.read(apiServiceProvider)
+                    final imagePayload = await ref
+                        .read(apiServiceProvider)
                         .updateProfileImage(
                           imageBytes: tempProfileImageBytes,
                           fileName: 'profile_image.jpg',
@@ -1090,21 +1108,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   }
 
   Future<void> _downloadCurrentPageRecords() async {
-    final exported = await exportCurrentPagePdf(
-      language: _language,
-      navIndex: _navIndex,
-      lands: _lands,
-      selectedLand: _selectedLand,
-    );
+    try {
+      final bills = _navIndex == 0 || _navIndex == 5
+          ? await ref.read(apiServiceProvider).getMyBills(source: 'all')
+          : const <Map<String, dynamic>>[];
+      final dashboardNotes = await AppSession.getDashboardDiaryNotes();
 
-    if (!mounted) {
-      return;
-    }
+      final exported = await exportCurrentPagePdf(
+        language: _language,
+        navIndex: _navIndex,
+        lands: _lands,
+        selectedLand: _selectedLand,
+        bills: bills,
+        dashboardNotes: dashboardNotes,
+      );
 
-    if (!exported) {
+      if (!mounted) {
+        return;
+      }
+
+      if (!exported) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(t(_language, 'downloadNoData'))));
+      }
+    } on ApiException catch (error) {
+      if (!mounted) {
+        return;
+      }
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(t(_language, 'downloadNoData'))));
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to download PDF.')));
     }
   }
 
@@ -1114,9 +1155,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         continue;
       }
 
-      final incomePayload = await ref.read(apiServiceProvider).getIncomeEntries(
-        land.id!,
-      );
+      final incomePayload = await ref
+          .read(apiServiceProvider)
+          .getIncomeEntries(land.id!);
       final incomeEntries = ((incomePayload['income_entries'] as List?) ?? [])
           .map(
             (item) =>
@@ -1124,9 +1165,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           )
           .toList();
 
-      final expensePayload = await ref.read(apiServiceProvider).getExpenseEntries(
-        land.id!,
-      );
+      final expensePayload = await ref
+          .read(apiServiceProvider)
+          .getExpenseEntries(land.id!);
       final expenseEntries =
           ((expensePayload['expense_entries'] as List?) ?? [])
               .map(
@@ -1135,14 +1176,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
               )
               .toList();
 
-      final cropPayload = await ref.read(apiServiceProvider).getCropEntries(land.id!);
+      final cropPayload = await ref
+          .read(apiServiceProvider)
+          .getCropEntries(land.id!);
       final cropEntries = ((cropPayload['crop_entries'] as List?) ?? [])
           .map(
             (item) => _cropEntryFromApi((item as Map).cast<String, dynamic>()),
           )
           .toList();
 
-      final laborPayload = await ref.read(apiServiceProvider).getLaborEntries(land.id!);
+      final laborPayload = await ref
+          .read(apiServiceProvider)
+          .getLaborEntries(land.id!);
       final laborEntries = ((laborPayload['labor_entries'] as List?) ?? [])
           .map(
             (item) => _laborEntryFromApi((item as Map).cast<String, dynamic>()),
@@ -1154,7 +1199,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
         if (labor.id == null) {
           continue;
         }
-        final upadPayload = await ref.read(apiServiceProvider).getUpadEntries(labor.id!);
+        final upadPayload = await ref
+            .read(apiServiceProvider)
+            .getUpadEntries(labor.id!);
         final entries = ((upadPayload['upad_entries'] as List?) ?? [])
             .map(
               (item) => _upadEntryFromApi(
@@ -1203,6 +1250,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       final exported = await exportAllDataPdf(
         language: _language,
         lands: _lands,
+        bills: await ref.read(apiServiceProvider).getMyBills(source: 'all'),
+        dashboardNotes: await AppSession.getDashboardDiaryNotes(),
       );
 
       if (!mounted) {
@@ -1361,6 +1410,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           selectedLand: _selectedLand,
           language: _language,
           onSaved: () => setState(() {}),
+          closeAddFormSignal: _labourCloseFormSignal,
+          onAddFormVisibilityChanged: (isOpen) {
+            if (!mounted || _isLabourFormOpen == isOpen) {
+              return;
+            }
+            setState(() {
+              _isLabourFormOpen = isOpen;
+            });
+          },
         );
       case 5:
         return FarmerBillsScreen(
@@ -1492,7 +1550,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
                                     groupValue: _language,
                                     onChanged: (v) {
                                       if (v != null) {
-                                        ref.read(apiServiceProvider)
+                                        ref
+                                            .read(apiServiceProvider)
                                             .updateLanguage(
                                               _languageToApiCode(v),
                                             )

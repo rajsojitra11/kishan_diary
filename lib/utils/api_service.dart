@@ -45,6 +45,8 @@ class ApiService {
   static String get _baseUrl {
     var configured = const String.fromEnvironment('API_BASE_URL');
     if (configured.trim().isNotEmpty) {
+      configured = configured.trim().replaceAll(RegExp(r'/$'), '');
+
       // Keep HTTP for localhost/private network during local development.
       final isLocalHttp =
           configured.startsWith('http://localhost') ||
@@ -62,9 +64,20 @@ class ApiService {
       if (configured.startsWith('http://') && !isLocalHttp) {
         configured = configured.replaceFirst('http://', 'https://');
       }
-      return configured.endsWith('/api/v1')
-          ? configured
-          : '${configured.replaceAll(RegExp(r'/$'), '')}/api/v1';
+
+      if (configured.endsWith('/api/v1')) {
+        return configured;
+      }
+
+      if (configured.endsWith('/api')) {
+        return '$configured/v1';
+      }
+
+      if (configured.endsWith('/v1')) {
+        return configured.replaceFirst(RegExp(r'/v1$'), '/api/v1');
+      }
+
+      return '$configured/api/v1';
     }
 
     if (kIsWeb) {

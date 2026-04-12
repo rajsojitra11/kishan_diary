@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -18,11 +19,14 @@ Future<bool> exportCurrentPagePdf({
   required int navIndex,
   required List<Land> lands,
   required Land? selectedLand,
+  List<Map<String, dynamic>> bills = const [],
+  Map<String, String> dashboardNotes = const {},
 }) async {
   final pageTitle = _pageTitle(language, navIndex);
   final fileName = 'kishan_diary_${_pageKey(navIndex)}.pdf';
-  final baseFont = await _resolvePdfBaseFont();
-  final boldFont = await _resolvePdfBoldFont(baseFont);
+  final pdfFonts = await _resolvePdfFonts();
+  final baseFont = pdfFonts.base;
+  final boldFont = pdfFonts.bold;
 
   final doc = pw.Document();
   final widgets = _buildPageWidgets(
@@ -30,6 +34,8 @@ Future<bool> exportCurrentPagePdf({
     navIndex: navIndex,
     lands: lands,
     selectedLand: selectedLand,
+    bills: bills,
+    dashboardNotes: dashboardNotes,
   );
 
   if (widgets.isEmpty) {
@@ -83,14 +89,19 @@ Future<bool> exportCurrentPagePdf({
 Future<bool> exportAllDataPdf({
   required AppLanguage language,
   required List<Land> lands,
+  List<Map<String, dynamic>> bills = const [],
+  Map<String, String> dashboardNotes = const {},
 }) async {
-  final baseFont = await _resolvePdfBaseFont();
-  final boldFont = await _resolvePdfBoldFont(baseFont);
+  final pdfFonts = await _resolvePdfFonts();
+  final baseFont = pdfFonts.base;
+  final boldFont = pdfFonts.bold;
   final doc = pw.Document();
 
   final widgets = _buildAllDataWidgets(
     language: language,
     lands: lands,
+    bills: bills,
+    dashboardNotes: dashboardNotes,
   );
 
   if (widgets.isEmpty) {
@@ -150,10 +161,18 @@ List<pw.Widget> _buildPageWidgets({
   required int navIndex,
   required List<Land> lands,
   required Land? selectedLand,
+  required List<Map<String, dynamic>> bills,
+  required Map<String, String> dashboardNotes,
 }) {
   switch (navIndex) {
     case 0:
-      return _buildHomeWidgets(language, lands, selectedLand);
+      return _buildHomeWidgets(
+        language,
+        lands,
+        selectedLand,
+        dashboardNotes: dashboardNotes,
+        bills: bills,
+      );
     case 1:
       return selectedLand == null
           ? const []
@@ -170,6 +189,8 @@ List<pw.Widget> _buildPageWidgets({
       return selectedLand == null
           ? const []
           : _buildLaborWidgets(language, selectedLand);
+    case 5:
+      return _buildBillsWidgets(language, bills);
     default:
       return const [];
   }
@@ -178,6 +199,8 @@ List<pw.Widget> _buildPageWidgets({
 List<pw.Widget> _buildAllDataWidgets({
   required AppLanguage language,
   required List<Land> lands,
+  required List<Map<String, dynamic>> bills,
+  required Map<String, String> dashboardNotes,
 }) {
   if (lands.isEmpty) {
     return const [];
@@ -240,6 +263,16 @@ List<pw.Widget> _buildAllDataWidgets({
             totalCrop.toStringAsFixed(2),
           ],
         ],
+      ),
+    );
+
+    final diaryNote = dashboardNotes[_landDiaryKey(land)] ?? '';
+    widgets.add(pw.SizedBox(height: 8));
+    widgets.add(_sectionTitle(t(language, 'dashboardDiaryTitle')));
+    widgets.add(
+      pw.Text(
+        diaryNote.isEmpty ? '-' : diaryNote,
+        style: const pw.TextStyle(fontSize: 9.5),
       ),
     );
 
@@ -375,14 +408,42 @@ List<pw.Widget> _buildAllDataWidgets({
     widgets.add(pw.SizedBox(height: 12));
   }
 
+  if (bills.isNotEmpty) {
+    widgets.add(_sectionTitle(t(language, 'navBills')));
+    widgets.add(
+      _table(
+        headers: [
+          t(language, 'agroBillDate'),
+          t(language, 'agroBillAmount'),
+          t(language, 'agroPaymentStatus'),
+          t(language, 'agroBillNote'),
+          t(language, 'billSourceLabel'),
+        ],
+        rows: bills
+            .map(
+              (bill) => [
+                _toDisplayDate(bill['bill_date']?.toString()),
+                _toAmountText(bill['amount']),
+                _billStatusLabel(language, bill['payment_status']?.toString()),
+                bill['note']?.toString() ?? '',
+                _billSourceLabel(language, bill['source']?.toString()),
+              ],
+            )
+            .toList(),
+      ),
+    );
+  }
+
   return widgets;
 }
 
 List<pw.Widget> _buildHomeWidgets(
   AppLanguage language,
   List<Land> lands,
-  Land? selectedLand,
-) {
+  Land? selectedLand, {
+  required Map<String, String> dashboardNotes,
+  required List<Map<String, dynamic>> bills,
+}) {
   if (lands.isEmpty && selectedLand == null) {
     return const [];
   }
@@ -410,6 +471,42 @@ List<pw.Widget> _buildHomeWidgets(
       ),
     );
     widgets.add(pw.SizedBox(height: 12));
+
+    final diaryNote = dashboardNotes[_landDiaryKey(selectedLand)] ?? '';
+    widgets.add(_sectionTitle(t(language, 'dashboardDiaryTitle')));
+    widgets.add(
+      pw.Text(
+        diaryNote.isEmpty ? '-' : diaryNote,
+        style: const pw.TextStyle(fontSize: 9.5),
+      ),
+    );
+    widgets.add(pw.SizedBox(height: 10));
+
+    if (bills.isNotEmpty) {
+      widgets.add(_sectionTitle(t(language, 'navBills')));
+      widgets.add(
+        _table(
+          headers: [
+            t(language, 'agroBillDate'),
+            t(language, 'agroBillAmount'),
+            t(language, 'agroPaymentStatus'),
+          ],
+          rows: bills
+              .map(
+                (bill) => [
+                  _toDisplayDate(bill['bill_date']?.toString()),
+                  _toAmountText(bill['amount']),
+                  _billStatusLabel(
+                    language,
+                    bill['payment_status']?.toString(),
+                  ),
+                ],
+              )
+              .toList(),
+        ),
+      );
+      widgets.add(pw.SizedBox(height: 12));
+    }
   }
 
   if (lands.isNotEmpty) {
@@ -435,6 +532,39 @@ List<pw.Widget> _buildHomeWidgets(
   }
 
   return widgets;
+}
+
+List<pw.Widget> _buildBillsWidgets(
+  AppLanguage language,
+  List<Map<String, dynamic>> bills,
+) {
+  if (bills.isEmpty) {
+    return const [];
+  }
+
+  return [
+    _sectionTitle(t(language, 'navBills')),
+    _table(
+      headers: [
+        t(language, 'agroBillDate'),
+        t(language, 'agroBillAmount'),
+        t(language, 'agroPaymentStatus'),
+        t(language, 'agroBillNote'),
+        t(language, 'billSourceLabel'),
+      ],
+      rows: bills
+          .map(
+            (bill) => [
+              _toDisplayDate(bill['bill_date']?.toString()),
+              _toAmountText(bill['amount']),
+              _billStatusLabel(language, bill['payment_status']?.toString()),
+              bill['note']?.toString() ?? '',
+              _billSourceLabel(language, bill['source']?.toString()),
+            ],
+          )
+          .toList(),
+    ),
+  ];
 }
 
 List<pw.Widget> _buildIncomeWidgets(AppLanguage language, Land land) {
@@ -624,11 +754,20 @@ pw.Widget _table({
   );
 }
 
-Future<pw.Font> _resolvePdfBaseFont() async {
+Future<_PdfFonts> _resolvePdfFonts() async {
+  // Prefer bundled fonts so Gujarati text renders correctly even without internet.
   try {
-    return await PdfGoogleFonts.notoSansGujaratiRegular();
+    final baseData = await rootBundle.load(
+      'lib/assets/fonts/HindVadodara-Regular.ttf',
+    );
+    final boldData = await rootBundle.load(
+      'lib/assets/fonts/HindVadodara-Bold.ttf',
+    );
+    return _PdfFonts(base: pw.Font.ttf(baseData), bold: pw.Font.ttf(boldData));
   } catch (_) {
-    return pw.Font.helvetica();
+    final onlineBase = await _resolvePdfBaseFont();
+    final onlineBold = await _resolvePdfBoldFont(onlineBase);
+    return _PdfFonts(base: onlineBase, bold: onlineBold);
   }
 }
 
@@ -638,6 +777,21 @@ Future<pw.Font> _resolvePdfBoldFont(pw.Font fallback) async {
   } catch (_) {
     return fallback;
   }
+}
+
+Future<pw.Font> _resolvePdfBaseFont() async {
+  try {
+    return await PdfGoogleFonts.notoSansGujaratiRegular();
+  } catch (_) {
+    return pw.Font.helvetica();
+  }
+}
+
+class _PdfFonts {
+  const _PdfFonts({required this.base, required this.bold});
+
+  final pw.Font base;
+  final pw.Font bold;
 }
 
 String _pageKey(int navIndex) {
@@ -650,6 +804,8 @@ String _pageKey(int navIndex) {
       return 'crop';
     case 4:
       return 'labor';
+    case 5:
+      return 'bills';
     default:
       return 'home';
   }
@@ -665,9 +821,53 @@ String _pageTitle(AppLanguage language, int navIndex) {
       return t(language, 'navCrop');
     case 4:
       return t(language, 'navLabor');
+    case 5:
+      return t(language, 'navBills');
     default:
       return t(language, 'navHome');
   }
+}
+
+String _toDisplayDate(String? serverDate) {
+  if (serverDate == null || serverDate.trim().isEmpty) {
+    return '-';
+  }
+  final parts = serverDate.split('-');
+  if (parts.length != 3) {
+    return serverDate;
+  }
+  return '${parts[2]}/${parts[1]}/${parts[0]}';
+}
+
+String _toAmountText(dynamic raw) {
+  if (raw is num) {
+    return raw.toDouble().toStringAsFixed(2);
+  }
+  final parsed = double.tryParse(raw?.toString() ?? '');
+  return (parsed ?? 0.0).toStringAsFixed(2);
+}
+
+String _billStatusLabel(AppLanguage language, String? status) {
+  final normalized = status?.toLowerCase() == 'completed'
+      ? 'completed'
+      : 'pending';
+  return normalized == 'completed'
+      ? t(language, 'agroCompleted')
+      : t(language, 'agroPending');
+}
+
+String _billSourceLabel(AppLanguage language, String? source) {
+  final normalized = source?.toLowerCase() == 'agro' ? 'agro' : 'farmer';
+  return normalized == 'agro'
+      ? t(language, 'farmerBillSourceAgro')
+      : t(language, 'farmerBillSourceFarmer');
+}
+
+String _landDiaryKey(Land land) {
+  if (land.id != null) {
+    return 'id_${land.id}';
+  }
+  return '${land.name}|${land.location}|${land.size.toStringAsFixed(4)}';
 }
 
 String _formatDays(double days) {

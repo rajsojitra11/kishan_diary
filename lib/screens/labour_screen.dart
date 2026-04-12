@@ -17,12 +17,16 @@ class LabourScreen extends ConsumerStatefulWidget {
   final Land? selectedLand;
   final AppLanguage language;
   final VoidCallback onSaved;
+  final int closeAddFormSignal;
+  final ValueChanged<bool>? onAddFormVisibilityChanged;
 
   const LabourScreen({
     super.key,
     required this.selectedLand,
     required this.language,
     required this.onSaved,
+    this.closeAddFormSignal = 0,
+    this.onAddFormVisibilityChanged,
   });
 
   @override
@@ -42,6 +46,7 @@ class _LabourScreenState extends ConsumerState<LabourScreen> {
 
   @override
   void dispose() {
+    widget.onAddFormVisibilityChanged?.call(false);
     _nameCtrl.dispose();
     _mobileCtrl.dispose();
     _laborSearchCtrl.dispose();
@@ -136,12 +141,17 @@ class _LabourScreenState extends ConsumerState<LabourScreen> {
   @override
   void initState() {
     super.initState();
+    widget.onAddFormVisibilityChanged?.call(_showLaborForm);
     _loadLaborEntries();
   }
 
   @override
   void didUpdateWidget(covariant LabourScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.closeAddFormSignal != widget.closeAddFormSignal &&
+        _showLaborForm) {
+      setState(_clearForm);
+    }
     if (oldWidget.selectedLand?.id != widget.selectedLand?.id) {
       _loadLaborEntries();
     }
@@ -156,7 +166,9 @@ class _LabourScreenState extends ConsumerState<LabourScreen> {
     setState(() => _loading = true);
 
     try {
-      final payload = await ref.read(apiServiceProvider).getLaborEntries(land.id!);
+      final payload = await ref
+          .read(apiServiceProvider)
+          .getLaborEntries(land.id!);
       final laborEntries = ((payload['labor_entries'] as List?) ?? [])
           .map((item) => _laborFromApi((item as Map).cast<String, dynamic>()))
           .toList();
@@ -167,7 +179,9 @@ class _LabourScreenState extends ConsumerState<LabourScreen> {
           continue;
         }
 
-        final upadPayload = await ref.read(apiServiceProvider).getUpadEntries(labor.id!);
+        final upadPayload = await ref
+            .read(apiServiceProvider)
+            .getUpadEntries(labor.id!);
         final entries = ((upadPayload['upad_entries'] as List?) ?? [])
             .map(
               (item) =>
@@ -304,6 +318,7 @@ class _LabourScreenState extends ConsumerState<LabourScreen> {
     _nameCtrl.clear();
     _mobileCtrl.clear();
     _showLaborForm = false;
+    widget.onAddFormVisibilityChanged?.call(false);
   }
 
   Future<void> _submitEntry() async {
@@ -337,11 +352,13 @@ class _LabourScreenState extends ConsumerState<LabourScreen> {
     }
 
     try {
-      final payload = await ref.read(apiServiceProvider).createLaborEntry(
-        landId: selectedLand.id!,
-        laborName: name,
-        mobile: mobile,
-      );
+      final payload = await ref
+          .read(apiServiceProvider)
+          .createLaborEntry(
+            landId: selectedLand.id!,
+            laborName: name,
+            mobile: mobile,
+          );
 
       final created = _laborFromApi(
         ((payload['labor_entry'] as Map?) ?? {}).cast<String, dynamic>(),
@@ -455,7 +472,9 @@ class _LabourScreenState extends ConsumerState<LabourScreen> {
     }
 
     try {
-      final payload = await ref.read(apiServiceProvider).deleteLaborEntry(labor.id!);
+      final payload = await ref
+          .read(apiServiceProvider)
+          .deleteLaborEntry(labor.id!);
 
       if (!mounted) {
         return;
@@ -560,7 +579,10 @@ class _LabourScreenState extends ConsumerState<LabourScreen> {
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.person_add),
                 label: Text(t(widget.language, 'laborFormButton')),
-                onPressed: () => setState(() => _showLaborForm = true),
+                onPressed: () {
+                  setState(() => _showLaborForm = true);
+                  widget.onAddFormVisibilityChanged?.call(true);
+                },
               ),
             ),
           ),

@@ -112,7 +112,9 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     setState(() => _loading = true);
 
     try {
-      final payload = await ref.read(apiServiceProvider).getExpenseEntries(land.id!);
+      final payload = await ref
+          .read(apiServiceProvider)
+          .getExpenseEntries(land.id!);
       final entries = ((payload['expense_entries'] as List?) ?? [])
           .map((item) => _entryFromApi((item as Map).cast<String, dynamic>()))
           .toList();
@@ -504,16 +506,18 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     }
 
     try {
-      final payload = await ref.read(apiServiceProvider).createExpenseEntry(
-        landId: land.id!,
-        expenseType: entry.type,
-        amount: entry.amount,
-        entryDate: entry.date,
-        note: entry.note,
-        billPhotoPath: entry.billPhotoPath,
-        billPhotoBytes: entry.billPhotoBytes,
-        billPhotoFileName: entry.billPhotoPath?.split('/').last,
-      );
+      final payload = await ref
+          .read(apiServiceProvider)
+          .createExpenseEntry(
+            landId: land.id!,
+            expenseType: entry.type,
+            amount: entry.amount,
+            entryDate: entry.date,
+            note: entry.note,
+            billPhotoPath: entry.billPhotoPath,
+            billPhotoBytes: entry.billPhotoBytes,
+            billPhotoFileName: entry.billPhotoPath?.split('/').last,
+          );
 
       final created = _entryFromApi(
         ((payload['expense_entry'] as Map?) ?? {}).cast<String, dynamic>(),
@@ -565,16 +569,18 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     }
 
     try {
-      final payload = await ref.read(apiServiceProvider).updateExpenseEntry(
-        expenseEntryId: existing.id!,
-        expenseType: updated.type,
-        amount: updated.amount,
-        entryDate: updated.date,
-        note: updated.note,
-        billPhotoPath: updated.billPhotoPath,
-        billPhotoBytes: updated.billPhotoBytes,
-        billPhotoFileName: updated.billPhotoPath?.split('/').last,
-      );
+      final payload = await ref
+          .read(apiServiceProvider)
+          .updateExpenseEntry(
+            expenseEntryId: existing.id!,
+            expenseType: updated.type,
+            amount: updated.amount,
+            entryDate: updated.date,
+            note: updated.note,
+            billPhotoPath: updated.billPhotoPath,
+            billPhotoBytes: updated.billPhotoBytes,
+            billPhotoFileName: updated.billPhotoPath?.split('/').last,
+          );
 
       final updatedEntry = _entryFromApi(
         ((payload['expense_entry'] as Map?) ?? {}).cast<String, dynamic>(),
@@ -651,7 +657,9 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
     }
 
     try {
-      final payload = await ref.read(apiServiceProvider).deleteExpenseEntry(target.id!);
+      final payload = await ref
+          .read(apiServiceProvider)
+          .deleteExpenseEntry(target.id!);
 
       if (!mounted) {
         return;
@@ -831,7 +839,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '₹ ${record.amount.toStringAsFixed(2)}',
+                              '₹ ${record.amount.toStringAsFixed(0)}',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: colorScheme.error,
@@ -909,7 +917,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${t(widget.language, 'expenseAmountLabel')}: ${record.amount.toStringAsFixed(2)}',
+                  '${t(widget.language, 'expenseAmountLabel')}: ${record.amount.toStringAsFixed(0)}',
                   style: TextStyle(color: colorScheme.error),
                 ),
                 Text(
@@ -974,7 +982,7 @@ class _ExpenseScreenState extends ConsumerState<ExpenseScreen> {
         const SizedBox(height: 12),
         statCard(
           t(widget.language, 'expensesLabel'),
-          '₹ ${selectedLand.expenses.toStringAsFixed(2)}',
+          '₹ ${selectedLand.expenses.toStringAsFixed(0)}',
           Colors.red,
         ),
         const SizedBox(height: 12),

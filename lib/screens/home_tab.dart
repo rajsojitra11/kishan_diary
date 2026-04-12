@@ -46,6 +46,7 @@ class _HomeTabState extends ConsumerState<HomeTab> {
     'incomeTypeCropSale',
     'incomeTypeTractorHarvester',
     'incomeTypeVegetables',
+    'incomeTypeAnimalPasu',
     'incomeTypeSubsidy',
     'incomeTypeOther',
   ];
@@ -101,7 +102,9 @@ class _HomeTabState extends ConsumerState<HomeTab> {
     final requestId = ++_billsCountRequestId;
 
     try {
-      var allBills = await ref.read(apiServiceProvider).getMyBills(source: 'all');
+      var allBills = await ref
+          .read(apiServiceProvider)
+          .getMyBills(source: 'all');
 
       if (!mounted || requestId != _billsCountRequestId) {
         return;
@@ -1329,14 +1332,14 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                   children: [
                     _quickMetricCard(
                       title: t(widget.language, 'incomeLabel'),
-                      value: '₹ ${totalIncome.toStringAsFixed(2)}',
+                      value: '₹ ${totalIncome.toStringAsFixed(0)}',
                       icon: Icons.trending_up,
                       color: const Color(0xFF15803D),
                     ),
                     const SizedBox(height: 8),
                     _quickMetricCard(
                       title: t(widget.language, 'expensesLabel'),
-                      value: '₹ ${totalExpense.toStringAsFixed(2)}',
+                      value: '₹ ${totalExpense.toStringAsFixed(0)}',
                       icon: Icons.trending_down,
                       color: const Color(0xFFB45309),
                     ),
@@ -1363,7 +1366,7 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                         width: columnWidth,
                         child: _quickMetricCard(
                           title: t(widget.language, 'incomeLabel'),
-                          value: '₹ ${totalIncome.toStringAsFixed(2)}',
+                          value: '₹ ${totalIncome.toStringAsFixed(0)}',
                           icon: Icons.trending_up,
                           color: const Color(0xFF15803D),
                         ),
@@ -1373,7 +1376,7 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                         width: columnWidth,
                         child: _quickMetricCard(
                           title: t(widget.language, 'expensesLabel'),
-                          value: '₹ ${totalExpense.toStringAsFixed(2)}',
+                          value: '₹ ${totalExpense.toStringAsFixed(0)}',
                           icon: Icons.trending_down,
                           color: const Color(0xFFB45309),
                         ),
@@ -1406,12 +1409,12 @@ class _HomeTabState extends ConsumerState<HomeTab> {
               final cards = [
                 _incomeDropdownCard(
                   title: t(widget.language, 'incomeLabel'),
-                  totalValue: '₹ ${totalIncome.toStringAsFixed(2)}',
+                  totalValue: '₹ ${totalIncome.toStringAsFixed(0)}',
                   incomeTypeTotals: incomeTypeTotals,
                 ),
                 _expenseDropdownCard(
                   title: t(widget.language, 'expensesLabel'),
-                  totalValue: '₹ ${totalExpense.toStringAsFixed(2)}',
+                  totalValue: '₹ ${totalExpense.toStringAsFixed(0)}',
                   expenseTypeTotals: expenseTypeTotals,
                   laborValue: '₹ ${majuriKharch.toStringAsFixed(2)}',
                 ),
@@ -1423,7 +1426,7 @@ class _HomeTabState extends ConsumerState<HomeTab> {
                 ),
                 _cropDropdownCard(
                   title: t(widget.language, 'cropProductionLabel'),
-                  totalValue: '${totalCropProductionKg.toStringAsFixed(2)} kg',
+                  totalValue: '${totalCropProductionKg.toStringAsFixed(0)} kg',
                   cropTypeTotals: cropTypeTotals,
                 ),
               ];
